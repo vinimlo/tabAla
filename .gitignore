@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# Atena credentials
+.atena/config.env
+
+# Hefesto local state and credentials
+.hefesto/config.env
+.hefesto/auto_state.json
+.hefesto/auto_state.json.bak
+.hefesto/logs/

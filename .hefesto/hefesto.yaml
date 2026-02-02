@@ -1,0 +1,112 @@
+# Hefesto Configuration File
+# This file governs the behavior of the Hefesto automation tool.
+# Secrets (API keys, tokens) should remain in environment variables or .env files.
+
+core:
+  # Use "." for current directory or ${HEFESTO_PROJECT_ROOT} for env var
+  project_root: "."
+
+jira:
+  # The base URL of your Jira instance (e.g., https://company.atlassian.net)
+  base_url: ${JIRA_BASE_URL}
+  # The project key where tasks will be fetched/created
+  project: ${JIRA_PROJECT}
+  # The status to apply when a task is completed by Hefesto
+  done_status: "CONCLUÍDO"
+  # Whether to update the Jira card status automatically
+  update_status: true
+  # Status names to exclude from interactive mode (tasks/epics in these statuses are hidden)
+  done_statuses:
+    - "Done"
+    - "Closed"
+    - "Resolved"
+    - "CONCLUÍDO"
+
+github:
+  # The owner (user or organization) of the repository
+  owner: vinimlo
+  # The repository name
+  repo: tabala
+  # The base branch for Pull Requests
+  base_branch: "develop"
+
+ai:
+  # Default AI provider: 'claude', 'gemini', or 'cursor'
+  # Can be overridden by env var AI_AGENT
+  agent: "claude"
+  # Specific model to use (e.g., claude-3-5-sonnet-20241022)
+  # Can be overridden by env var AI_MODEL
+  model: null
+  # Tools that the AI is allowed to use
+  allowed_tools: "read,write,edit,bash,mcp"
+  # Enable automatic rotation to other agents on rate limits
+  rotation_enabled: true
+  # Priority list for agent rotation (format: agent:model)
+  agent_priority:
+    - agent: claude
+      model: claude-sonnet-4-5
+    - agent: gemini
+      model: gemini-3-pro-preview
+
+auto_mode:
+  # Enable continuous automation loop
+  enabled: false
+  # Jira status to look for tasks to do
+  status_todo: "SELECTED FOR DEVELOPMENT"
+  # Jira status to set when working on a task
+  status_in_progress: "IN PROGRESS"
+  # Jira status to set when task is done
+  status_done: "CONCLUÍDO"
+  # Seconds to wait between polls when no tasks are found
+  idle_wait_seconds: 30
+
+limiter:
+  # Maximum cost in USD per execution
+  budget_usd: null
+  # Maximum daily budget in USD
+  daily_budget_usd: null
+  # Maximum execution duration in minutes
+  max_duration_minutes: null
+  # Maximum number of tasks to process in one run
+  max_tasks: null
+  # Max retries per task failure
+  max_retries_per_task: 3
+  # Max consecutive failures before stopping
+  max_consecutive_failures: 3
+  # Execution window start time (HH:MM)
+  schedule_start: null
+  # Execution window end time (HH:MM)
+  schedule_end: null
+  # Budget warning threshold percentage
+  warning_threshold_percent: 80
+
+cost:
+  # Currency for reporting costs (USD or BRL)
+  currency: "BRL"
+
+slack:
+  webhook_url: ${SLACK_WEBHOOK_URL}
+
+human_feedback:
+  enabled: true
+  timeout_seconds: 600
+
+code_review:
+  # Code review provider: 'coderabbit', 'none'
+  provider: "coderabbit"
+  # CodeRabbit-specific configuration
+  coderabbit:
+    # Path to CodeRabbit CLI executable (default: "coderabbit")
+    cli_path: "coderabbit"
+    # Apply suggestions automatically (default: false)
+    auto_apply_suggestions: false
+    # Run review before commits (default: true)
+    review_on_commit: true
+    # Run review before creating PRs (default: true)
+    review_on_pr: true
+    # Path to custom .coderabbit.yaml config (optional)
+    config_file: null
+
+display:
+  # Show ASCII art banner on startup (forge-themed colors)
+  show_banner: true%

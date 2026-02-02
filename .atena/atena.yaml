@@ -1,0 +1,66 @@
+# Atena Configuration
+# Strategic development management for Hefesto
+
+core:
+  project_root: "."
+  templates_dir: ".atena/templates"
+
+jira:
+  # base_url: "https://vinimlo.atlassian.net"
+  base_url:  ${JIRA_BASE_URL}
+  project: ${JIRA_PROJECT}
+
+  # Status mapping (adjust to match your Jira workflow)
+  status:
+    backlog: "BACKLOG"
+    to_refine: "BACKLOG"
+    refined: "SELECTED FOR DEVELOPMENT"
+
+  # Custom fields (optional)
+  # custom_fields:
+  #   complexity: "customfield_10001"
+  #   business_value: "customfield_10002"
+
+ai:
+  provider: "claude"
+  model: null  # Uses provider default
+
+  # Provider-specific configuration
+  providers:
+    claude:
+      model: "claude-sonnet-4-5"
+    openai:
+      model: "gpt-4o"
+
+analysis:
+  # Enable code analysis for context
+  code_analysis: true
+
+  # Files to consider for context
+  context_files:
+    - "ATENA.md"
+    - "README.md"
+    - "docs/**/*.md"
+
+  # Patterns to ignore
+  ignore_patterns:
+    - "node_modules/**"
+    - "venv/**"
+    - "*.pyc"
+    - "__pycache__/**"
+
+scoring:
+  # Weights for priority scoring formula
+  weights:
+    business_value: 2.0
+    effort: 1.0
+    risk: 1.5
+
+output:
+  # Output format: rich, plain, json
+  format: "rich"
+
+display:
+  # Show ASCII banner on main commands (init, refine, status)
+  # Can be overridden with --no-banner flag or ATENA_SHOW_BANNER=false
+  show_banner: true

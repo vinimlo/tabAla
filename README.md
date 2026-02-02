@@ -27,6 +27,59 @@ Extensão leve que permite salvar abas em coleções temporárias, com experiên
 - **Vite** — Build rápido
 - **Chrome Extension Manifest V3**
 
+## Pré-requisitos
+
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+- [Make](https://www.gnu.org/software/make/)
+
+## Comandos Make
+
+Todos os comandos de desenvolvimento são executados via Docker através do Makefile:
+
+```bash
+make help           # Lista todos os comandos disponíveis
+make dev            # Inicia servidor de desenvolvimento (modo interativo)
+make dev-detached   # Inicia servidor de desenvolvimento (background)
+make build          # Compila a extensão para produção
+make test           # Executa suite de testes com Vitest
+make lint           # Executa ESLint para validação de código
+make lint-fix       # Executa ESLint com auto-correção
+make shell          # Abre shell interativo no container
+make clean          # Remove artefatos de build (dist/)
+make stop           # Para todos os containers em execução
+```
+
+### Fluxo de Trabalho Típico
+
+```bash
+# 1. Clone o repositório
+git clone https://github.com/seu-usuario/tabAla.git
+cd tabAla
+
+# 2. Inicie o ambiente de desenvolvimento
+make dev
+
+# 3. Abra a extensão no Chrome
+#    - Acesse chrome://extensions
+#    - Ative "Modo desenvolvedor"
+#    - Clique em "Carregar sem compactação"
+#    - Selecione a pasta dist/
+
+# 4. Faça suas alterações (hot-reload ativo)
+
+# 5. Execute os testes
+make test
+
+# 6. Valide o código
+make lint
+
+# 7. Gere build de produção
+make build
+```
+
+> **Nota:** Não execute comandos npm diretamente. Use sempre os comandos make para garantir consistência de ambiente.
+
 ## Contribuindo
 
 Contribuições são bem-vindas! Veja o [docs/mvp.md](./docs/mvp.md) para entender o escopo atual.

@@ -26,6 +26,36 @@ Extensão leve que permite salvar abas em coleções temporárias, com experiên
 - **TypeScript** — Tipagem estática
 - **Vite** — Build rápido
 - **Chrome Extension Manifest V3**
+- **Docker** — Ambiente de desenvolvimento containerizado
+
+## Desenvolvimento com Docker
+
+O projeto utiliza Docker para garantir consistência entre ambientes de desenvolvimento.
+
+### Comandos Básicos
+
+```bash
+# Iniciar ambiente de desenvolvimento
+docker-compose up
+
+# Iniciar em background
+docker-compose up -d
+
+# Parar containers
+docker-compose down
+
+# Ver logs
+docker-compose logs -f
+
+# Abrir shell no container
+docker-compose exec app sh
+```
+
+Após iniciar, acesse o Vite dev server em: http://localhost:5173
+
+### Hot-Reload
+
+O ambiente está configurado para hot-reload automático. Edite arquivos `.svelte` ou `.ts` e as mudanças serão refletidas instantaneamente no navegador.
 
 ## Contribuindo
 

@@ -1,0 +1,73 @@
+# =============================================================================
+# TabAla - Docker Compose Configuration
+# =============================================================================
+# Development environment orchestration for the TabAla browser extension.
+#
+# Usage:
+#   docker-compose up        # Start development server (foreground)
+#   docker-compose up -d     # Start development server (background)
+#   docker-compose down      # Stop and remove containers
+#   docker-compose logs -f   # Follow container logs
+#   docker-compose exec app sh  # Open shell in running container
+#
+# After starting, access the Vite dev server at: http://localhost:5173
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Main Application Service
+  # ---------------------------------------------------------------------------
+  # Svelte + TypeScript + Vite development environment for the browser extension
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tabala-dev
+
+    # Port mapping for Vite dev server
+    ports:
+      - "5173:5173"
+
+    # Volume configuration for development workflow
+    volumes:
+      # Bind mount: sync source code for hot-reload
+      - .:/app
+      # Named volume: isolate node_modules to avoid OS-specific conflicts
+      - node_modules:/app/node_modules
+
+    # Environment variables for Vite development server
+    environment:
+      - NODE_ENV=development
+      # Allow Vite to accept connections from outside the container
+      - VITE_HOST=0.0.0.0
+      # Enable polling for file changes (required for some OS/Docker combinations)
+      - CHOKIDAR_USEPOLLING=true
+
+    # Restart policy: auto-restart on failure but respect manual stops
+    restart: unless-stopped
+
+    # Enable interactive terminal for debugging
+    stdin_open: true
+    tty: true
+
+    # Connect to project network
+    networks:
+      - tabala-network
+
+# -----------------------------------------------------------------------------
+# Named Volumes
+# -----------------------------------------------------------------------------
+# node_modules volume isolates dependencies from the host filesystem,
+# preventing conflicts between different operating systems (e.g., Linux binaries
+# in container vs macOS/Windows on host)
+volumes:
+  node_modules:
+
+# -----------------------------------------------------------------------------
+# Networks
+# -----------------------------------------------------------------------------
+# Bridge network for inter-service communication. Future services (database,
+# cache, API) can join this network and communicate using service names as DNS.
+networks:
+  tabala-network:
+    driver: bridge

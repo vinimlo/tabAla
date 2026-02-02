@@ -26,6 +26,142 @@ Extensão leve que permite salvar abas em coleções temporárias, com experiên
 - **TypeScript** — Tipagem estática
 - **Vite** — Build rápido
 - **Chrome Extension Manifest V3**
+- **Docker** — Ambiente de desenvolvimento containerizado
+
+## Desenvolvimento com Docker
+
+O projeto utiliza Docker para garantir consistência entre ambientes de desenvolvimento.
+
+### Comandos Básicos
+
+```bash
+# Iniciar ambiente de desenvolvimento
+docker-compose up
+
+# Iniciar em background
+docker-compose up -d
+
+# Parar containers
+docker-compose down
+
+# Ver logs
+docker-compose logs -f
+
+# Abrir shell no container
+docker-compose exec app sh
+```
+
+Após iniciar, acesse o Vite dev server em: http://localhost:5173
+
+### Hot-Reload
+
+O ambiente está configurado para hot-reload automático. Edite arquivos `.svelte` ou `.ts` e as mudanças serão refletidas instantaneamente no navegador.
+
+## Pré-requisitos
+
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+- [Make](https://www.gnu.org/software/make/)
+
+## Comandos Make
+
+Todos os comandos de desenvolvimento são executados via Docker através do Makefile:
+
+```bash
+make help           # Lista todos os comandos disponíveis
+make dev            # Inicia servidor de desenvolvimento (modo interativo)
+make dev-detached   # Inicia servidor de desenvolvimento (background)
+make build          # Compila a extensão para produção
+make test           # Executa suite de testes com Vitest
+make lint           # Executa ESLint para validação de código
+make lint-fix       # Executa ESLint com auto-correção
+make shell          # Abre shell interativo no container
+make clean          # Remove artefatos de build (dist/)
+make stop           # Para todos os containers em execução
+```
+
+### Fluxo de Trabalho Típico
+
+```bash
+# 1. Clone o repositório
+git clone https://github.com/seu-usuario/tabAla.git
+cd tabAla
+
+# 2. Inicie o ambiente de desenvolvimento
+make dev
+
+# 3. Abra a extensão no Chrome
+#    - Acesse chrome://extensions
+#    - Ative "Modo desenvolvedor"
+#    - Clique em "Carregar sem compactação"
+#    - Selecione a pasta dist/
+
+# 4. Faça suas alterações (hot-reload ativo)
+
+# 5. Execute os testes
+make test
+
+# 6. Valide o código
+make lint
+
+# 7. Gere build de produção
+make build
+```
+
+> **Nota:** Não execute comandos npm diretamente. Use sempre os comandos make para garantir consistência de ambiente.
+
+## Desenvolvimento com Docker
+
+O projeto utiliza Docker para garantir ambiente de desenvolvimento consistente.
+
+### Requisitos
+
+- Docker 20.10+
+- Docker Compose (opcional, para orquestração)
+
+### Build e Execução
+
+```bash
+# Build da imagem
+docker build -t tabala-dev .
+
+# Executar container com hot-reload
+docker run -p 5173:5173 -v $(pwd):/app -v /app/node_modules tabala-dev
+
+# Acessar: http://localhost:5173
+```
+
+### Comandos Make (recomendado)
+
+```bash
+make dev      # Build + dev server com hot-reload
+make build    # Build de produção
+make test     # Executar testes
+make lint     # Lint + type check
+make shell    # Shell interativo no container
+```
+
+### Verificar Status do Container
+
+```bash
+docker ps                    # Ver containers rodando
+docker logs <container_id>   # Ver logs do Vite
+docker inspect --format='{{.State.Health.Status}}' <container_id>  # Status do healthcheck
+```
+
+### Troubleshooting
+
+**Container não inicia:**
+- Verifique se a porta 5173 não está em uso: `lsof -i :5173`
+- Confirme que o Docker está rodando: `docker info`
+
+**Hot-reload não funciona:**
+- Certifique-se de que o volume está montado corretamente
+- Em macOS/Windows, habilite file sharing para o diretório do projeto
+
+**Erros de permissão:**
+- O container executa como usuário `node` (uid 1000)
+- Se necessário, ajuste permissões: `chmod -R 755 .`
 
 ## Contribuindo
 

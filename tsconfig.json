@@ -36,8 +36,8 @@
     "declaration": true,
     "declarationMap": true,
 
-    "types": ["svelte", "chrome"]
+    "types": ["svelte", "chrome", "node"]
   },
-  "include": ["src/**/*", "src/**/*.svelte"],
+  "include": ["src/**/*", "src/**/*.svelte", "vite.config.ts"],
   "exclude": ["node_modules", "dist", "build", ".atena", ".hefesto"]
 }

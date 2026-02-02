@@ -1,7 +1,3 @@
-/**
- * Core types for the TabAla extension.
- */
-
 export interface Link {
   id: string;
   url: string;

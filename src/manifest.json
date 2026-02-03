@@ -2,9 +2,14 @@
   "manifest_version": 3,
   "name": "TabAla",
   "version": "0.1.0",
-  "description": "Extensão de navegador minimalista para organização temporária de links",
-  "permissions": ["storage"],
+  "description": "Sala de espera para links - organize abas temporariamente sem poluir seus bookmarks",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "action": {
+    "default_title": "TabAla",
     "default_popup": "src/popup/index.html",
     "default_icon": {
       "16": "icons/icon-16.png",
@@ -12,13 +17,16 @@
       "128": "icons/icon-128.png"
     }
   },
-  "icons": {
-    "16": "icons/icon-16.png",
-    "48": "icons/icon-48.png",
-    "128": "icons/icon-128.png"
-  },
   "background": {
     "service_worker": "src/background/service-worker.ts",
     "type": "module"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
   }
 }

@@ -17,7 +17,10 @@ Extensão leve que permite salvar abas em coleções temporárias, com experiên
 - Salvar aba atual com um clique
 - Organizar links em coleções
 - Coleção "Inbox" para links sem categoria
-- Reabrir e remover links facilmente
+- Abrir link salvo em nova aba do navegador
+- Feedback visual durante ações (loading spinner)
+- Tratamento de erros com mensagens amigáveis
+- Remover links facilmente
 - Dados persistem localmente (sem conta)
 
 ## Stack

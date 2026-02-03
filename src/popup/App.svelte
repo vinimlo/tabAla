@@ -9,6 +9,7 @@
   import ConfirmDialog from './components/ConfirmDialog.svelte';
   import Toast from './components/Toast.svelte';
   import SaveButton from './components/SaveButton.svelte';
+  import CreateCollectionModal from './components/CreateCollectionModal.svelte';
 
   const BATCH_SIZE = 50;
 
@@ -20,6 +21,7 @@
   let successMessage: string | null = null;
   let isSaving = false;
   let mounted = false;
+  let showCreateCollectionModal = false;
 
   $: loading = $linksStore.loading;
   $: error = $linksStore.error;
@@ -145,6 +147,30 @@
   function clearSuccess(): void {
     successMessage = null;
   }
+
+  function openCreateCollectionModal(): void {
+    showCreateCollectionModal = true;
+  }
+
+  function closeCreateCollectionModal(): void {
+    showCreateCollectionModal = false;
+  }
+
+  async function handleCreateCollection(event: CustomEvent<string>): Promise<void> {
+    const name = event.detail;
+
+    try {
+      const newCollection = await linksStore.addCollection(name);
+      showCreateCollectionModal = false;
+      successMessage = `Coleção "${newCollection.name}" criada!`;
+      expandedCollections.add(newCollection.id);
+      expandedCollections = expandedCollections;
+    } catch (err) {
+      console.error('Failed to create collection:', err);
+      errorMessage = err instanceof Error ? err.message : 'Erro ao criar coleção. Tente novamente.';
+      showCreateCollectionModal = false;
+    }
+  }
 </script>
 
 <main class="app" class:mounted>
@@ -158,27 +184,53 @@
       <p>Erro ao carregar dados</p>
       <button type="button" on:click={() => linksStore.load()}>Tentar novamente</button>
     </div>
-  {:else if isEmpty}
-    <EmptyState />
   {:else}
-    <div
-      class="scroll-container"
-      bind:this={scrollContainer}
-      on:scroll={handleScroll}
-    >
-      {#each visibleCollections as { collection, links }, i (collection.id)}
-        <div class="collection-wrapper" style="--delay: {i * 50}ms">
-          <CollectionGroup
-            {collection}
-            {links}
-            expanded={expandedCollections.has(collection.id)}
-            on:toggle={handleToggle}
-            on:open={handleOpenLink}
-            on:remove={handleRemoveLink}
-          />
-        </div>
-      {/each}
-    </div>
+    <header class="header">
+      <button
+        type="button"
+        class="btn-new-collection"
+        on:click={openCreateCollectionModal}
+        aria-label="Nova Coleção"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Nova Coleção</span>
+      </button>
+    </header>
+
+    {#if isEmpty}
+      <EmptyState />
+    {:else}
+      <div
+        class="scroll-container"
+        bind:this={scrollContainer}
+        on:scroll={handleScroll}
+      >
+        {#each visibleCollections as { collection, links }, i (collection.id)}
+          <div class="collection-wrapper" style="--delay: {i * 50}ms">
+            <CollectionGroup
+              {collection}
+              {links}
+              expanded={expandedCollections.has(collection.id)}
+              on:toggle={handleToggle}
+              on:open={handleOpenLink}
+              on:remove={handleRemoveLink}
+            />
+          </div>
+        {/each}
+      </div>
+    {/if}
   {/if}
 
   <SaveButton loading={isSaving} disabled={loading} on:click={handleSaveCurrentTab} />
@@ -203,6 +255,14 @@
     cancelText="Cancelar"
     on:confirm={handleConfirmRemove}
     on:cancel={handleCancelRemove}
+  />
+{/if}
+
+{#if showCreateCollectionModal}
+  <CreateCollectionModal
+    existingNames={linksStore.getCollectionNames()}
+    on:create={handleCreateCollection}
+    on:cancel={closeCreateCollectionModal}
   />
 {/if}
 
@@ -403,5 +463,48 @@
     text-transform: uppercase;
     color: var(--text-tertiary);
     opacity: 0.5;
+  }
+
+  .header {
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--space-3);
+    padding-bottom: 0;
+  }
+
+  .btn-new-collection {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+
+  .btn-new-collection:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+  }
+
+  .btn-new-collection:focus {
+    outline: none;
+  }
+
+  .btn-new-collection:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .btn-new-collection svg {
+    width: 14px;
+    height: 14px;
   }
 </style>

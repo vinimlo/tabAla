@@ -10,7 +10,7 @@ export async function getLinks(): Promise<Link[]> {
     return (result.links as Link[] | undefined) ?? [];
   } catch (error) {
     console.error('Failed to get links from storage:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -29,7 +29,7 @@ export async function getCollections(): Promise<Collection[]> {
     return (result.collections as Collection[] | undefined) ?? [];
   } catch (error) {
     console.error('Failed to get collections from storage:', error);
-    return [];
+    throw error;
   }
 }
 

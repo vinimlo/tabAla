@@ -1,206 +1,108 @@
 /**
  * LinkItem component tests.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/svelte';
 import LinkItem from '@/popup/components/LinkItem.svelte';
 import type { Link } from '@/lib/types';
 
-const createMockLink = (overrides: Partial<Link> = {}): Link => ({
-  id: 'test-link-1',
+const mockLink: Link = {
+  id: 'test-id-1',
   url: 'https://example.com/page',
   title: 'Example Page',
+  favicon: 'https://example.com/favicon.ico',
   collectionId: 'inbox',
   createdAt: Date.now(),
-  ...overrides,
-});
+};
 
 describe('LinkItem Component', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(chrome.tabs.create).mockResolvedValue({ id: 1, url: '' } as chrome.tabs.Tab);
+  it('should render link title', () => {
+    render(LinkItem, { props: { link: mockLink } });
+    expect(screen.getByText('Example Page')).toBeInTheDocument();
   });
 
-  it('should render link title and URL', () => {
-    const link = createMockLink({ title: 'Test Title', url: 'https://test.com/path' });
-    render(LinkItem, { props: { link } });
-
-    expect(screen.getByText('Test Title')).toBeInTheDocument();
-    expect(screen.getByText('test.com/path')).toBeInTheDocument();
+  it('should render truncated URL', () => {
+    render(LinkItem, { props: { link: mockLink } });
+    expect(screen.getByText('example.com/page')).toBeInTheDocument();
   });
 
-  it('should show "Untitled" for links without title', () => {
-    const link = createMockLink({ title: '' });
-    render(LinkItem, { props: { link } });
+  it('should render favicon image', () => {
+    const { container } = render(LinkItem, { props: { link: mockLink } });
+    const img = container.querySelector('.favicon') as HTMLImageElement;
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', mockLink.favicon);
+  });
 
+  it('should render placeholder when favicon is missing', () => {
+    const linkWithoutFavicon: Link = { ...mockLink, favicon: undefined };
+    const { container } = render(LinkItem, { props: { link: linkWithoutFavicon } });
+    const img = container.querySelector('.favicon') as HTMLImageElement;
+    expect(img).toBeInTheDocument();
+    expect(img.getAttribute('src')).toContain('data:image/svg+xml');
+  });
+
+  it('should render "Untitled" when title is empty', () => {
+    const linkWithoutTitle: Link = { ...mockLink, title: '' };
+    render(LinkItem, { props: { link: linkWithoutTitle } });
     expect(screen.getByText('Untitled')).toBeInTheDocument();
   });
 
-  it('should have accessible open button', () => {
-    const link = createMockLink({ title: 'My Link' });
-    render(LinkItem, { props: { link } });
-
-    const openButton = screen.getByRole('button', { name: /abrir my link em nova aba/i });
-    expect(openButton).toBeInTheDocument();
+  it('should render remove button with aria-label', () => {
+    render(LinkItem, { props: { link: mockLink } });
+    const removeBtn = screen.getByRole('button', { name: 'Remove link' });
+    expect(removeBtn).toBeInTheDocument();
   });
 
-  it('should call chrome.tabs.create when link content is clicked', async () => {
-    const link = createMockLink({ url: 'https://test.com' });
-    render(LinkItem, { props: { link } });
+  it('should dispatch open event when clicked', async () => {
+    const { component } = render(LinkItem, { props: { link: mockLink } });
+    const openHandler = vi.fn();
+    component.$on('open', openHandler);
 
-    const openButton = screen.getByRole('button', { name: /abrir/i });
-    await fireEvent.click(openButton);
+    const linkItem = screen.getByRole('button', { name: /Example Page/i });
+    await fireEvent.click(linkItem);
 
-    await waitFor(() => {
-      expect(chrome.tabs.create).toHaveBeenCalledWith({
-        url: 'https://test.com',
-        active: true,
-      });
-    });
+    expect(openHandler).toHaveBeenCalledTimes(1);
+    expect(openHandler.mock.calls[0][0].detail).toEqual(mockLink);
   });
 
-  it('should show spinner while loading', async () => {
-    let resolveCreate!: (value: chrome.tabs.Tab) => void;
-    vi.mocked(chrome.tabs.create).mockReturnValue(
-      new Promise<chrome.tabs.Tab>((resolve) => {
-        resolveCreate = resolve;
-      }),
-    );
+  it('should dispatch remove event when remove button clicked', async () => {
+    const { component } = render(LinkItem, { props: { link: mockLink } });
+    const removeHandler = vi.fn();
+    component.$on('remove', removeHandler);
 
-    const link = createMockLink();
-    const { container } = render(LinkItem, { props: { link } });
+    const removeBtn = screen.getByRole('button', { name: 'Remove link' });
+    await fireEvent.click(removeBtn);
 
-    const button = screen.getByRole('button', { name: /abrir/i });
-    await fireEvent.click(button);
-
-    await waitFor(() => {
-      expect(container.querySelector('.open-spinner')).toBeInTheDocument();
-    });
-
-    resolveCreate({ id: 1, url: '' } as chrome.tabs.Tab);
-
-    await waitFor(() => {
-      expect(container.querySelector('.open-spinner')).not.toBeInTheDocument();
-    });
+    expect(removeHandler).toHaveBeenCalledTimes(1);
+    expect(removeHandler.mock.calls[0][0].detail).toBe(mockLink.id);
   });
 
-  it('should disable button while loading', async () => {
-    let resolveCreate!: (value: chrome.tabs.Tab) => void;
-    vi.mocked(chrome.tabs.create).mockReturnValue(
-      new Promise<chrome.tabs.Tab>((resolve) => {
-        resolveCreate = resolve;
-      }),
-    );
+  it('should dispatch open event on Enter key', async () => {
+    const { component } = render(LinkItem, { props: { link: mockLink } });
+    const openHandler = vi.fn();
+    component.$on('open', openHandler);
 
-    const link = createMockLink();
-    render(LinkItem, { props: { link } });
+    const linkItem = screen.getByRole('button', { name: /Example Page/i });
+    await fireEvent.keyDown(linkItem, { key: 'Enter' });
 
-    const button = screen.getByRole('button', { name: /abrir/i });
-    await fireEvent.click(button);
-
-    await waitFor(() => {
-      expect(button).toBeDisabled();
-    });
-
-    resolveCreate({ id: 1, url: '' } as chrome.tabs.Tab);
-
-    await waitFor(() => {
-      expect(button).not.toBeDisabled();
-    });
+    expect(openHandler).toHaveBeenCalledTimes(1);
   });
 
-  it('should dispatch error event for invalid URL', async () => {
-    const link = createMockLink({ url: 'invalid-url' });
-    const handleError = vi.fn();
+  it('should dispatch open event on Space key', async () => {
+    const { component } = render(LinkItem, { props: { link: mockLink } });
+    const openHandler = vi.fn();
+    component.$on('open', openHandler);
 
-    const { component } = render(LinkItem, { props: { link } });
-    component.$on('error', handleError);
+    const linkItem = screen.getByRole('button', { name: /Example Page/i });
+    await fireEvent.keyDown(linkItem, { key: ' ' });
 
-    const button = screen.getByRole('button', { name: /abrir/i });
-    await fireEvent.click(button);
-
-    await waitFor(() => {
-      expect(handleError).toHaveBeenCalled();
-      expect(handleError.mock.calls[0][0].detail.message).toBe(
-        'URL inválido. Não foi possível abrir o link.',
-      );
-    });
+    expect(openHandler).toHaveBeenCalledTimes(1);
   });
 
-  it('should dispatch error event when chrome.tabs.create fails', async () => {
-    vi.mocked(chrome.tabs.create).mockRejectedValueOnce(new Error('Failed'));
+  it('should be accessible with proper roles', () => {
+    render(LinkItem, { props: { link: mockLink } });
 
-    const link = createMockLink({ url: 'https://example.com' });
-    const handleError = vi.fn();
-
-    const { component } = render(LinkItem, { props: { link } });
-    component.$on('error', handleError);
-
-    const button = screen.getByRole('button', { name: /abrir/i });
-    await fireEvent.click(button);
-
-    await waitFor(() => {
-      expect(handleError).toHaveBeenCalled();
-      expect(handleError.mock.calls[0][0].detail.message).toBe(
-        'Erro ao abrir link. Tente novamente.',
-      );
-    });
-  });
-
-  it('should dispatch remove event when remove button is clicked', async () => {
-    const link = createMockLink({ id: 'link-to-remove' });
-    const { component } = render(LinkItem, { props: { link } });
-
-    const handleRemove = vi.fn();
-    component.$on('remove', handleRemove);
-
-    const container = screen.getByRole('listitem');
-    await fireEvent.mouseEnter(container);
-
-    const removeButton = screen.getByRole('button', { name: /remover link/i });
-    await fireEvent.click(removeButton);
-
-    expect(handleRemove).toHaveBeenCalledTimes(1);
-    expect(handleRemove).toHaveBeenCalledWith(
-      expect.objectContaining({
-        detail: { linkId: 'link-to-remove' },
-      }),
-    );
-  });
-
-  it('should show remove button on hover', async () => {
-    const link = createMockLink();
-    render(LinkItem, { props: { link } });
-
-    expect(screen.queryByRole('button', { name: /remover link/i })).not.toBeInTheDocument();
-
-    const container = screen.getByRole('listitem');
-    await fireEvent.mouseEnter(container);
-
-    expect(screen.getByRole('button', { name: /remover link/i })).toBeInTheDocument();
-  });
-
-  it('should truncate long URLs', () => {
-    const longUrl = 'https://example.com/very/long/path/that/should/be/truncated/to/fit';
-    const link = createMockLink({ url: longUrl });
-    render(LinkItem, { props: { link } });
-
-    const urlElement = screen.getByText(/example\.com\/very\/long/);
-    expect(urlElement).toBeInTheDocument();
-  });
-
-  it('should render with proper role for accessibility', () => {
-    const link = createMockLink();
-    render(LinkItem, { props: { link } });
-
-    expect(screen.getByRole('listitem')).toBeInTheDocument();
-  });
-
-  it('should be keyboard accessible', () => {
-    const link = createMockLink();
-    render(LinkItem, { props: { link } });
-
-    const button = screen.getByRole('button', { name: /abrir/i });
-    expect(button).not.toHaveAttribute('tabindex', '-1');
+    const linkItem = screen.getByRole('button', { name: /Example Page/i });
+    expect(linkItem).toHaveAttribute('tabindex', '0');
   });
 });

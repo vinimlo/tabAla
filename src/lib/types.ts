@@ -108,10 +108,16 @@ export interface Collection {
   name: string;
 
   /**
+   * Display order for the collection (lower = first).
+   * Used for sorting collections in the UI.
+   */
+  order: number;
+
+  /**
    * Unix timestamp (milliseconds) when the collection was created.
    * Use Date.now() to generate this value.
    */
-  createdAt: number;
+  createdAt?: number;
 
   /**
    * Hexadecimal color code for visual identification in UI.

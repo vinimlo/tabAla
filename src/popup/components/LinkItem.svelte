@@ -1,269 +1,159 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { fade } from 'svelte/transition';
   import type { Link } from '@/lib/types';
-  import { openLinkInNewTab } from '@/lib/tabs';
 
   export let link: Link;
 
   const dispatch = createEventDispatcher<{
-    error: { message: string };
-    remove: { linkId: string };
+    open: Link;
+    remove: string;
   }>();
 
-  let isLoading = false;
-  let isHovering = false;
+  const DEFAULT_FAVICON = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23888"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>';
 
-  async function handleOpenLink() {
-    if (isLoading) {
-      return;
-    }
-
-    isLoading = true;
-
-    try {
-      const result = await openLinkInNewTab(link.url);
-
-      if (!result.success && result.error) {
-        dispatch('error', { message: result.error });
-      }
-    } finally {
-      isLoading = false;
-    }
+  function handleClick(): void {
+    dispatch('open', link);
   }
 
-  function handleRemoveClick(event: MouseEvent) {
+  function handleRemove(event: MouseEvent): void {
     event.stopPropagation();
-    dispatch('remove', { linkId: link.id });
+    dispatch('remove', link.id);
   }
 
-  function getFaviconUrl(url: string): string {
-    try {
-      const urlObj = new URL(url);
-      return `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`;
-    } catch {
-      return '';
+  function handleKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      dispatch('open', link);
     }
   }
 
-  function truncateUrl(url: string, maxLength: number = 40): string {
+  function handleImageError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    img.src = DEFAULT_FAVICON;
+  }
+
+  function truncateUrl(url: string): string {
     try {
-      const urlObj = new URL(url);
-      const display = `${urlObj.hostname}${urlObj.pathname}`;
-      return display.length > maxLength ? `${display.substring(0, maxLength)}...` : display;
+      const parsed = new URL(url);
+      return parsed.hostname + (parsed.pathname !== '/' ? parsed.pathname : '');
     } catch {
-      return url.length > maxLength ? `${url.substring(0, maxLength)}...` : url;
+      return url;
     }
   }
 </script>
 
 <div
   class="link-item"
-  on:mouseenter={() => (isHovering = true)}
-  on:mouseleave={() => (isHovering = false)}
-  role="listitem"
-  transition:fade={{ duration: 250 }}
+  role="button"
+  tabindex="0"
+  on:click={handleClick}
+  on:keydown={handleKeydown}
 >
-  <button
-    class="link-content"
-    on:click={handleOpenLink}
-    disabled={isLoading}
-    type="button"
-    aria-label="Abrir {link.title || 'link'} em nova aba"
-  >
-    <div class="favicon-wrapper">
-      {#if link.favicon || link.url}
-        <img
-          src={link.favicon || getFaviconUrl(link.url)}
-          alt=""
-          class="favicon"
-          on:error={(e) => {
-            const target = e.currentTarget;
-            target.style.display = 'none';
-          }}
-        />
-      {/if}
-      <svg
-        class="favicon-placeholder"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        aria-hidden="true"
-      >
-        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-      </svg>
-    </div>
-    <div class="link-info">
-      <span class="link-title">{link.title || 'Untitled'}</span>
-      <span class="link-url">{truncateUrl(link.url)}</span>
-    </div>
-    {#if isLoading}
-      <span class="open-spinner" aria-hidden="true"></span>
-    {/if}
-  </button>
+  <img
+    class="favicon"
+    src={link.favicon || DEFAULT_FAVICON}
+    alt=""
+    width="16"
+    height="16"
+    on:error={handleImageError}
+  />
 
-  {#if isHovering && !isLoading}
-    <button
-      class="remove-btn"
-      on:click={handleRemoveClick}
-      type="button"
-      aria-label="Remover link"
-      transition:fade={{ duration: 100 }}
-    >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        aria-hidden="true"
-      >
-        <path d="M3 6h18" />
-        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-        <line x1="10" y1="11" x2="10" y2="17" />
-        <line x1="14" y1="11" x2="14" y2="17" />
-      </svg>
-    </button>
-  {/if}
+  <div class="content">
+    <span class="title">{link.title || 'Untitled'}</span>
+    <span class="url">{truncateUrl(link.url)}</span>
+  </div>
+
+  <button
+    class="remove-btn"
+    type="button"
+    aria-label="Remove link"
+    on:click={handleRemove}
+  >
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+    </svg>
+  </button>
 </div>
 
 <style>
   .link-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
+    gap: 12px;
+    padding: 10px 12px;
     border-radius: 6px;
-    transition: background-color 0.15s;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
   }
 
   .link-item:hover {
-    background-color: #f3f4f6;
+    background-color: #f5f5f5;
   }
 
-  .link-content {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex: 1;
-    min-width: 0;
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    text-align: left;
-  }
-
-  .link-content:focus {
-    outline: 2px solid #3b82f6;
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-
-  .link-content:disabled {
-    cursor: wait;
-    opacity: 0.7;
-  }
-
-  .favicon-wrapper {
-    position: relative;
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
+  .link-item:focus {
+    outline: 2px solid #666;
+    outline-offset: -2px;
   }
 
   .favicon {
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
-    object-fit: contain;
+    flex-shrink: 0;
+    border-radius: 2px;
   }
 
-  .favicon-placeholder {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 24px;
-    height: 24px;
-    color: #9ca3af;
-  }
-
-  .favicon + .favicon-placeholder {
-    display: none;
-  }
-
-  .link-info {
+  .content {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.125rem;
-    min-width: 0;
+    gap: 2px;
   }
 
-  .link-title {
-    font-size: 0.875rem;
+  .title {
+    font-size: 14px;
     font-weight: 500;
-    color: #1f2937;
+    color: #333;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .link-url {
-    font-size: 0.75rem;
-    color: #6b7280;
+  .url {
+    font-size: 12px;
+    color: #888;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .open-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid #e5e7eb;
-    border-top-color: #3b82f6;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    flex-shrink: 0;
-    margin-left: auto;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   .remove-btn {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 28px;
     height: 28px;
     padding: 0;
-    background: none;
-    border: 1px solid transparent;
+    border: none;
     border-radius: 4px;
+    background: transparent;
+    color: #999;
     cursor: pointer;
-    color: #9ca3af;
-    flex-shrink: 0;
-    transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+    opacity: 0;
+    transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .link-item:hover .remove-btn {
+    opacity: 1;
   }
 
   .remove-btn:hover {
-    color: #dc2626;
-    background-color: #fef2f2;
-    border-color: #fecaca;
+    background-color: #fee;
+    color: #d00;
   }
 
   .remove-btn:focus {
-    outline: 2px solid #dc2626;
-    outline-offset: 2px;
-  }
-
-  .remove-btn svg {
-    width: 16px;
-    height: 16px;
+    opacity: 1;
+    outline: 2px solid #666;
+    outline-offset: -2px;
   }
 </style>

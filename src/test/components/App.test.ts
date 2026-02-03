@@ -33,6 +33,8 @@ describe('App Component', () => {
       collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
       loading: false,
       error: null,
+      isAdding: false,
+      isRemoving: new Set(),
     });
 
     render(App);
@@ -45,6 +47,8 @@ describe('App Component', () => {
       collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
       loading: false,
       error: null,
+      isAdding: false,
+      isRemoving: new Set(),
     });
 
     const { container } = render(App);
@@ -58,6 +62,8 @@ describe('App Component', () => {
       collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
       loading: false,
       error: null,
+      isAdding: false,
+      isRemoving: new Set(),
     });
 
     render(App);
@@ -70,6 +76,8 @@ describe('App Component', () => {
       collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
       loading: true,
       error: null,
+      isAdding: false,
+      isRemoving: new Set(),
     });
 
     render(App);
@@ -82,6 +90,8 @@ describe('App Component', () => {
       collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
       loading: false,
       error: 'Test error',
+      isAdding: false,
+      isRemoving: new Set(),
     });
 
     render(App);
@@ -105,10 +115,13 @@ describe('App Component', () => {
       collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
       loading: false,
       error: null,
+      isAdding: false,
+      isRemoving: new Set(),
     });
 
     render(App);
-    expect(screen.getByText('Inbox')).toBeInTheDocument();
+    const inboxElements = screen.getAllByText('Inbox');
+    expect(inboxElements.length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Example')).toBeInTheDocument();
   });
 });

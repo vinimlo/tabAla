@@ -644,7 +644,7 @@ export async function initializeInbox(): Promise<void> {
 export async function removeCollection(collectionId: string): Promise<void> {
   if (collectionId === INBOX_COLLECTION_ID) {
     throw new StorageError(
-      'A coleção Inbox não pode ser removida.',
+      'The Inbox collection cannot be removed.',
       'INBOX_DELETE_FORBIDDEN'
     );
   }

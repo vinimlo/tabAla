@@ -16,6 +16,10 @@
   let isSubmitting = false;
   let validationError: string | null = null;
 
+  export function resetSubmission(): void {
+    isSubmitting = false;
+  }
+
   $: trimmedName = name.trim();
   $: {
     if (trimmedName === '') {

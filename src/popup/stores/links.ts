@@ -247,7 +247,14 @@ export const linksByCollection = derived(linksStore, ($store) => {
   }
 
   for (const link of $store.links) {
-    const links = grouped.get(link.collectionId) ?? grouped.get(INBOX_COLLECTION_ID)!;
+    let links = grouped.get(link.collectionId);
+    if (!links) {
+      links = grouped.get(INBOX_COLLECTION_ID);
+      if (!links) {
+        links = [];
+        grouped.set(INBOX_COLLECTION_ID, links);
+      }
+    }
     links.push(link);
   }
 

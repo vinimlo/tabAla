@@ -23,6 +23,8 @@
  * ```
  */
 
+import type { Link, Collection } from './types';
+
 /**
  * Represents a storage change for a single key.
  * Contains the old and new values when a storage key is modified.
@@ -482,3 +484,100 @@ export const storage: StorageWrapper = {
 };
 
 export default storage;
+
+// Domain-specific storage functions
+
+/**
+ * Retrieves all links from storage.
+ *
+ * @returns Array of Link objects, or empty array if none exist
+ */
+export async function getLinks(): Promise<Link[]> {
+  const links = await storage.get<Link[]>('links');
+  return links ?? [];
+}
+
+/**
+ * Saves links array to storage.
+ *
+ * @param links - Array of Link objects to save
+ */
+export async function saveLinks(links: Link[]): Promise<void> {
+  await storage.set('links', links);
+}
+
+/**
+ * Retrieves all collections from storage.
+ *
+ * @returns Array of Collection objects, or empty array if none exist
+ */
+export async function getCollections(): Promise<Collection[]> {
+  const collections = await storage.get<Collection[]>('collections');
+  return collections ?? [];
+}
+
+/**
+ * Saves collections array to storage.
+ *
+ * @param collections - Array of Collection objects to save
+ */
+export async function saveCollections(collections: Collection[]): Promise<void> {
+  await storage.set('collections', collections);
+}
+
+/**
+ * Result of a removeLink operation.
+ */
+export interface RemoveLinkResult {
+  /** Whether the link was successfully removed */
+  success: boolean;
+  /** Error message if operation failed */
+  error?: string;
+  /** Whether the link's collection was also removed (if empty and not inbox) */
+  collectionRemoved?: boolean;
+}
+
+/**
+ * Removes a link from storage and optionally cleans up empty collections.
+ *
+ * If removing the link leaves its collection empty (and the collection is not
+ * the inbox), the collection is also removed.
+ *
+ * @param linkId - The ID of the link to remove
+ * @returns Result object indicating success/failure and whether collection was removed
+ */
+export async function removeLink(linkId: string): Promise<RemoveLinkResult> {
+  try {
+    const links = await getLinks();
+    const linkIndex = links.findIndex((link) => link.id === linkId);
+
+    if (linkIndex === -1) {
+      return { success: false, error: 'Link not found' };
+    }
+
+    const removedLink = links[linkIndex];
+    const collectionId = removedLink.collectionId;
+    const updatedLinks = links.filter((link) => link.id !== linkId);
+    await saveLinks(updatedLinks);
+
+    const remainingLinksInCollection = updatedLinks.filter(
+      (link) => link.collectionId === collectionId
+    );
+
+    let collectionRemoved = false;
+    if (remainingLinksInCollection.length === 0 && collectionId !== 'inbox') {
+      const collections = await getCollections();
+      const updatedCollections = collections.filter((c) => c.id !== collectionId);
+      await saveCollections(updatedCollections);
+      collectionRemoved = true;
+    }
+
+    return { success: true, collectionRemoved };
+  } catch (error) {
+    console.error('Failed to remove link from storage:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}

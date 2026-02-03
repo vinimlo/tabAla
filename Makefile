@@ -8,7 +8,7 @@
 .DEFAULT_GOAL := help
 
 # Evita conflitos com arquivos de mesmo nome
-.PHONY: help dev dev-detached build test test-watch test-ui test-coverage lint lint-fix shell clean stop
+.PHONY: help dev dev-detached build test test-watch test-ui test-coverage lint lint-fix shell lockfile clean stop
 
 # =============================================================================
 # Help
@@ -96,6 +96,12 @@ lint-fix:
 shell:
 	@echo "\033[32m>>> Abrindo shell no container...\033[0m"
 	docker compose run --rm app sh
+
+## lockfile: Regenera package-lock.json
+lockfile:
+	@echo "\033[32m>>> Regenerando package-lock.json...\033[0m"
+	docker compose run --rm app npm install
+	@echo "\033[32m>>> package-lock.json atualizado!\033[0m"
 
 ## clean: Remove artefatos de build (dist/)
 clean:

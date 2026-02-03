@@ -1,8 +1,12 @@
 /**
  * App component test.
+ *
+ * Note: Async tests for loading links are challenging with Svelte + Vitest
+ * due to module mocking limitations. The core functionality is tested in
+ * storage.test.ts and component tests (LinkItem, ConfirmDialog).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, cleanup } from '@testing-library/svelte';
+import { render, screen, cleanup } from '@testing-library/svelte';
 import App from '@/popup/App.svelte';
 import { linksStore } from '@/popup/stores/links';
 import type { Link } from '@/lib/types';
@@ -23,7 +27,7 @@ describe('App Component', () => {
     cleanup();
   });
 
-  it('should render TabAla title in heading', async () => {
+  it('should render TabAla title in heading', () => {
     linksStore.set({
       links: [],
       collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
@@ -48,7 +52,7 @@ describe('App Component', () => {
     expect(main).not.toBeNull();
   });
 
-  it('should show empty state when no links are saved', async () => {
+  it('should show empty state when no links are saved', () => {
     linksStore.set({
       links: [],
       collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
@@ -85,7 +89,7 @@ describe('App Component', () => {
     expect(screen.getByText('Tentar novamente')).toBeInTheDocument();
   });
 
-  it('should display links grouped by collection', async () => {
+  it('should display links grouped by collection', () => {
     const mockLinks: Link[] = [
       {
         id: 'link-1',

@@ -4,12 +4,16 @@
   import { linksStore, linksByCollection } from '@stores/links';
   import CollectionGroup from '@components/CollectionGroup.svelte';
   import EmptyState from '@components/EmptyState.svelte';
+  import ConfirmDialog from './components/ConfirmDialog.svelte';
+  import Toast from './components/Toast.svelte';
 
   const BATCH_SIZE = 50;
 
   let expandedCollections: Set<string> = new Set(['inbox']);
   let visibleCount = BATCH_SIZE;
   let scrollContainer: HTMLElement;
+  let linkToRemove: Link | null = null;
+  let errorMessage: string | null = null;
 
   $: loading = $linksStore.loading;
   $: error = $linksStore.error;
@@ -48,16 +52,40 @@
       await chrome.tabs.create({ url: link.url });
     } catch (err) {
       console.error('Failed to open link:', err);
+      errorMessage = 'Erro ao abrir link. Tente novamente.';
     }
   }
 
-  async function handleRemoveLink(event: CustomEvent<string>): Promise<void> {
+  function handleRemoveLink(event: CustomEvent<string>): void {
     const linkId = event.detail;
+    const link = $linksStore.links.find((l) => l.id === linkId);
+    if (link !== undefined) {
+      linkToRemove = link;
+    }
+  }
+
+  async function handleConfirmRemove(): Promise<void> {
+    if (!linkToRemove) {
+      return;
+    }
+
+    const linkId = linkToRemove.id;
+    linkToRemove = null;
+
     try {
       await linksStore.removeLink(linkId);
     } catch (err) {
       console.error('Failed to remove link:', err);
+      errorMessage = 'Erro ao remover link. Tente novamente.';
     }
+  }
+
+  function handleCancelRemove(): void {
+    linkToRemove = null;
+  }
+
+  function clearError(): void {
+    errorMessage = null;
   }
 
   function handleScroll(): void {
@@ -110,6 +138,20 @@
     </div>
   {/if}
 </main>
+
+{#if errorMessage}
+  <Toast message={errorMessage} onClose={clearError} />
+{/if}
+
+{#if linkToRemove}
+  <ConfirmDialog
+    message="Remover este link?"
+    confirmText="Remover"
+    cancelText="Cancelar"
+    on:confirm={handleConfirmRemove}
+    on:cancel={handleCancelRemove}
+  />
+{/if}
 
 <style>
   :global(*) {

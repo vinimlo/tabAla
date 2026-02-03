@@ -113,13 +113,14 @@ function createLinksStore(): Writable<LinksState> & {
   }
 
   async function addCollection(name: string): Promise<Collection> {
-    let currentState: LinksState;
+    let currentCollections: Collection[] = [];
     update((state) => {
-      currentState = state;
+      currentCollections = state.collections;
       return state;
     });
 
-    const maxOrder = Math.max(...currentState!.collections.map((c) => c.order), 0);
+    const orders: number[] = currentCollections.map((c: Collection): number => c.order);
+    const maxOrder = orders.length > 0 ? Math.max(...orders) : 0;
     const newCollection: Collection = {
       id: crypto.randomUUID(),
       name,

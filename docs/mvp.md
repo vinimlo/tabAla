@@ -121,7 +121,7 @@ Extensão leve que permite salvar abas em coleções temporárias, com experiên
 - Botão para salvar aba atual
 - Armazenamento local dos links
 - Lista de links salvos no popup
-- Ação de abrir link
+- Ação de abrir link ✓
 - Ação de remover link
 
 **Entregável:** Ciclo completo salvar → visualizar → abrir → remover
@@ -129,7 +129,7 @@ Extensão leve que permite salvar abas em coleções temporárias, com experiên
 **Verificação:**
 - [ ] Salvar aba atual adiciona link à lista
 - [ ] Lista exibe links salvos com título e favicon
-- [ ] Clicar em link abre em nova aba
+- [x] Clicar em link abre em nova aba (TAB-26 implementado)
 - [ ] Botão remover deleta link
 - [ ] Dados persistem após fechar/abrir popup
 

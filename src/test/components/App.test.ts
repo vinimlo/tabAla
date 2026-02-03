@@ -11,9 +11,9 @@ describe('App Component', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('TabAla');
   });
 
-  it('should render the subtitle', () => {
+  it('should render the links count', () => {
     render(App);
-    expect(screen.getByText('Sua sala de espera para links')).toBeInTheDocument();
+    expect(screen.getByText('Links: 0')).toBeInTheDocument();
   });
 
   it('should have main element', () => {

@@ -11,7 +11,12 @@ type StorageCallback = (items: StorageData) => void;
 
 const mockStorage: StorageData = {};
 
-const createStorageArea = () => ({
+const createStorageArea = (): {
+  get: ReturnType<typeof vi.fn>;
+  set: ReturnType<typeof vi.fn>;
+  remove: ReturnType<typeof vi.fn>;
+  clear: ReturnType<typeof vi.fn>;
+} => ({
   get: vi.fn((keys: string | string[] | null, callback?: StorageCallback) => {
     const result: StorageData = {};
     if (keys === null) {

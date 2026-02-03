@@ -15,7 +15,7 @@ describe('Vitest Configuration', () => {
   it('should have jsdom environment', () => {
     expect(document).toBeDefined();
     expect(window).toBeDefined();
-    expect(document.querySelector).toBeDefined();
+    expect(typeof document.querySelector).toBe('function');
   });
 
   it('should resolve @ alias correctly', () => {

@@ -163,6 +163,11 @@ docker inspect --format='{{.State.Health.Status}}' <container_id>  # Status do h
 - O container executa como usuário `node` (uid 1000)
 - Se necessário, ajuste permissões: `chmod -R 755 .`
 
+## Documentação
+
+- [docs/mvp.md](./docs/mvp.md) — Escopo e roadmap do MVP
+- [docs/development.md](./docs/development.md) — Guia de build e troubleshooting
+
 ## Contribuindo
 
 Contribuições são bem-vindas! Veja o [docs/mvp.md](./docs/mvp.md) para entender o escopo atual.

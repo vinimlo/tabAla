@@ -2,7 +2,7 @@
   import type { Link } from '@/lib/types';
 
   let links: Link[] = [];
-  let title = 'TabAla';
+  const title = 'TabAla';
 
   function handleAddLink(): void {
     const newLink: Link = {
@@ -19,7 +19,7 @@
 <main>
   <h1>{title}</h1>
   <p>Links: {links.length}</p>
-  <button on:click={handleAddLink}>Add Link</button>
+  <button type="button" on:click={handleAddLink}>Add Link</button>
 </main>
 
 <style>

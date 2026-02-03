@@ -1,0 +1,31 @@
+# Build outputs
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# Test coverage
+coverage/
+
+# Tool directories
+.atena/
+.hefesto/
+.git/
+
+# Configuration files
+*.config.js
+*.config.ts
+*.config.mjs
+vite.config.ts
+vitest.config.ts
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation and misc
+*.md
+LICENSE
+Makefile

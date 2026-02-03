@@ -8,7 +8,7 @@
 .DEFAULT_GOAL := help
 
 # Evita conflitos com arquivos de mesmo nome
-.PHONY: help dev dev-detached build test lint lint-fix shell clean stop
+.PHONY: help dev dev-detached build test test-watch test-ui test-coverage lint lint-fix shell lockfile clean stop
 
 # =============================================================================
 # Help
@@ -58,6 +58,22 @@ test:
 	@echo "\033[32m>>> Executando testes...\033[0m"
 	docker compose run --rm app npm test
 
+## test-watch: Executa testes em modo watch
+test-watch:
+	@echo "\033[32m>>> Executando testes em modo watch...\033[0m"
+	docker compose run --rm app npm run test:watch
+
+## test-ui: Abre interface visual do Vitest
+test-ui:
+	@echo "\033[32m>>> Abrindo Vitest UI na porta 51204...\033[0m"
+	docker compose run --rm -p 51204:51204 app npm run test:ui -- --host 0.0.0.0
+
+## test-coverage: Gera relatório de cobertura de testes
+test-coverage:
+	@echo "\033[32m>>> Gerando relatório de cobertura...\033[0m"
+	docker compose run --rm app npm run test:coverage
+	@echo "\033[32m>>> Relatório disponível em coverage/index.html\033[0m"
+
 # =============================================================================
 # Linting
 # =============================================================================
@@ -80,6 +96,12 @@ lint-fix:
 shell:
 	@echo "\033[32m>>> Abrindo shell no container...\033[0m"
 	docker compose run --rm app sh
+
+## lockfile: Regenera package-lock.json
+lockfile:
+	@echo "\033[32m>>> Regenerando package-lock.json...\033[0m"
+	docker compose run --rm app npm install
+	@echo "\033[32m>>> package-lock.json atualizado!\033[0m"
 
 ## clean: Remove artefatos de build (dist/)
 clean:

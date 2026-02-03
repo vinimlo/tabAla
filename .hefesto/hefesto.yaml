@@ -54,7 +54,7 @@ auto_mode:
   # Jira status to look for tasks to do
   status_todo: "SELECTED FOR DEVELOPMENT"
   # Jira status to set when working on a task
-  status_in_progress: "IN PROGRESS"
+  status_in_progress: "Em andamento"
   # Jira status to set when task is done
   status_done: "CONCLUÍDO"
   # Seconds to wait between polls when no tasks are found

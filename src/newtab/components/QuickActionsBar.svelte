@@ -77,8 +77,8 @@
     justify-content: space-between;
     gap: var(--space-4);
     padding: var(--space-4) var(--space-5);
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
+    background: var(--surface-elevated);
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .search-container {
@@ -89,23 +89,25 @@
 
   .search-icon {
     position: absolute;
-    left: var(--space-3);
+    left: var(--space-4);
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-tertiary);
     pointer-events: none;
+    transition: all var(--duration-fast) var(--ease-out);
   }
 
   .search-input {
     width: 100%;
-    padding: var(--space-3) var(--space-4);
-    padding-left: calc(var(--space-3) + 18px + var(--space-2));
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    height: 48px;
+    padding: 0 var(--space-4);
+    padding-left: calc(var(--space-4) + 20px + var(--space-2));
+    background: var(--surface-overlay);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
     color: var(--text-primary);
-    font-family: inherit;
-    font-size: 0.875rem;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
     transition: all var(--duration-fast) var(--ease-out);
   }
 
@@ -115,9 +117,14 @@
 
   .search-input:focus {
     outline: none;
-    border-color: var(--accent);
-    background: var(--bg-primary);
+    border-color: var(--accent-primary);
+    background: var(--surface-base);
     box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .search-container:focus-within .search-icon {
+    color: var(--accent-primary);
+    transform: translateY(-50%) scale(1.1);
   }
 
   .clear-search {
@@ -128,8 +135,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     padding: 0;
     background: transparent;
     border: none;
@@ -141,35 +148,40 @@
 
   .clear-search:hover {
     color: var(--text-primary);
-    background: var(--border);
+    background: var(--border-default);
+  }
+
+  .clear-search:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
   }
 
   .actions {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--space-3);
   }
 
   .btn-action {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-4);
+    background: var(--surface-overlay);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
     color: var(--text-secondary);
-    font-family: inherit;
-    font-size: 0.8125rem;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
   }
 
   .btn-action:hover {
-    background: var(--bg-elevated);
+    background: var(--surface-subtle);
     color: var(--text-primary);
-    border-color: var(--border-hover);
+    border-color: var(--border-strong);
   }
 
   .btn-action:focus {
@@ -177,23 +189,32 @@
   }
 
   .btn-action:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
   }
 
   .btn-new-collection {
     background: var(--accent-soft);
     border-color: transparent;
-    color: var(--accent);
+    color: var(--accent-primary);
   }
 
   .btn-new-collection:hover {
-    background: var(--accent);
+    background: var(--accent-primary);
     color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--accent-glow);
+  }
+
+  .btn-new-collection:active {
+    transform: translateY(0);
   }
 
   .btn-settings {
     padding: var(--space-2);
+    width: 40px;
+    height: 40px;
+    justify-content: center;
   }
 
   .btn-settings svg {
@@ -202,5 +223,16 @@
 
   .btn-settings:hover svg {
     transform: rotate(45deg);
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .btn-new-collection:hover,
+    .btn-settings:hover svg {
+      transform: none;
+    }
+    .search-container:focus-within .search-icon {
+      transform: translateY(-50%);
+    }
   }
 </style>

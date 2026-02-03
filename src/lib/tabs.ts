@@ -73,11 +73,26 @@ export async function getCurrentTab(): Promise<CurrentTabInfo | null> {
 }
 
 /**
- * Checks if a URL is saveable (not a browser internal URL).
+ * Checks if a URL is saveable (not a browser internal URL or localhost).
  */
 export function isSaveableUrl(url: string): boolean {
   const blockedPrefixes = ['chrome://', 'chrome-extension://', 'about:', 'edge://', 'brave://'];
-  return !blockedPrefixes.some((prefix) => url.startsWith(prefix));
+  const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0'];
+
+  if (blockedPrefixes.some((prefix) => url.startsWith(prefix))) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(url);
+    if (blockedHosts.includes(parsed.hostname)) {
+      return false;
+    }
+  } catch {
+    return false;
+  }
+
+  return true;
 }
 
 export interface OpenLinkResult {
@@ -130,7 +145,8 @@ export async function getAllTabs(): Promise<BrowserTab[]> {
         groupId: tab.groupId ?? chrome.tabGroups?.TAB_GROUP_ID_NONE ?? -1,
         windowId: tab.windowId ?? -1,
         index: tab.index,
-      }));
+      }))
+      .filter((tab) => isSaveableUrl(tab.url));
   } catch (error) {
     console.error('Failed to get all tabs:', error);
     return [];

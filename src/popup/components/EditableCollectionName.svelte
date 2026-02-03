@@ -118,32 +118,33 @@
 <style>
   .name {
     flex: 1;
-    font-size: 0.75rem;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
     font-weight: 500;
     color: var(--text-secondary);
     text-transform: lowercase;
     letter-spacing: 0.02em;
-    transition: color var(--duration-fast) var(--ease-out);
+    transition: all var(--duration-fast) var(--ease-out);
     cursor: pointer;
     border-radius: var(--radius-sm);
-    padding: 2px 4px;
-    margin: -2px -4px;
+    padding: 4px 8px;
+    margin: -4px -8px;
   }
 
   .name:hover {
     color: var(--text-primary);
-    background-color: var(--bg-tertiary);
+    background-color: var(--surface-overlay);
   }
 
   .name:focus {
     outline: none;
     color: var(--text-primary);
-    background-color: var(--bg-tertiary);
+    background-color: var(--surface-overlay);
   }
 
   .name:focus-visible {
-    outline: 1px solid var(--accent);
-    outline-offset: 1px;
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
   }
 
   .edit-container {
@@ -156,16 +157,16 @@
 
   .edit-input {
     width: 100%;
-    font-size: 0.75rem;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
     font-weight: 500;
     color: var(--text-primary);
     text-transform: lowercase;
     letter-spacing: 0.02em;
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius-sm);
-    padding: 2px 4px;
-    font-family: inherit;
+    background-color: var(--surface-overlay);
+    border: 1px solid var(--accent-primary);
+    border-radius: var(--radius-md);
+    padding: 4px 8px;
     outline: none;
     transition: border-color var(--duration-fast) var(--ease-out),
                 box-shadow var(--duration-fast) var(--ease-out);
@@ -173,13 +174,13 @@
   }
 
   .edit-input:focus {
-    border-color: var(--accent);
+    border-color: var(--accent-primary);
     box-shadow: 0 0 0 3px var(--accent-glow);
   }
 
   .edit-input.error {
-    border-color: var(--error);
-    box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.2);
+    border-color: var(--semantic-error);
+    box-shadow: 0 0 0 2px rgba(212, 114, 106, 0.2);
   }
 
   .edit-input:disabled {
@@ -188,27 +189,28 @@
   }
 
   .error-message {
+    font-family: var(--font-body);
     font-size: 0.625rem;
-    color: var(--error);
+    color: var(--semantic-error);
     line-height: 1.2;
   }
 
   .saving-indicator {
     position: absolute;
-    right: 6px;
+    right: 8px;
     top: 50%;
     transform: translateY(-50%);
   }
 
   .has-error .saving-indicator {
-    top: 10px;
+    top: 12px;
   }
 
   .mini-spinner {
-    width: 10px;
-    height: 10px;
-    border: 1.5px solid var(--border);
-    border-top-color: var(--accent);
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--border-subtle);
+    border-top-color: var(--accent-primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -216,6 +218,13 @@
   @keyframes spin {
     to {
       transform: rotate(360deg);
+    }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .mini-spinner {
+      animation: none;
     }
   }
 </style>

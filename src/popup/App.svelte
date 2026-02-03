@@ -1,456 +1,254 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
-  import { fade } from 'svelte/transition';
+  import { onMount } from 'svelte';
+  import { slide } from 'svelte/transition';
   import type { Link } from '@/lib/types';
   import { INBOX_COLLECTION_ID } from '@/lib/types';
-  import { openLinkInNewTab, getCurrentTab, isSaveableUrl } from '@/lib/tabs';
-  import { deleteCollection } from '@/lib/storage';
-  import { validateCollectionName } from '@/lib/validation';
-  import { BATCH_SIZE, SUCCESS_MESSAGES, UI_ERRORS } from '@/lib/constants';
-  import { linksStore, linksByCollection } from '@stores/links';
-  import {
-    collectionFilterStore,
-    selectedCollectionId,
-    ALL_COLLECTIONS_FILTER,
-  } from '@stores/collectionFilter';
-  import { filterLinksByCollection, countLinksByCollection } from '@/lib/filters';
-  import CollectionGroup from '@components/CollectionGroup.svelte';
-  import CollectionSelector from '@components/CollectionSelector.svelte';
-  import EmptyState from '@components/EmptyState.svelte';
-  import ConfirmDialog from './components/ConfirmDialog.svelte';
-  import ConfirmDeleteDialog from './components/ConfirmDeleteDialog.svelte';
+  import { getCurrentTab, isSaveableUrl, openLinkInNewTab } from '@/lib/tabs';
+  import { linksStore, linksByCollection } from '@/lib/stores/links';
   import Toast from './components/Toast.svelte';
-  import SaveButton from './components/SaveButton.svelte';
-  import CreateCollectionModal from './components/CreateCollectionModal.svelte';
+  import ConfirmDialog from './components/ConfirmDialog.svelte';
 
-
-  let expandedCollections: Set<string> = new Set([INBOX_COLLECTION_ID]);
-  let visibleCount = BATCH_SIZE;
-  let scrollContainer: HTMLElement;
-  let linkToRemove: Link | null = null;
+  let mounted = false;
+  let selectedCollectionId = INBOX_COLLECTION_ID;
+  let isSaving = false;
+  let expandedCollectionId: string | null = null;
   let errorMessage: string | null = null;
   let successMessage: string | null = null;
-  let isSaving = false;
-  let mounted = false;
-  let showCreateCollectionModal = false;
-
-  interface CollectionToDelete {
-    id: string;
-    name: string;
-    linkCount: number;
-  }
-  let collectionToDelete: CollectionToDelete | null = null;
-  let deletingCollectionId: string | null = null;
-  let renameErrors: Map<string, string | null> = new Map();
-  let renamingCollections: Set<string> = new Set();
-  const collectionGroupRefs: Record<string, CollectionGroup> = {};
+  let linkToRemove: Link | null = null;
 
   $: loading = $linksStore.loading;
-  $: error = $linksStore.error;
   $: collections = $linksStore.collections;
   $: allLinks = $linksStore.links;
   $: totalLinks = allLinks.length;
 
-  $: linkCounts = countLinksByCollection(allLinks);
-
-  $: currentFilter = $selectedCollectionId;
-  $: filteredLinks = filterLinksByCollection(allLinks, currentFilter);
-  $: filteredCount = filteredLinks.length;
-  $: isFiltered = currentFilter !== ALL_COLLECTIONS_FILTER && currentFilter !== null;
-
-  $: isEmpty = loading === false && totalLinks === 0;
-  $: isFilteredEmpty = loading === false && filteredCount === 0 && totalLinks > 0;
-
+  $: linkCounts = new Map<string, number>();
   $: {
-    if (!loading && collections.length > 0) {
-      collectionFilterStore.validateSelection(collections.map((c) => c.id));
+    const counts = new Map<string, number>();
+    for (const collection of collections) {
+      const collectionLinks = $linksByCollection.get(collection.id) ?? [];
+      counts.set(collection.id, collectionLinks.length);
     }
-  }
-
-  $: visibleCollections = collections.map((collection) => {
-    const allCollectionLinks = $linksByCollection.get(collection.id) ?? [];
-    const shouldShow =
-      currentFilter === ALL_COLLECTIONS_FILTER ||
-      currentFilter === null ||
-      currentFilter === collection.id;
-    return {
-      collection,
-      links: shouldShow ? allCollectionLinks : [],
-      visible: shouldShow,
-    };
-  }).filter((group) => {
-    if (!group.visible) {
-      return false;
-    }
-    return group.links.length > 0 || group.collection.id === INBOX_COLLECTION_ID;
-  });
-
-  $: hasMoreToLoad = visibleCount < filteredCount;
-
-  function handleKeyboardShortcuts(event: KeyboardEvent): void {
-    if (event.ctrlKey || event.metaKey) {
-      const key = event.key;
-
-      if (key === '0') {
-        event.preventDefault();
-        collectionFilterStore.select(ALL_COLLECTIONS_FILTER);
-        return;
-      }
-
-      if (key === '1') {
-        event.preventDefault();
-        collectionFilterStore.select(INBOX_COLLECTION_ID);
-        return;
-      }
-
-      const num = parseInt(key, 10);
-      if (num >= 2 && num <= 9) {
-        event.preventDefault();
-        const nonInboxCollections = collections.filter(
-          (c) => c.id !== INBOX_COLLECTION_ID
-        );
-        const targetCollection = nonInboxCollections[num - 2];
-        if (targetCollection) {
-          collectionFilterStore.select(targetCollection.id);
-        }
-      }
-    }
+    linkCounts = counts;
   }
 
   onMount(() => {
-    linksStore.load();
-    expandedCollections = new Set([INBOX_COLLECTION_ID]);
-    setTimeout(() => mounted = true, 50);
-
-    document.addEventListener('keydown', handleKeyboardShortcuts);
+    void linksStore.load();
+    setTimeout(() => { mounted = true; }, 50);
   });
 
-  onDestroy(() => {
-    if (typeof document !== 'undefined') {
-      document.removeEventListener('keydown', handleKeyboardShortcuts);
-    }
-  });
-
-  function handleToggle(event: CustomEvent<string>): void {
-    const collectionId = event.detail;
-    if (expandedCollections.has(collectionId)) {
-      expandedCollections.delete(collectionId);
-    } else {
-      expandedCollections.add(collectionId);
-    }
-    expandedCollections = expandedCollections;
-  }
-
-  async function handleOpenLink(event: CustomEvent<Link>): Promise<void> {
-    const link = event.detail;
-    const result = await openLinkInNewTab(link.url);
-    if (!result.success) {
-      errorMessage = result.error ?? UI_ERRORS.OPEN_LINK_FAILED;
-    }
-  }
-
-  function handleRemoveLink(event: CustomEvent<string>): void {
-    const linkId = event.detail;
-    const link = $linksStore.links.find((l) => l.id === linkId);
-    if (link !== undefined) {
-      linkToRemove = link;
-    }
-  }
-
-  async function handleConfirmRemove(): Promise<void> {
-    if (!linkToRemove) {
-      return;
-    }
-
-    const linkId = linkToRemove.id;
-    linkToRemove = null;
-
-    try {
-      await linksStore.removeLink(linkId);
-    } catch (err) {
-      console.error('Failed to remove link:', err);
-      errorMessage = UI_ERRORS.REMOVE_LINK_FAILED;
-    }
-  }
-
-  function handleCancelRemove(): void {
-    linkToRemove = null;
-  }
-
-  function clearError(): void {
-    errorMessage = null;
-  }
-
-  function handleScroll(): void {
-    if (scrollContainer === undefined || hasMoreToLoad === false) {
-      return;
-    }
-
-    const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-    const scrollPercentage = (scrollTop + clientHeight) / scrollHeight;
-
-    if (scrollPercentage >= 0.8) {
-      visibleCount = Math.min(visibleCount + BATCH_SIZE, filteredCount);
-    }
-  }
-
-  function handleCollectionSelect(event: CustomEvent<string>): void {
-    const collectionId = event.detail;
-    collectionFilterStore.select(collectionId);
-    visibleCount = BATCH_SIZE;
-
-    if (collectionId !== ALL_COLLECTIONS_FILTER) {
-      expandedCollections.add(collectionId);
-      expandedCollections = expandedCollections;
-    }
-  }
-
-  function getTargetCollectionForSave(): string {
-    if (
-      currentFilter === ALL_COLLECTIONS_FILTER ||
-      currentFilter === null
-    ) {
-      return INBOX_COLLECTION_ID;
-    }
-    return currentFilter;
+  function toggleCollection(collectionId: string): void {
+    expandedCollectionId = expandedCollectionId === collectionId ? null : collectionId;
   }
 
   async function handleSaveCurrentTab(): Promise<void> {
     if (isSaving) {
       return;
     }
-
     isSaving = true;
 
     try {
       const tabInfo = await getCurrentTab();
 
       if (!tabInfo) {
-        errorMessage = UI_ERRORS.GET_CURRENT_TAB_FAILED;
+        errorMessage = 'Não foi possível obter informações da aba';
         return;
       }
 
       if (!isSaveableUrl(tabInfo.url)) {
-        errorMessage = UI_ERRORS.PAGE_NOT_SAVEABLE;
+        errorMessage = 'Esta página não pode ser salva';
         return;
       }
 
-      const targetCollection = getTargetCollectionForSave();
       await linksStore.addLink({
         url: tabInfo.url,
         title: tabInfo.title,
         favicon: tabInfo.favicon,
-        collectionId: targetCollection,
+        collectionId: selectedCollectionId,
       });
 
-      successMessage = SUCCESS_MESSAGES.LINK_SAVED;
-    } catch (err) {
-      console.error('Failed to save current tab:', err);
-      errorMessage = UI_ERRORS.SAVE_LINK_FAILED;
+      successMessage = 'Link salvo';
+    } catch {
+      errorMessage = 'Erro ao salvar link';
     } finally {
       isSaving = false;
     }
   }
 
+  function getRecentLinks(collectionId: string): Link[] {
+    return ($linksByCollection.get(collectionId) ?? []).slice(0, 4);
+  }
+
+  function openDashboard(): void {
+    void chrome.tabs.create({ url: 'chrome://newtab' });
+  }
+
+  async function handleOpenLink(link: Link): Promise<void> {
+    const result = await openLinkInNewTab(link.url);
+    if (!result.success) {
+      errorMessage = result.error ?? 'Erro ao abrir link';
+    }
+  }
+
+  function handleRemoveLink(link: Link): void {
+    linkToRemove = link;
+  }
+
+  async function confirmRemoveLink(): Promise<void> {
+    if (!linkToRemove) {
+      return;
+    }
+    const id = linkToRemove.id;
+    linkToRemove = null;
+
+    try {
+      await linksStore.removeLink(id);
+    } catch {
+      errorMessage = 'Erro ao remover link';
+    }
+  }
+
+  function clearError(): void {
+    errorMessage = null;
+  }
+
   function clearSuccess(): void {
     successMessage = null;
   }
-
-  function openCreateCollectionModal(): void {
-    showCreateCollectionModal = true;
-  }
-
-  function closeCreateCollectionModal(): void {
-    showCreateCollectionModal = false;
-  }
-
-  async function handleCreateCollection(event: CustomEvent<string>): Promise<void> {
-    const name = event.detail;
-
-    try {
-      const newCollection = await linksStore.addCollection(name);
-      showCreateCollectionModal = false;
-      successMessage = SUCCESS_MESSAGES.COLLECTION_CREATED(newCollection.name);
-      expandedCollections.add(newCollection.id);
-      expandedCollections = expandedCollections;
-    } catch (err) {
-      console.error('Failed to create collection:', err);
-      errorMessage = err instanceof Error ? err.message : UI_ERRORS.CREATE_COLLECTION_FAILED;
-      showCreateCollectionModal = false;
-    }
-  }
-
-  function handleDeleteCollection(
-    event: CustomEvent<{ id: string; name: string; linkCount: number }>
-  ): void {
-    collectionToDelete = event.detail;
-  }
-
-  async function handleConfirmDeleteCollection(): Promise<void> {
-    if (!collectionToDelete) {
-      return;
-    }
-
-    const { id, name } = collectionToDelete;
-    collectionToDelete = null;
-    deletingCollectionId = id;
-
-    try {
-      const result = await deleteCollection(id);
-
-      if (result.success) {
-        await linksStore.load();
-        successMessage = SUCCESS_MESSAGES.COLLECTION_DELETED(name, result.movedCount);
-
-        if (expandedCollections.has(id)) {
-          expandedCollections.delete(id);
-          expandedCollections = expandedCollections;
-        }
-        if (!expandedCollections.has(INBOX_COLLECTION_ID)) {
-          expandedCollections.add(INBOX_COLLECTION_ID);
-          expandedCollections = expandedCollections;
-        }
-      } else {
-        errorMessage = result.error ?? UI_ERRORS.DELETE_COLLECTION_FAILED;
-      }
-    } catch (err) {
-      console.error('Failed to delete collection:', err);
-      errorMessage = UI_ERRORS.DELETE_COLLECTION_FAILED;
-    } finally {
-      deletingCollectionId = null;
-    }
-  }
-
-  function handleCancelDeleteCollection(): void {
-    collectionToDelete = null;
-  }
-
-  async function handleRename(
-    event: CustomEvent<{ id: string; newName: string }>
-  ): Promise<void> {
-    const { id, newName } = event.detail;
-    const trimmedName = newName.trim();
-
-    const validation = validateCollectionName(trimmedName, id, collections);
-    if (!validation.valid) {
-      renameErrors = new Map(renameErrors.set(id, validation.error ?? null));
-      return;
-    }
-
-    renameErrors = new Map(renameErrors.set(id, null));
-    renamingCollections = new Set(renamingCollections.add(id));
-
-    try {
-      await linksStore.renameCollection(id, trimmedName);
-      collectionGroupRefs[id]?.exitEditMode();
-    } catch (err) {
-      console.error('Failed to rename collection:', err);
-      renameErrors = new Map(
-        renameErrors.set(id, UI_ERRORS.RENAME_COLLECTION_FAILED)
-      );
-    } finally {
-      renamingCollections = new Set(
-        [...renamingCollections].filter((cid) => cid !== id)
-      );
-    }
-  }
-
-  function handleCancelRename(event: CustomEvent<string>): void {
-    const id = event.detail;
-    renameErrors = new Map(renameErrors.set(id, null));
-  }
 </script>
 
-<main class="app" class:mounted>
+<main class="popup" class:mounted>
   {#if loading}
-    <div class="loading">
+    <div class="loading-state">
       <div class="spinner"></div>
       <span>carregando...</span>
     </div>
-  {:else if error}
-    <div class="error">
-      <p>Erro ao carregar dados</p>
-      <button type="button" on:click={() => linksStore.load()}>Tentar novamente</button>
-    </div>
   {:else}
+    <!-- Header -->
     <header class="header">
-      <CollectionSelector
-        {collections}
-        selectedId={currentFilter}
-        {linkCounts}
-        {totalLinks}
-        on:select={handleCollectionSelect}
-      />
-      <button
-        type="button"
-        class="btn-new-collection"
-        on:click={openCreateCollectionModal}
-        aria-label="Nova Coleção"
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
+      <div class="brand">
+        <span class="logo">TabAla</span>
+        <span class="badge">{totalLinks}</span>
+      </div>
+      <button type="button" class="btn-dashboard" on:click={openDashboard} title="Abrir Dashboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
         </svg>
-        <span>Nova Coleção</span>
       </button>
     </header>
 
-    {#if isFiltered}
-      <div class="filter-status" transition:fade={{ duration: 150 }}>
-        <span class="filter-count">{filteredCount} de {totalLinks} links</span>
+    <!-- Save Section -->
+    <section class="save-section">
+      <div class="save-row">
+        <div class="save-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </div>
+        <div class="save-info">
+          <span class="save-label">Salvar em</span>
+          <select class="collection-select" bind:value={selectedCollectionId}>
+            {#each collections as col}
+              <option value={col.id}>{col.name}</option>
+            {/each}
+          </select>
+        </div>
+        <button
+          type="button"
+          class="btn-save"
+          on:click={handleSaveCurrentTab}
+          disabled={isSaving}
+        >
+          {#if isSaving}
+            <span class="mini-spinner"></span>
+          {:else}
+            Salvar
+          {/if}
+        </button>
       </div>
-    {/if}
+    </section>
 
-    {#if isEmpty}
-      <EmptyState />
-    {:else if isFilteredEmpty}
-      <div class="empty-filter" transition:fade={{ duration: 200 }}>
-        <p>Nenhum link nesta coleção</p>
-        <span class="hint">Salve uma aba para começar</span>
-      </div>
-    {:else}
-      <div
-        class="scroll-container"
-        bind:this={scrollContainer}
-        on:scroll={handleScroll}
-      >
-        {#each visibleCollections as { collection, links }, i (collection.id)}
-          <div class="collection-wrapper" style="--delay: {i * 50}ms">
-            <CollectionGroup
-              bind:this={collectionGroupRefs[collection.id]}
-              {collection}
-              {links}
-              expanded={expandedCollections.has(collection.id)}
-              isDeleting={deletingCollectionId === collection.id}
-              renameError={renameErrors.get(collection.id) ?? null}
-              isRenaming={renamingCollections.has(collection.id)}
-              on:toggle={handleToggle}
-              on:open={handleOpenLink}
-              on:remove={handleRemoveLink}
-              on:deleteCollection={handleDeleteCollection}
-              on:rename={handleRename}
-              on:cancelRename={handleCancelRename}
-            />
-          </div>
-        {/each}
-      </div>
-    {/if}
+    <!-- Collections List -->
+    <section class="collections">
+      {#each collections as collection (collection.id)}
+        {@const count = linkCounts.get(collection.id) ?? 0}
+        {@const isExpanded = expandedCollectionId === collection.id}
+        {@const recentLinks = getRecentLinks(collection.id)}
+
+        <div class="collection-item" class:expanded={isExpanded}>
+          <button
+            type="button"
+            class="collection-header"
+            on:click={() => toggleCollection(collection.id)}
+          >
+            <svg class="folder-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span class="collection-name">{collection.name}</span>
+            <span class="collection-count">{count}</span>
+            <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+
+          {#if isExpanded}
+            <div class="collection-links" transition:slide={{ duration: 150 }}>
+              {#if recentLinks.length > 0}
+                {#each recentLinks as link (link.id)}
+                  <div class="link-row">
+                    <button
+                      type="button"
+                      class="link-btn"
+                      on:click={() => handleOpenLink(link)}
+                      title={link.url}
+                    >
+                      {#if link.favicon}
+                        <img src={link.favicon} alt="" width="14" height="14" class="link-favicon" />
+                      {:else}
+                        <span class="link-favicon-placeholder"></span>
+                      {/if}
+                      <span class="link-title">{link.title}</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="link-remove"
+                      on:click|stopPropagation={() => handleRemoveLink(link)}
+                      title="Remover"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                {/each}
+                {#if count > 4}
+                  <button type="button" class="view-more" on:click={openDashboard}>
+                    Ver todos ({count})
+                  </button>
+                {/if}
+              {:else}
+                <span class="empty-hint">Nenhum link</span>
+              {/if}
+            </div>
+          {/if}
+        </div>
+      {/each}
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <button type="button" class="btn-open-dashboard" on:click={openDashboard}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        Abrir Dashboard Completo
+      </button>
+    </footer>
   {/if}
-
-  <SaveButton loading={isSaving} disabled={loading} on:click={handleSaveCurrentTab} />
-
-  <footer class="watermark">
-    <span>tabala</span>
-  </footer>
 </main>
 
 {#if successMessage}
@@ -466,73 +264,57 @@
     message="Remover este link?"
     confirmText="Remover"
     cancelText="Cancelar"
-    on:confirm={handleConfirmRemove}
-    on:cancel={handleCancelRemove}
-  />
-{/if}
-
-{#if showCreateCollectionModal}
-  <CreateCollectionModal
-    existingNames={linksStore.getCollectionNames()}
-    on:create={handleCreateCollection}
-    on:cancel={closeCreateCollectionModal}
-  />
-{/if}
-
-{#if collectionToDelete}
-  <ConfirmDeleteDialog
-    collectionName={collectionToDelete.name}
-    linkCount={collectionToDelete.linkCount}
-    on:confirm={handleConfirmDeleteCollection}
-    on:cancel={handleCancelDeleteCollection}
+    on:confirm={confirmRemoveLink}
+    on:cancel={() => linkToRemove = null}
   />
 {/if}
 
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
   :global(:root) {
-    /* Base - Dark theme for futuristic feel */
-    --bg-primary: #0D0D0F;
-    --bg-secondary: #151518;
-    --bg-tertiary: #1C1C21;
-
-    /* Text - High contrast, refined */
-    --text-primary: #FAFAFA;
-    --text-secondary: #8A8A8E;
-    --text-tertiary: #4A4A4E;
-
-    /* Accent - Warm coral */
-    --accent: #FF6B4A;
-    --accent-soft: rgba(255, 107, 74, 0.12);
-    --accent-glow: rgba(255, 107, 74, 0.25);
-
-    /* Semantic */
-    --success: #4ADE80;
-    --error: #F87171;
-
-    /* Borders & Dividers */
-    --border: rgba(255, 255, 255, 0.06);
-    --border-hover: rgba(255, 255, 255, 0.12);
-
-    /* Spacing */
+    --surface-base: #0F0E11;
+    --surface-elevated: #17161A;
+    --surface-overlay: #1E1D22;
+    --surface-subtle: #26252B;
+    --text-primary: #F5F3F0;
+    --text-secondary: #A8A5A0;
+    --text-tertiary: #6B6865;
+    --accent-primary: #E85D42;
+    --accent-secondary: #F07A62;
+    --accent-soft: rgba(232, 93, 66, 0.12);
+    --accent-glow: rgba(232, 93, 66, 0.24);
+    --semantic-success: #7CB890;
+    --semantic-error: #D4726A;
+    --border-subtle: rgba(255, 255, 255, 0.04);
+    --border-default: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.12);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.5);
     --space-1: 0.25rem;
     --space-2: 0.5rem;
     --space-3: 0.75rem;
     --space-4: 1rem;
     --space-5: 1.5rem;
     --space-6: 2rem;
-
-    /* Radius */
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 16px;
+    --radius-xl: 20px;
     --radius-full: 9999px;
-
-    /* Motion */
-    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --font-body: "Inter", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", monospace;
+    --text-xs: 0.6875rem;
+    --text-sm: 0.75rem;
+    --text-base: 0.8125rem;
+    --text-md: 0.875rem;
     --duration-fast: 150ms;
-    --duration-normal: 250ms;
-    --duration-slow: 400ms;
+    --duration-normal: 200ms;
+    --duration-slow: 300ms;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   :global(*) {
@@ -542,40 +324,44 @@
   :global(body) {
     margin: 0;
     padding: 0;
-    font-family: "Satoshi", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 1.4;
     color: var(--text-primary);
-    background-color: var(--bg-primary);
+    background-color: var(--surface-base);
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
 
-  .app {
+  :global(::selection) {
+    background: var(--accent-soft);
+    color: var(--text-primary);
+  }
+
+  .popup {
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    max-height: 600px;
-    min-width: 300px;
-    max-width: 400px;
-    background: var(--bg-primary);
-    position: relative;
+    width: 380px;
+    min-height: 480px;
+    max-height: 550px;
+    background: var(--surface-base);
     opacity: 0;
-    transition: opacity var(--duration-normal) var(--ease-out);
+    transform: translateY(4px);
+    transition: opacity var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
   }
 
-  .app.mounted {
+  .popup.mounted {
     opacity: 1;
+    transform: translateY(0);
   }
 
-  .loading {
+  .loading-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: var(--space-3);
-    flex: 1;
-    color: var(--text-secondary);
+    gap: var(--space-2);
+    padding: var(--space-5);
+    color: var(--text-tertiary);
     font-size: 0.75rem;
     letter-spacing: 0.05em;
     text-transform: lowercase;
@@ -584,187 +370,397 @@
   .spinner {
     width: 20px;
     height: 20px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
+    border: 2px solid var(--border-subtle);
+    border-top-color: var(--accent-primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
 
   @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+    to { transform: rotate(360deg); }
   }
 
-  .error {
+  /* Header */
+  .header {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: var(--space-3);
-    flex: 1;
-    padding: var(--space-5);
-    text-align: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
   }
 
-  .error p {
-    color: var(--error);
-    margin: 0;
-    font-size: 0.875rem;
-  }
-
-  .error button {
-    padding: var(--space-2) var(--space-4);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    font-family: inherit;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .error button:hover {
-    background-color: var(--bg-tertiary);
-    border-color: var(--border-hover);
-  }
-
-  .filter-status {
+  .brand {
     display: flex;
-    justify-content: center;
-    padding: var(--space-2) var(--space-3);
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
+    align-items: center;
+    gap: var(--space-2);
   }
 
-  .filter-count {
+  .logo {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+  }
+
+  .badge {
+    font-family: var(--font-mono);
     font-size: 0.6875rem;
     font-weight: 500;
-    color: var(--text-tertiary);
-    letter-spacing: 0.02em;
-  }
-
-  .empty-filter {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-    gap: var(--space-2);
-    padding: var(--space-5);
-    text-align: center;
-  }
-
-  .empty-filter p {
-    margin: 0;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-  }
-
-  .empty-filter .hint {
-    font-size: 0.75rem;
-    color: var(--text-tertiary);
-  }
-
-  .scroll-container {
-    flex: 1;
-    overflow-y: auto;
-    padding: var(--space-3);
-    padding-bottom: var(--space-6);
-  }
-
-  .scroll-container::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .scroll-container::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .scroll-container::-webkit-scrollbar-thumb {
-    background-color: var(--border);
+    color: var(--accent-primary);
+    background: var(--accent-soft);
+    padding: 2px 8px;
     border-radius: var(--radius-full);
   }
 
-  .scroll-container::-webkit-scrollbar-thumb:hover {
-    background-color: var(--border-hover);
-  }
-
-  .collection-wrapper {
-    opacity: 0;
-    transform: translateY(8px);
-    animation: fadeSlideIn var(--duration-slow) var(--ease-out) forwards;
-    animation-delay: var(--delay, 0ms);
-  }
-
-  @keyframes fadeSlideIn {
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .watermark {
-    position: absolute;
-    bottom: var(--space-3);
-    left: 0;
-    right: 0;
+  .btn-dashboard {
     display: flex;
+    align-items: center;
     justify-content: center;
-    pointer-events: none;
-  }
-
-  .watermark span {
-    font-size: 0.6875rem;
-    font-weight: 500;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
     color: var(--text-tertiary);
-    opacity: 0.5;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
   }
 
-  .header {
+  .btn-dashboard:hover {
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+  }
+
+  /* Save Section */
+  .save-section {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .save-row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: var(--space-3);
-    gap: var(--space-2);
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
   }
 
-  .btn-new-collection {
-    display: inline-flex;
+  .save-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: var(--accent-soft);
+    border-radius: var(--radius-sm);
+    color: var(--accent-primary);
+    flex-shrink: 0;
+  }
+
+  .save-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .save-label {
+    font-size: 0.6875rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .collection-select {
+    padding: 2px 4px;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-left: -4px;
+  }
+
+  .collection-select:focus {
+    outline: none;
+  }
+
+  .collection-select option {
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+  }
+
+  .btn-save {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 64px;
+    height: 32px;
+    padding: 0 var(--space-3);
+    background: var(--accent-primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: white;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+
+  .btn-save:hover:not(:disabled) {
+    background: var(--accent-secondary);
+    transform: translateY(-1px);
+  }
+
+  .btn-save:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .btn-save:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .mini-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  /* Collections */
+  .collections {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-2);
+  }
+
+  .collections::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .collections::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .collections::-webkit-scrollbar-thumb {
+    background-color: var(--border-default);
+    border-radius: var(--radius-full);
+  }
+
+  .collection-item {
+    margin-bottom: var(--space-1);
+  }
+
+  .collection-header {
+    display: flex;
     align-items: center;
     gap: var(--space-2);
+    width: 100%;
     padding: var(--space-2) var(--space-3);
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: transparent;
+    border: none;
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
-    font-family: inherit;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+
+  .collection-header:hover {
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+  }
+
+  .folder-icon {
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+  }
+
+  .collection-name {
+    flex: 1;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .collection-count {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--text-tertiary);
+    background: var(--surface-overlay);
+    padding: 1px 6px;
+    border-radius: var(--radius-full);
+  }
+
+  .chevron {
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+
+  .collection-item.expanded .chevron {
+    transform: rotate(180deg);
+  }
+
+  .collection-links {
+    padding-left: calc(var(--space-3) + 14px + var(--space-2));
+    padding-right: var(--space-2);
+    padding-bottom: var(--space-2);
+  }
+
+  .link-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .link-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-1) var(--space-2);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-family: var(--font-body);
     font-size: 0.75rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+
+  .link-btn:hover {
+    background: var(--surface-elevated);
+    color: var(--text-primary);
+  }
+
+  .link-favicon {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .link-favicon-placeholder {
+    width: 14px;
+    height: 14px;
+    background: var(--surface-subtle);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .link-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .link-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    opacity: 0;
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+
+  .link-row:hover .link-remove {
+    opacity: 1;
+  }
+
+  .link-remove:hover {
+    background: rgba(212, 114, 106, 0.15);
+    color: var(--semantic-error);
+  }
+
+  .view-more {
+    display: block;
+    width: 100%;
+    padding: var(--space-1) var(--space-2);
+    background: transparent;
+    border: none;
+    color: var(--accent-primary);
+    font-family: var(--font-body);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .view-more:hover {
+    color: var(--accent-secondary);
+    text-decoration: underline;
+  }
+
+  .empty-hint {
+    display: block;
+    padding: var(--space-2);
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-style: italic;
+  }
+
+  /* Footer */
+  .footer {
+    padding: var(--space-3) var(--space-4);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .btn-open-dashboard {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    width: 100%;
+    padding: var(--space-3);
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
   }
 
-  .btn-new-collection:hover {
-    background: var(--bg-tertiary);
+  .btn-open-dashboard:hover {
+    background: var(--surface-overlay);
+    border-color: var(--border-default);
     color: var(--text-primary);
-    border-color: var(--border-hover);
   }
 
-  .btn-new-collection:focus {
-    outline: none;
+  .btn-open-dashboard svg {
+    color: var(--text-tertiary);
+    transition: color var(--duration-fast) var(--ease-out);
   }
 
-  .btn-new-collection:focus-visible {
-    outline: 1px solid var(--accent);
-    outline-offset: 2px;
-  }
-
-  .btn-new-collection svg {
-    width: 14px;
-    height: 14px;
+  .btn-open-dashboard:hover svg {
+    color: var(--accent-primary);
   }
 </style>

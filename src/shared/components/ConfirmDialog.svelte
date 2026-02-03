@@ -88,8 +88,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px) saturate(150%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -97,15 +97,16 @@
   }
 
   .dialog {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-5);
-    max-width: 320px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    max-width: 340px;
     width: 90%;
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.4),
-      0 0 0 1px rgba(255, 255, 255, 0.03);
+      var(--shadow-xl),
+      0 0 40px rgba(0, 0, 0, 0.15);
+    transform-origin: center center;
   }
 
   .dialog:focus {
@@ -115,28 +116,29 @@
   p {
     margin: 0 0 var(--space-5);
     color: var(--text-primary);
-    font-size: 0.9375rem;
+    font-family: var(--font-body);
+    font-size: var(--text-base);
     text-align: center;
-    line-height: 1.4;
+    line-height: 1.5;
     font-weight: 500;
   }
 
   .actions {
     display: flex;
-    gap: var(--space-2);
+    gap: var(--space-3);
     justify-content: center;
   }
 
   .btn {
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-sm);
-    font-family: inherit;
-    font-size: 0.8125rem;
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius-lg);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
     border: 1px solid transparent;
-    min-width: 80px;
+    min-width: 100px;
   }
 
   .btn:focus {
@@ -144,29 +146,42 @@
   }
 
   .btn:focus-visible {
-    outline: 1px solid var(--accent);
+    outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
   }
 
   .btn-cancel {
-    background: var(--bg-tertiary);
+    background: transparent;
     color: var(--text-secondary);
-    border-color: var(--border);
+    border-color: var(--border-default);
   }
 
   .btn-cancel:hover {
-    background: var(--bg-primary);
+    background: var(--surface-overlay);
     color: var(--text-primary);
-    border-color: var(--border-hover);
+    border-color: var(--border-strong);
   }
 
   .btn-confirm {
-    background: var(--error);
+    background: var(--semantic-error);
     color: white;
+    box-shadow: 0 2px 8px rgba(212, 114, 106, 0.3);
   }
 
   .btn-confirm:hover {
-    background: #dc2626;
-    box-shadow: 0 0 16px rgba(248, 113, 113, 0.3);
+    background: #c45f58;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(212, 114, 106, 0.35);
+  }
+
+  .btn-confirm:active {
+    transform: translateY(0);
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .btn-confirm:hover {
+      transform: none;
+    }
   }
 </style>

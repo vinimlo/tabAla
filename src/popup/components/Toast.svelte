@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { fly, fade } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
 
   export let message: string;
   export let duration: number = 3000;
@@ -9,14 +10,39 @@
 
   let visible = true;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let isPaused = false;
+  let remainingTime = duration;
+  let startTime: number;
 
   function dismiss() {
     visible = false;
     onClose();
   }
 
+  function startTimer() {
+    startTime = Date.now();
+    timeoutId = setTimeout(dismiss, remainingTime);
+  }
+
+  function pauseTimer() {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      remainingTime -= Date.now() - startTime;
+    }
+  }
+
+  function handleMouseEnter() {
+    isPaused = true;
+    pauseTimer();
+  }
+
+  function handleMouseLeave() {
+    isPaused = false;
+    startTimer();
+  }
+
   onMount(() => {
-    timeoutId = setTimeout(dismiss, duration);
+    startTimer();
   });
 
   onDestroy(() => {
@@ -35,10 +61,14 @@
       class="toast"
       class:error={type === 'error'}
       class:success={type === 'success'}
-      role="alert"
+      class:paused={isPaused}
+      role="status"
       aria-live="polite"
-      transition:fly={{ y: 20, duration: 200 }}
+      on:mouseenter={handleMouseEnter}
+      on:mouseleave={handleMouseLeave}
+      transition:fly={{ y: 16, duration: 300, easing: cubicOut }}
     >
+      <span class="toast-indicator"></span>
       <span class="toast-message">{message}</span>
       <button
         class="toast-close"
@@ -71,66 +101,69 @@
     z-index: 1000;
     display: flex;
     justify-content: center;
+    pointer-events: none;
   }
 
   .toast {
     position: relative;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: var(--space-3);
     padding: var(--space-3) var(--space-4);
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border);
+    background-color: rgba(30, 29, 34, 0.9);
+    border: 1px solid var(--border-default);
     color: var(--text-primary);
     border-radius: var(--radius-full);
     box-shadow:
-      0 4px 24px rgba(0, 0, 0, 0.3),
+      0 8px 24px rgba(0, 0, 0, 0.45),
       0 0 0 1px rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(12px);
-    max-width: 340px;
-    width: 100%;
+    max-width: 360px;
+    width: auto;
+    pointer-events: auto;
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+
+  .toast:hover {
+    transform: scale(1.02);
+  }
+
+  .toast.paused {
+    transform: scale(1.02);
+  }
+
+  .toast-indicator {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background-color: var(--text-tertiary);
+    transition: all var(--duration-fast) var(--ease-out);
   }
 
   .toast.error {
-    border-color: rgba(248, 113, 113, 0.2);
+    border-color: rgba(212, 114, 106, 0.25);
   }
 
-  .toast.error::before {
-    content: '';
-    position: absolute;
-    left: var(--space-4);
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 6px;
-    border-radius: var(--radius-full);
-    background-color: var(--error);
-    box-shadow: 0 0 8px var(--error);
+  .toast.error .toast-indicator {
+    background-color: var(--semantic-error);
+    box-shadow: 0 0 12px rgba(212, 114, 106, 0.5);
   }
 
   .toast.success {
-    border-color: rgba(74, 222, 128, 0.2);
+    border-color: rgba(124, 184, 144, 0.25);
   }
 
-  .toast.success::before {
-    content: '';
-    position: absolute;
-    left: var(--space-4);
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 6px;
-    border-radius: var(--radius-full);
-    background-color: var(--success);
-    box-shadow: 0 0 8px var(--success);
+  .toast.success .toast-indicator {
+    background-color: var(--semantic-success);
+    box-shadow: 0 0 12px rgba(124, 184, 144, 0.5);
   }
 
   .toast-message {
-    font-size: 0.8125rem;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
     line-height: 1.4;
     flex: 1;
-    padding-left: var(--space-4);
   }
 
   .toast-close {
@@ -147,11 +180,12 @@
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
     flex-shrink: 0;
+    margin-left: var(--space-1);
   }
 
   .toast-close:hover {
     color: var(--text-primary);
-    background-color: var(--border);
+    background-color: var(--border-default);
   }
 
   .toast-close:focus {
@@ -159,6 +193,15 @@
   }
 
   .toast-close:focus-visible {
-    outline: 1px solid var(--accent);
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .toast:hover,
+    .toast.paused {
+      transform: none;
+    }
   }
 </style>

@@ -6,7 +6,7 @@
 import { writable, type Writable } from 'svelte/store';
 import type { Settings } from '@/lib/types';
 import { DEFAULT_SETTINGS } from '@/lib/types';
-import { getSettings, saveSettings, updateSettings, storage } from '@/lib/storage';
+import { getSettings, updateSettings, storage } from '@/lib/storage';
 
 interface SettingsState {
   settings: Settings;

@@ -1,72 +1,141 @@
+/* =================================================================
+   TABALA - Digital Sanctuary Design System
+   A serene, refined dark interface for thoughtful link management
+   ================================================================= */
+
+/* === FONT IMPORTS === */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
 :root {
-  /* Base - Dark theme for futuristic feel */
-  --bg-primary: #0D0D0F;
-  --bg-secondary: #151518;
-  --bg-tertiary: #1C1C21;
-  --bg-elevated: #242429;
+  /* =================================================================
+     SURFACES - Warm charcoal palette
+     ================================================================= */
+  --surface-base: #0F0E11;       /* Background principal - charcoal quente */
+  --surface-elevated: #17161A;   /* Cards e superfícies elevadas */
+  --surface-overlay: #1E1D22;    /* Hover states */
+  --surface-subtle: #26252B;     /* Elementos secundários */
 
-  /* Text - High contrast, refined */
-  --text-primary: #FAFAFA;
-  --text-secondary: #8A8A8E;
-  --text-tertiary: #4A4A4E;
+  /* Legacy aliases for compatibility */
+  --bg-primary: var(--surface-base);
+  --bg-secondary: var(--surface-elevated);
+  --bg-tertiary: var(--surface-overlay);
+  --bg-elevated: var(--surface-subtle);
 
-  /* Accent - Warm coral */
-  --accent: #FF6B4A;
-  --accent-soft: rgba(255, 107, 74, 0.12);
-  --accent-glow: rgba(255, 107, 74, 0.25);
-  --accent-hover: #FF8266;
+  /* =================================================================
+     TEXT - Cream white for reduced eye strain
+     ================================================================= */
+  --text-primary: #F5F3F0;       /* Cream white - reduz cansaço visual */
+  --text-secondary: #A8A5A0;     /* Texto de corpo */
+  --text-tertiary: #6B6865;      /* Texto auxiliar - WCAG AA compliant */
 
-  /* Semantic */
-  --success: #4ADE80;
-  --error: #F87171;
-  --warning: #FBBF24;
+  /* =================================================================
+     ACCENT - Refined coral
+     ================================================================= */
+  --accent-primary: #E85D42;     /* Principal */
+  --accent-secondary: #F07A62;   /* Hover */
+  --accent-soft: rgba(232, 93, 66, 0.12);
+  --accent-glow: rgba(232, 93, 66, 0.24);
 
-  /* Borders & Dividers */
-  --border: rgba(255, 255, 255, 0.06);
-  --border-hover: rgba(255, 255, 255, 0.12);
+  /* Legacy aliases */
+  --accent: var(--accent-primary);
+  --accent-hover: var(--accent-secondary);
+
+  /* =================================================================
+     SEMANTIC - Muted, calming colors
+     ================================================================= */
+  --semantic-success: #7CB890;   /* Verde sage, não neon */
+  --semantic-error: #D4726A;     /* Rosa dusty, não vermelho agressivo */
+  --semantic-warning: #D4A85A;   /* Âmbar quente */
+
+  /* Legacy aliases */
+  --success: var(--semantic-success);
+  --error: var(--semantic-error);
+  --warning: var(--semantic-warning);
+
+  /* =================================================================
+     BORDERS - Subtle layering
+     ================================================================= */
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.12);
+
+  /* Legacy aliases */
+  --border: var(--border-default);
+  --border-hover: var(--border-strong);
   --border-active: rgba(255, 255, 255, 0.18);
 
-  /* Shadows */
+  /* =================================================================
+     SHADOWS - Deep, layered
+     ================================================================= */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px var(--accent-glow);
 
-  /* Spacing */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.5rem;
-  --space-6: 2rem;
-  --space-8: 3rem;
+  /* =================================================================
+     SPACING - Consistent scale
+     ================================================================= */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.5rem;    /* 24px */
+  --space-6: 2rem;      /* 32px */
+  --space-8: 3rem;      /* 48px */
 
-  /* Radius */
+  /* =================================================================
+     RADIUS - Rounded and friendly
+     ================================================================= */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-xl: 24px;
   --radius-full: 9999px;
 
-  /* Motion */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* =================================================================
+     TYPOGRAPHY - Modern, readable
+     ================================================================= */
+  --font-display: "General Sans", "SF Pro Display", system-ui, sans-serif;
+  --font-body: "Inter", "SF Pro Text", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", monospace;
+
+  /* Scale (adjusted for better readability) */
+  --text-xs: 0.75rem;    /* 12px - badges, URLs */
+  --text-sm: 0.875rem;   /* 14px - texto secundário */
+  --text-base: 1rem;     /* 16px - corpo */
+  --text-md: 1.25rem;    /* 20px - headers de seção */
+  --text-lg: 1.44rem;    /* 23px - títulos */
+
+  /* =================================================================
+     MOTION - Smooth and intentional
+     ================================================================= */
   --duration-fast: 150ms;
   --duration-normal: 250ms;
   --duration-slow: 400ms;
 
-  /* Column sizing */
-  --column-width: 280px;
-  --column-min-width: 240px;
-  --column-max-width: 320px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
+
+  /* =================================================================
+     LAYOUT - Column system
+     ================================================================= */
+  --column-width: 320px;
+  --column-min-width: 280px;
+  --column-max-width: 360px;
   --column-gap: 16px;
 
   /* Sidebar */
-  --sidebar-width: 280px;
-  --sidebar-collapsed-width: 48px;
-  --sidebar-transition: 250ms var(--ease-out);
+  --sidebar-width: 320px;
+  --sidebar-collapsed-width: 52px;
+  --sidebar-transition: var(--duration-normal) var(--ease-out);
 }
 
+/* =================================================================
+   GLOBAL RESETS
+   ================================================================= */
 * {
   box-sizing: border-box;
 }
@@ -77,11 +146,11 @@ body {
   padding: 0;
   width: 100%;
   height: 100%;
-  font-family: "Satoshi", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.5;
   color: var(--text-primary);
-  background-color: var(--bg-primary);
+  background-color: var(--surface-base);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
@@ -92,7 +161,9 @@ body {
   height: 100%;
 }
 
-/* Scrollbar styling */
+/* =================================================================
+   SCROLLBAR STYLING
+   ================================================================= */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -103,26 +174,72 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--border);
+  background-color: var(--border-default);
   border-radius: var(--radius-full);
+  transition: background-color var(--duration-fast) var(--ease-out);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--border-hover);
+  background-color: var(--border-strong);
 }
 
-/* Focus visible for keyboard navigation */
+/* =================================================================
+   FOCUS STATES - Accessible keyboard navigation
+   ================================================================= */
 :focus {
   outline: none;
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
 
-/* Selection */
+/* =================================================================
+   SELECTION
+   ================================================================= */
 ::selection {
   background: var(--accent-soft);
   color: var(--text-primary);
 }
+
+/* =================================================================
+   REDUCED MOTION - Accessibility
+   ================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =================================================================
+   UTILITY CLASSES
+   ================================================================= */
+
+/* Text utilities */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.text-accent { color: var(--accent-primary); }
+
+/* Font utilities */
+.font-display { font-family: var(--font-display); }
+.font-body { font-family: var(--font-body); }
+.font-mono { font-family: var(--font-mono); }
+
+/* Size utilities */
+.text-xs { font-size: var(--text-xs); }
+.text-sm { font-size: var(--text-sm); }
+.text-base { font-size: var(--text-base); }
+.text-md { font-size: var(--text-md); }
+.text-lg { font-size: var(--text-lg); }
+
+/* Background utilities */
+.bg-base { background-color: var(--surface-base); }
+.bg-elevated { background-color: var(--surface-elevated); }
+.bg-overlay { background-color: var(--surface-overlay); }
+.bg-subtle { background-color: var(--surface-subtle); }

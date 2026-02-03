@@ -29,6 +29,7 @@
   "permissions": [
     "storage",
     "tabs",
+    "tabGroups",
     "activeTab"
   ],
   "content_security_policy": {

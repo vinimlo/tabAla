@@ -74,8 +74,8 @@
       class="favicon"
       src={link.favicon || DEFAULT_FAVICON}
       alt=""
-      width="20"
-      height="20"
+      width="18"
+      height="18"
       on:error={handleImageError}
     />
   </div>
@@ -101,22 +101,20 @@
   .link-item {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-3);
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
     margin-bottom: var(--space-1);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    background: transparent;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
     position: relative;
   }
 
   .link-item:hover {
-    background: var(--bg-tertiary);
-    border-color: var(--border-hover);
-    transform: translateX(2px);
-    box-shadow: 0 0 20px var(--accent-soft);
+    background: var(--surface-elevated);
+    border-color: var(--border-subtle);
   }
 
   .link-item.pressed {
@@ -125,8 +123,12 @@
 
   .link-item:focus {
     outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 1px var(--accent-soft);
+  }
+
+  .link-item:focus-visible {
+    background: var(--surface-elevated);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-soft);
   }
 
   .favicon-wrapper {
@@ -136,12 +138,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg-primary);
+    background: var(--surface-overlay);
     border-radius: var(--radius-sm);
   }
 
   .favicon {
-    border-radius: 4px;
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
     object-fit: contain;
   }
 
@@ -154,22 +158,24 @@
   }
 
   .title {
-    font-size: 0.875rem;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
     font-weight: 500;
     color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    line-height: 1.3;
+    line-height: 1.25;
   }
 
   .url {
+    font-family: var(--font-mono);
     font-size: 0.6875rem;
     color: var(--text-tertiary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    letter-spacing: 0.01em;
+    letter-spacing: -0.01em;
   }
 
   .remove-btn {
@@ -186,25 +192,34 @@
     color: var(--text-tertiary);
     cursor: pointer;
     opacity: 0;
+    transform: translateX(4px);
     transition: all var(--duration-fast) var(--ease-out);
   }
 
   .link-item:hover .remove-btn {
     opacity: 1;
+    transform: translateX(0);
   }
 
   .remove-btn:hover {
-    background-color: var(--accent-soft);
-    color: var(--error);
+    background-color: rgba(212, 114, 106, 0.15);
+    color: var(--semantic-error);
   }
 
   .remove-btn:focus {
     opacity: 1;
+    transform: translateX(0);
     outline: none;
-    background-color: var(--accent-soft);
   }
 
   .remove-btn:focus-visible {
-    outline: 1px solid var(--accent);
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+    background-color: var(--accent-soft);
+  }
+
+  .remove-btn svg {
+    width: 12px;
+    height: 12px;
   }
 </style>

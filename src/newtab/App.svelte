@@ -265,13 +265,17 @@
     flex-direction: row;
     height: 100vh;
     width: 100vw;
-    background: var(--bg-primary);
+    background: var(--surface-base);
     opacity: 0;
-    transition: opacity var(--duration-normal) var(--ease-out);
+    transform: translateY(4px);
+    transition:
+      opacity var(--duration-slow) var(--ease-out),
+      transform var(--duration-slow) var(--ease-out);
   }
 
   .dashboard.mounted {
     opacity: 1;
+    transform: translateY(0);
   }
 
   .main-content {
@@ -280,6 +284,25 @@
     flex: 1;
     min-width: 0;
     height: 100%;
+    /* Stagger animation for children */
+    animation: contentFadeIn var(--duration-slow) var(--ease-out) forwards;
+    animation-delay: 100ms;
+    opacity: 0;
+  }
+
+  .dashboard.mounted .main-content {
+    opacity: 1;
+  }
+
+  @keyframes contentFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .loading {
@@ -287,21 +310,23 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: var(--space-3);
+    gap: var(--space-4);
     flex: 1;
     color: var(--text-secondary);
-    font-size: 0.875rem;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
     letter-spacing: 0.05em;
     text-transform: lowercase;
   }
 
   .spinner {
-    width: 32px;
-    height: 32px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-subtle);
+    border-top-color: var(--accent-primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+    box-shadow: 0 0 20px var(--accent-soft);
   }
 
   @keyframes spin {
@@ -315,31 +340,63 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: var(--space-4);
+    gap: var(--space-5);
     flex: 1;
     text-align: center;
+    padding: var(--space-6);
   }
 
   .error-state p {
-    color: var(--error);
+    color: var(--semantic-error);
     margin: 0;
-    font-size: 1rem;
+    font-family: var(--font-body);
+    font-size: var(--text-md);
+    font-weight: 500;
   }
 
   .error-state button {
-    padding: var(--space-2) var(--space-4);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg-secondary);
+    padding: var(--space-3) var(--space-5);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    background: var(--surface-elevated);
     color: var(--text-primary);
-    font-family: inherit;
-    font-size: 0.875rem;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
   }
 
   .error-state button:hover {
-    background-color: var(--bg-tertiary);
-    border-color: var(--border-hover);
+    background-color: var(--surface-overlay);
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
+  }
+
+  .error-state button:active {
+    transform: translateY(0);
+  }
+
+  .error-state button:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .dashboard {
+      transform: none;
+      transition: opacity var(--duration-normal) var(--ease-out);
+    }
+    .main-content {
+      animation: none;
+      opacity: 1;
+    }
+    .spinner {
+      animation: none;
+    }
+    .error-state button:hover {
+      transform: none;
+    }
   }
 </style>

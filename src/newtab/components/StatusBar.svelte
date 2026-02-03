@@ -16,9 +16,9 @@
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return 'agora';
-    if (minutes < 60) return `ha ${minutes} min`;
-    if (hours < 24) return `ha ${hours} hora${hours > 1 ? 's' : ''}`;
+    if (minutes < 1) { return 'agora'; }
+    if (minutes < 60) { return `ha ${minutes} min`; }
+    if (hours < 24) { return `ha ${hours} hora${hours > 1 ? 's' : ''}`; }
     return `ha ${days} dia${days > 1 ? 's' : ''}`;
   }
 </script>
@@ -64,31 +64,44 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-3) var(--space-5);
-    background: var(--bg-secondary);
-    border-top: 1px solid var(--border);
+    height: 44px;
+    padding: 0 var(--space-5);
+    background: var(--surface-elevated);
+    border-top: 1px solid var(--border-subtle);
     color: var(--text-tertiary);
-    font-size: 0.75rem;
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
   }
 
   .stats {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-4);
   }
 
   .stat {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-1);
+    gap: var(--space-2);
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .stat:hover {
+    color: var(--text-secondary);
   }
 
   .stat svg {
     opacity: 0.6;
+    transition: opacity var(--duration-fast) var(--ease-out);
+  }
+
+  .stat:hover svg {
+    opacity: 0.8;
   }
 
   .divider {
-    opacity: 0.4;
+    opacity: 0.3;
+    font-size: 0.5rem;
   }
 
   .last-saved {
@@ -97,9 +110,19 @@
   }
 
   .brand {
-    font-weight: 600;
-    letter-spacing: 0.15em;
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: var(--text-xs);
+    letter-spacing: 0.2em;
     text-transform: uppercase;
+    font-variant: small-caps;
+    color: var(--text-tertiary);
     opacity: 0.4;
+    transition: opacity var(--duration-fast) var(--ease-out);
+    cursor: default;
+  }
+
+  .brand:hover {
+    opacity: 0.6;
   }
 </style>

@@ -290,28 +290,33 @@
     min-width: var(--column-min-width);
     max-width: var(--column-max-width);
     max-height: calc(100vh - 140px);
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
     flex-shrink: 0;
+    transition: all var(--duration-fast) var(--ease-out);
   }
 
   .column.inbox {
-    border-color: var(--accent-soft);
+    border-left: 2px solid var(--accent-primary);
   }
 
   .column.tab-drag-over {
-    border-color: var(--accent);
+    border-color: var(--accent-primary);
     background: var(--accent-soft);
-    box-shadow: 0 0 0 2px var(--accent-glow);
+    box-shadow:
+      0 0 0 2px var(--accent-glow),
+      0 8px 24px rgba(232, 93, 66, 0.15);
+    transform: scale(1.01);
   }
 
   .column-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-3) var(--space-4);
-    border-bottom: 1px solid var(--border);
+    padding: var(--space-2) var(--space-3);
+    min-height: 46px;
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .column-title {
@@ -322,10 +327,10 @@
     margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-2));
     background: transparent;
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     color: var(--text-primary);
-    font-family: inherit;
-    font-size: 0.875rem;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
     font-weight: 600;
     cursor: default;
     transition: all var(--duration-fast) var(--ease-out);
@@ -336,33 +341,36 @@
   }
 
   .column-title.editable:hover {
-    background: var(--bg-tertiary);
+    background: var(--surface-overlay);
   }
 
   .link-count {
-    font-size: 0.6875rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
     font-weight: 500;
     color: var(--text-tertiary);
-    background: var(--bg-tertiary);
-    padding: 2px 6px;
+    background: var(--surface-subtle);
+    padding: 2px 8px;
     border-radius: var(--radius-full);
+    min-width: 24px;
+    text-align: center;
   }
 
   .edit-input {
     flex: 1;
-    padding: var(--space-1) var(--space-2);
-    background: var(--bg-tertiary);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius-sm);
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-overlay);
+    border: 1px solid var(--accent-primary);
+    border-radius: var(--radius-md);
     color: var(--text-primary);
-    font-family: inherit;
-    font-size: 0.875rem;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
     font-weight: 600;
   }
 
   .edit-input:focus {
     outline: none;
-    box-shadow: 0 0 0 2px var(--accent-soft);
+    box-shadow: 0 0 0 3px var(--accent-soft);
   }
 
   .column-menu {
@@ -373,20 +381,25 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     padding: 0;
     background: transparent;
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     color: var(--text-tertiary);
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
   }
 
   .btn-menu:hover {
-    background: var(--bg-tertiary);
+    background: var(--surface-overlay);
     color: var(--text-primary);
+  }
+
+  .btn-menu:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
   }
 
   .menu-dropdown {
@@ -394,33 +407,45 @@
     top: 100%;
     right: 0;
     margin-top: var(--space-1);
-    min-width: 160px;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
+    min-width: 180px;
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
     z-index: 100;
     overflow: hidden;
+    animation: menuSlide var(--duration-fast) var(--ease-spring);
+  }
+
+  @keyframes menuSlide {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 
   .menu-item {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--space-3);
     width: 100%;
-    padding: var(--space-2) var(--space-3);
+    padding: var(--space-3) var(--space-4);
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    font-family: inherit;
-    font-size: 0.8125rem;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
     text-align: left;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
   }
 
   .menu-item:hover {
-    background: var(--bg-tertiary);
+    background: var(--surface-overlay);
     color: var(--text-primary);
   }
 
@@ -430,13 +455,13 @@
   }
 
   .menu-item-danger:hover {
-    background: rgba(248, 113, 113, 0.1);
-    color: var(--error);
+    background: rgba(212, 114, 106, 0.12);
+    color: var(--semantic-error);
   }
 
   .column-content {
     flex: 1;
-    padding: var(--space-3);
+    padding: var(--space-2);
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
@@ -453,13 +478,17 @@
   }
 
   .column-content::-webkit-scrollbar-thumb {
-    background-color: var(--border);
+    background-color: var(--border-default);
     border-radius: var(--radius-full);
+  }
+
+  .column-content::-webkit-scrollbar-thumb:hover {
+    background-color: var(--border-strong);
   }
 
   :global(.column-content.drop-target) {
     background: var(--accent-soft);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
   }
 
   .empty-column {
@@ -469,7 +498,21 @@
     flex: 1;
     min-height: 80px;
     color: var(--text-tertiary);
-    font-size: 0.8125rem;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
     text-align: center;
+    border: 1px dashed var(--border-default);
+    border-radius: var(--radius-lg);
+    margin: var(--space-2);
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .column {
+      transition: none;
+    }
+    .menu-dropdown {
+      animation: none;
+    }
   }
 </style>

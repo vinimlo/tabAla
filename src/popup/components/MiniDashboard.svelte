@@ -7,7 +7,6 @@
   import { getCurrentTab, isSaveableUrl, openLinkInNewTab } from '@/lib/tabs';
 
   export let collections: Collection[] = [];
-  export let links: Link[] = [];
 
   const dispatch = createEventDispatcher<{
     openSettings: void;
@@ -38,7 +37,7 @@
   }
 
   async function handleSaveCurrentTab(): Promise<void> {
-    if (isSaving) return;
+    if (isSaving) { return; }
 
     isSaving = true;
 
@@ -76,7 +75,7 @@
   }
 
   function openDashboard(): void {
-    chrome.tabs.create({ url: 'chrome://newtab' });
+    void chrome.tabs.create({ url: 'chrome://newtab' });
   }
 
   async function handleOpenLink(link: Link): Promise<void> {
@@ -86,9 +85,9 @@
     }
   }
 
-  function openFilteredDashboard(collectionId: string): void {
+  function openFilteredDashboard(_collectionId: string): void {
     // Opens newtab - in future could pass filter param
-    chrome.tabs.create({ url: 'chrome://newtab' });
+    void chrome.tabs.create({ url: 'chrome://newtab' });
   }
 </script>
 
@@ -216,7 +215,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: var(--bg-primary);
+    background: var(--surface-base);
   }
 
   .header {
@@ -224,7 +223,7 @@
     align-items: center;
     justify-content: space-between;
     padding: var(--space-3) var(--space-4);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-default);
   }
 
   .logo {
@@ -250,13 +249,13 @@
   }
 
   .btn-settings:hover {
-    background: var(--bg-secondary);
+    background: var(--surface-elevated);
     color: var(--text-primary);
   }
 
   .save-section {
     padding: var(--space-4);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-default);
   }
 
   .save-card {
@@ -264,8 +263,8 @@
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-3);
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-default);
     border-radius: var(--radius-md);
   }
 
@@ -277,7 +276,7 @@
     height: 36px;
     background: var(--accent-soft);
     border-radius: var(--radius-sm);
-    color: var(--accent);
+    color: var(--accent-primary);
     flex-shrink: 0;
   }
 
@@ -297,8 +296,8 @@
 
   .collection-select {
     padding: var(--space-1) var(--space-2);
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
+    background: var(--surface-overlay);
+    border: 1px solid var(--border-default);
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
     font-family: inherit;
@@ -308,7 +307,7 @@
 
   .collection-select:focus {
     outline: none;
-    border-color: var(--accent);
+    border-color: var(--accent-primary);
   }
 
   .btn-save {
@@ -318,7 +317,7 @@
     width: 36px;
     height: 36px;
     padding: 0;
-    background: var(--accent);
+    background: var(--accent-primary);
     border: none;
     border-radius: var(--radius-sm);
     color: white;
@@ -377,7 +376,7 @@
   }
 
   .collection-header:hover {
-    background: var(--bg-secondary);
+    background: var(--surface-elevated);
     color: var(--text-primary);
   }
 
@@ -426,7 +425,7 @@
   }
 
   .link-item:hover {
-    background: var(--bg-secondary);
+    background: var(--surface-elevated);
     color: var(--text-primary);
   }
 
@@ -440,7 +439,7 @@
   .link-favicon-placeholder {
     width: 14px;
     height: 14px;
-    background: var(--bg-tertiary);
+    background: var(--surface-overlay);
     border-radius: 2px;
     flex-shrink: 0;
   }
@@ -465,7 +464,7 @@
     padding: var(--space-2);
     background: transparent;
     border: none;
-    color: var(--accent);
+    color: var(--accent-primary);
     font-family: inherit;
     font-size: 0.6875rem;
     font-weight: 500;
@@ -479,7 +478,7 @@
 
   .footer {
     padding: var(--space-3) var(--space-4);
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--border-default);
   }
 
   .btn-dashboard {
@@ -489,8 +488,8 @@
     gap: var(--space-2);
     width: 100%;
     padding: var(--space-3);
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-default);
     border-radius: var(--radius-md);
     color: var(--text-secondary);
     font-family: inherit;
@@ -501,8 +500,8 @@
   }
 
   .btn-dashboard:hover {
-    background: var(--bg-tertiary);
+    background: var(--surface-overlay);
     color: var(--text-primary);
-    border-color: var(--border-hover);
+    border-color: var(--border-strong);
   }
 </style>

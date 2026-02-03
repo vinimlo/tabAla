@@ -80,12 +80,27 @@
   .collection-selector[role="tablist"] {
     display: flex;
     gap: var(--space-1);
-    padding: var(--space-2) var(--space-3);
+    padding: 0;
     overflow-x: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    border-bottom: 1px solid var(--border);
     flex-shrink: 0;
+    position: relative;
+    /* Scroll indicators via gradient masks */
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      black 8px,
+      black calc(100% - 8px),
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      black 8px,
+      black calc(100% - 8px),
+      transparent 100%
+    );
   }
 
   .collection-selector::-webkit-scrollbar {
@@ -96,23 +111,24 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-1) var(--space-3);
+    padding: var(--space-2) var(--space-3);
     border: none;
     border-radius: var(--radius-full);
     background: transparent;
     color: var(--text-secondary);
-    font-family: inherit;
-    font-size: 0.75rem;
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
     font-weight: 500;
     letter-spacing: 0.02em;
     white-space: nowrap;
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
     flex-shrink: 0;
+    min-height: 32px;
   }
 
   .tab:hover {
-    background: var(--bg-secondary);
+    background: var(--surface-overlay);
     color: var(--text-primary);
   }
 
@@ -121,18 +137,18 @@
   }
 
   .tab:focus-visible {
-    outline: 1px solid var(--accent);
-    outline-offset: 1px;
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
   }
 
   .tab.active {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-primary);
   }
 
   .tab.active .tab-count {
-    color: var(--accent);
-    opacity: 0.8;
+    color: var(--accent-primary);
+    background: rgba(232, 93, 66, 0.15);
   }
 
   .tab.inbox .tab-name {
@@ -144,11 +160,16 @@
   }
 
   .tab-count {
+    font-family: var(--font-mono);
     font-size: 0.625rem;
     font-weight: 500;
     color: var(--text-tertiary);
     font-variant-numeric: tabular-nums;
-    min-width: 1ch;
+    min-width: 18px;
     text-align: center;
+    background: var(--surface-subtle);
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+    transition: all var(--duration-fast) var(--ease-out);
   }
 </style>

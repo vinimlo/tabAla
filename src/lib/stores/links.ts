@@ -29,6 +29,7 @@ interface LinksState {
   error: string | null;
   isAdding: boolean;
   isRemoving: Set<string>;
+  pendingLocalUpdate: boolean; // Flag to ignore storage.watch() during local operations
 }
 
 const INBOX_COLLECTION: Collection = {
@@ -37,6 +38,21 @@ const INBOX_COLLECTION: Collection = {
   order: 0,
   isDefault: true,
 };
+
+/**
+ * Remove duplicate links by ID, keeping the first occurrence.
+ * This prevents race conditions from creating duplicate entries.
+ */
+function deduplicateLinks(links: Link[]): Link[] {
+  const seen = new Set<string>();
+  return links.filter((link) => {
+    if (seen.has(link.id)) {
+      return false;
+    }
+    seen.add(link.id);
+    return true;
+  });
+}
 
 function createLinksStore(): Writable<LinksState> & {
   load: () => Promise<void>;
@@ -57,16 +73,24 @@ function createLinksStore(): Writable<LinksState> & {
     error: null,
     isAdding: false,
     isRemoving: new Set(),
+    pendingLocalUpdate: false,
   });
 
   // Watch for storage changes from other contexts (popup <-> newtab)
   storage.watch((changes) => {
     if (changes.links?.newValue || changes.collections?.newValue) {
-      update((state) => ({
-        ...state,
-        links: changes.links?.newValue as Link[] ?? state.links,
-        collections: changes.collections?.newValue as Collection[] ?? state.collections,
-      }));
+      update((state) => {
+        // Ignore storage updates triggered by our own local operations
+        if (state.pendingLocalUpdate) {
+          return state;
+        }
+        const newLinks = (changes.links?.newValue as Link[]) ?? state.links;
+        return {
+          ...state,
+          links: deduplicateLinks(newLinks),
+          collections: (changes.collections?.newValue as Collection[]) ?? state.collections,
+        };
+      });
     }
   });
 
@@ -75,11 +99,12 @@ function createLinksStore(): Writable<LinksState> & {
 
     try {
       await initializeInbox();
-      const [links, collections] = await Promise.all([getLinks(), getCollections()]);
+      const [linksData, collections] = await Promise.all([getLinks(), getCollections()]);
+      const links = deduplicateLinks(linksData.sort((a, b) => b.createdAt - a.createdAt));
 
       update((state) => ({
         ...state,
-        links: links.sort((a, b) => b.createdAt - a.createdAt),
+        links,
         collections,
         loading: false,
         error: null,
@@ -114,6 +139,7 @@ function createLinksStore(): Writable<LinksState> & {
         ...state,
         links: linksToSave,
         isAdding: true,
+        pendingLocalUpdate: true, // Prevent storage.watch from duplicating
       };
     });
 
@@ -126,7 +152,11 @@ function createLinksStore(): Writable<LinksState> & {
         error: 'Failed to save link',
       }));
     } finally {
-      update((state) => ({ ...state, isAdding: false }));
+      update((state) => ({
+        ...state,
+        isAdding: false,
+        pendingLocalUpdate: false, // Allow storage.watch again
+      }));
     }
   }
 
@@ -153,6 +183,7 @@ function createLinksStore(): Writable<LinksState> & {
         ...state,
         links: linksToSave,
         isRemoving: newIsRemoving,
+        pendingLocalUpdate: true, // Prevent storage.watch from duplicating
       };
     });
 
@@ -170,7 +201,11 @@ function createLinksStore(): Writable<LinksState> & {
       update((state) => {
         const newIsRemoving = new Set(state.isRemoving);
         newIsRemoving.delete(id);
-        return { ...state, isRemoving: newIsRemoving };
+        return {
+          ...state,
+          isRemoving: newIsRemoving,
+          pendingLocalUpdate: false, // Allow storage.watch again
+        };
       });
     }
   }
@@ -186,6 +221,7 @@ function createLinksStore(): Writable<LinksState> & {
       return {
         ...state,
         links: updatedLinks,
+        pendingLocalUpdate: true, // Prevent storage.watch from duplicating
       };
     });
 
@@ -203,6 +239,11 @@ function createLinksStore(): Writable<LinksState> & {
         ...state,
         links: previousLinks,
         error: 'Erro ao mover link',
+      }));
+    } finally {
+      update((state) => ({
+        ...state,
+        pendingLocalUpdate: false, // Allow storage.watch again
       }));
     }
   }
@@ -226,6 +267,11 @@ function createLinksStore(): Writable<LinksState> & {
   }
 
   async function addCollection(name: string): Promise<Collection> {
+    update((state) => ({
+      ...state,
+      pendingLocalUpdate: true,
+    }));
+
     try {
       const newCollection = await storageCreateCollection({ name });
 
@@ -239,6 +285,11 @@ function createLinksStore(): Writable<LinksState> & {
       const message = error instanceof Error ? error.message : 'Failed to save collection';
       update((state) => ({ ...state, error: message }));
       throw error;
+    } finally {
+      update((state) => ({
+        ...state,
+        pendingLocalUpdate: false,
+      }));
     }
   }
 
@@ -259,6 +310,7 @@ function createLinksStore(): Writable<LinksState> & {
         links: state.links.map((l) =>
           l.collectionId === id ? { ...l, collectionId: INBOX_COLLECTION_ID } : l
         ),
+        pendingLocalUpdate: true, // Prevent storage.watch from duplicating
       };
     });
 
@@ -270,6 +322,11 @@ function createLinksStore(): Writable<LinksState> & {
         links: previousLinks,
         collections: previousCollections,
         error: 'Failed to remove collection',
+      }));
+    } finally {
+      update((state) => ({
+        ...state,
+        pendingLocalUpdate: false, // Allow storage.watch again
       }));
     }
   }
@@ -285,6 +342,7 @@ function createLinksStore(): Writable<LinksState> & {
       return {
         ...state,
         collections: updatedCollections,
+        pendingLocalUpdate: true,
       };
     });
 
@@ -303,6 +361,11 @@ function createLinksStore(): Writable<LinksState> & {
         collections: previousCollections,
         error: 'Erro ao renomear coleção',
       }));
+    } finally {
+      update((state) => ({
+        ...state,
+        pendingLocalUpdate: false,
+      }));
     }
   }
 
@@ -314,6 +377,7 @@ function createLinksStore(): Writable<LinksState> & {
       return {
         ...state,
         collections: orderedCollections,
+        pendingLocalUpdate: true,
       };
     });
 
@@ -331,6 +395,11 @@ function createLinksStore(): Writable<LinksState> & {
         ...state,
         collections: previousCollections,
         error: 'Erro ao reordenar coleções',
+      }));
+    } finally {
+      update((state) => ({
+        ...state,
+        pendingLocalUpdate: false,
       }));
     }
   }
@@ -356,12 +425,19 @@ export const linksStore = createLinksStore();
 
 export const linksByCollection = derived(linksStore, ($store) => {
   const grouped = new Map<string, Link[]>();
+  const seenIds = new Set<string>();
 
   for (const collection of $store.collections) {
     grouped.set(collection.id, []);
   }
 
   for (const link of $store.links) {
+    // Skip duplicate links (same ID already processed)
+    if (seenIds.has(link.id)) {
+      continue;
+    }
+    seenIds.add(link.id);
+
     let links = grouped.get(link.collectionId);
     if (!links) {
       links = grouped.get(INBOX_COLLECTION_ID);

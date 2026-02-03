@@ -162,61 +162,73 @@
 
 <style>
   .collection-group {
-    margin-bottom: var(--space-1);
+    margin-bottom: var(--space-2);
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
   }
 
   .header {
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
+    padding: var(--space-3) var(--space-4);
+    min-height: 52px;
     cursor: pointer;
     user-select: none;
     transition: background-color var(--duration-fast) var(--ease-out);
   }
 
   .header:hover {
-    background-color: var(--bg-secondary);
+    background-color: var(--surface-overlay);
   }
 
   .header:focus {
     outline: none;
-    background-color: var(--bg-secondary);
+    background-color: var(--surface-overlay);
   }
 
   .header:focus-visible {
-    outline: 1px solid var(--accent);
-    outline-offset: -1px;
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
   }
 
   .dot {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     border-radius: var(--radius-full);
     background-color: var(--text-tertiary);
     transition: all var(--duration-fast) var(--ease-out);
     flex-shrink: 0;
+    transform: rotate(0deg);
   }
 
   .dot.expanded {
-    background-color: var(--accent);
-    box-shadow: 0 0 8px var(--accent-glow);
+    background-color: var(--accent-primary);
+    box-shadow: 0 0 10px var(--accent-glow);
+    transform: rotate(90deg);
   }
 
   .count {
-    font-size: 0.6875rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
     font-weight: 500;
     color: var(--text-tertiary);
     font-variant-numeric: tabular-nums;
+    background: var(--surface-subtle);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    min-width: 24px;
+    text-align: center;
   }
 
   .delete-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     padding: 0;
     background: transparent;
     border: none;
@@ -224,26 +236,30 @@
     color: var(--text-tertiary);
     cursor: pointer;
     opacity: 0;
+    transform: translateX(4px);
     transition: all var(--duration-fast) var(--ease-out);
     flex-shrink: 0;
   }
 
   .header:hover .delete-btn {
     opacity: 1;
+    transform: translateX(0);
   }
 
   .delete-btn:hover {
-    color: var(--error);
-    background-color: rgba(248, 113, 113, 0.1);
+    color: var(--semantic-error);
+    background-color: rgba(212, 114, 106, 0.12);
   }
 
   .delete-btn:focus {
     outline: none;
     opacity: 1;
+    transform: translateX(0);
   }
 
   .delete-btn:focus-visible {
-    outline: 1px solid var(--accent);
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
   }
 
   .delete-btn:disabled {
@@ -253,13 +269,14 @@
 
   .delete-btn.deleting {
     opacity: 1;
+    transform: translateX(0);
   }
 
   .delete-btn .spinner {
-    width: 12px;
-    height: 12px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border-subtle);
+    border-top-color: var(--accent-primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -271,19 +288,33 @@
   }
 
   .links {
-    padding-left: var(--space-4);
-    padding-top: var(--space-1);
+    padding: 0 var(--space-3) var(--space-3) var(--space-3);
+    border-top: 1px solid var(--border-subtle);
   }
 
   .link-wrapper {
     animation: linkFadeIn var(--duration-normal) var(--ease-out) forwards;
     animation-delay: var(--link-delay, 0ms);
     opacity: 0;
+    transform: translateY(4px);
   }
 
   @keyframes linkFadeIn {
     to {
       opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .dot {
+      transition: none;
+    }
+    .link-wrapper {
+      animation: none;
+      opacity: 1;
+      transform: none;
     }
   }
 </style>

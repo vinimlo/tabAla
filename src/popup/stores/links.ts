@@ -14,6 +14,7 @@ import {
   removeCollection as storageRemoveCollection,
   createCollection as storageCreateCollection,
   validateCollectionName,
+  renameCollection as storageRenameCollection,
   type ValidationResult,
 } from '@/lib/storage';
 
@@ -41,6 +42,7 @@ function createLinksStore(): Writable<LinksState> & {
   removeCollection: (id: string) => Promise<void>;
   getCollectionNames: () => string[];
   validateCollection: (name: string) => ValidationResult;
+  renameCollection: (id: string, newName: string) => Promise<void>;
 } {
   const { subscribe, set, update } = writable<LinksState>({
     links: [],
@@ -223,6 +225,38 @@ function createLinksStore(): Writable<LinksState> & {
     }
   }
 
+  async function renameCollection(id: string, newName: string): Promise<void> {
+    let previousCollections: Collection[] = [];
+
+    update((state) => {
+      previousCollections = state.collections;
+      const updatedCollections = state.collections.map((c) =>
+        c.id === id ? { ...c, name: newName } : c
+      );
+      return {
+        ...state,
+        collections: updatedCollections,
+      };
+    });
+
+    try {
+      const result = await storageRenameCollection(id, newName);
+      if (!result.success) {
+        update((state) => ({
+          ...state,
+          collections: previousCollections,
+          error: result.error ?? 'Erro ao renomear coleção',
+        }));
+      }
+    } catch (error) {
+      update((state) => ({
+        ...state,
+        collections: previousCollections,
+        error: 'Erro ao renomear coleção',
+      }));
+    }
+  }
+
   return {
     subscribe,
     set,
@@ -234,6 +268,7 @@ function createLinksStore(): Writable<LinksState> & {
     removeCollection,
     getCollectionNames,
     validateCollection,
+    renameCollection,
   };
 }
 

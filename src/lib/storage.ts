@@ -562,6 +562,62 @@ export interface RemoveLinkResult {
  * @param linkId - The ID of the link to remove
  * @returns Result object indicating success/failure and whether collection was removed
  */
+/**
+ * Result of a renameCollection operation.
+ */
+export interface RenameCollectionResult {
+  /** Whether the collection was successfully renamed */
+  success: boolean;
+  /** Error message if operation failed */
+  error?: string;
+}
+
+/**
+ * Renames a collection in storage.
+ *
+ * Performs an atomic read-modify-write operation to update the collection name.
+ * The new name should be trimmed before calling this function.
+ *
+ * @param collectionId - The ID of the collection to rename
+ * @param newName - The new name for the collection (should be pre-trimmed)
+ * @returns Result object indicating success/failure
+ *
+ * @example
+ * ```typescript
+ * const result = await renameCollection('col-123', 'New Name');
+ * if (!result.success) {
+ *   console.error(result.error);
+ * }
+ * ```
+ */
+export async function renameCollection(
+  collectionId: string,
+  newName: string
+): Promise<RenameCollectionResult> {
+  try {
+    const collections = await getCollections();
+    const collectionIndex = collections.findIndex((c) => c.id === collectionId);
+
+    if (collectionIndex === -1) {
+      return { success: false, error: 'Coleção não encontrada' };
+    }
+
+    const updatedCollections = collections.map((c) =>
+      c.id === collectionId ? { ...c, name: newName } : c
+    );
+
+    await saveCollections(updatedCollections);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to rename collection:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao renomear coleção',
+    };
+  }
+}
+
 export async function removeLink(linkId: string): Promise<RemoveLinkResult> {
   try {
     const links = await getLinks();

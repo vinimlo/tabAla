@@ -5,6 +5,7 @@
   import { INBOX_COLLECTION_ID } from '@/lib/types';
   import { openLinkInNewTab, getCurrentTab, isSaveableUrl } from '@/lib/tabs';
   import { deleteCollection } from '@/lib/storage';
+  import { validateCollectionName } from '@/lib/validation';
   import { linksStore, linksByCollection } from '@stores/links';
   import {
     collectionFilterStore,
@@ -40,6 +41,9 @@
   }
   let collectionToDelete: CollectionToDelete | null = null;
   let deletingCollectionId: string | null = null;
+  let renameErrors: Map<string, string | null> = new Map();
+  let renamingCollections: Set<string> = new Set();
+  const collectionGroupRefs: Record<string, CollectionGroup> = {};
 
   $: loading = $linksStore.loading;
   $: error = $linksStore.error;
@@ -252,7 +256,7 @@
     successMessage = null;
   }
 
-function openCreateCollectionModal(): void {
+  function openCreateCollectionModal(): void {
     showCreateCollectionModal = true;
   }
 
@@ -325,6 +329,41 @@ function openCreateCollectionModal(): void {
   function handleCancelDeleteCollection(): void {
     collectionToDelete = null;
   }
+
+  async function handleRename(
+    event: CustomEvent<{ id: string; newName: string }>
+  ): Promise<void> {
+    const { id, newName } = event.detail;
+    const trimmedName = newName.trim();
+
+    const validation = validateCollectionName(trimmedName, id, collections);
+    if (!validation.valid) {
+      renameErrors = new Map(renameErrors.set(id, validation.error ?? null));
+      return;
+    }
+
+    renameErrors = new Map(renameErrors.set(id, null));
+    renamingCollections = new Set(renamingCollections.add(id));
+
+    try {
+      await linksStore.renameCollection(id, trimmedName);
+      collectionGroupRefs[id]?.exitEditMode();
+    } catch (err) {
+      console.error('Failed to rename collection:', err);
+      renameErrors = new Map(
+        renameErrors.set(id, 'Erro ao renomear. Tente novamente.')
+      );
+    } finally {
+      renamingCollections = new Set(
+        [...renamingCollections].filter((cid) => cid !== id)
+      );
+    }
+  }
+
+  function handleCancelRename(event: CustomEvent<string>): void {
+    const id = event.detail;
+    renameErrors = new Map(renameErrors.set(id, null));
+  }
 </script>
 
 <main class="app" class:mounted>
@@ -392,14 +431,19 @@ function openCreateCollectionModal(): void {
         {#each visibleCollections as { collection, links }, i (collection.id)}
           <div class="collection-wrapper" style="--delay: {i * 50}ms">
             <CollectionGroup
+              bind:this={collectionGroupRefs[collection.id]}
               {collection}
               {links}
               expanded={expandedCollections.has(collection.id)}
               isDeleting={deletingCollectionId === collection.id}
+              renameError={renameErrors.get(collection.id) ?? null}
+              isRenaming={renamingCollections.has(collection.id)}
               on:toggle={handleToggle}
               on:open={handleOpenLink}
               on:remove={handleRemoveLink}
               on:deleteCollection={handleDeleteCollection}
+              on:rename={handleRename}
+              on:cancelRename={handleCancelRename}
             />
           </div>
         {/each}

@@ -4,6 +4,7 @@
   import type { Link } from '@/lib/types';
   import { INBOX_COLLECTION_ID } from '@/lib/types';
   import { openLinkInNewTab, getCurrentTab, isSaveableUrl } from '@/lib/tabs';
+  import { deleteCollection } from '@/lib/storage';
   import { linksStore, linksByCollection } from '@stores/links';
   import {
     collectionFilterStore,
@@ -15,6 +16,7 @@
   import CollectionSelector from '@components/CollectionSelector.svelte';
   import EmptyState from '@components/EmptyState.svelte';
   import ConfirmDialog from './components/ConfirmDialog.svelte';
+  import ConfirmDeleteDialog from './components/ConfirmDeleteDialog.svelte';
   import Toast from './components/Toast.svelte';
   import SaveButton from './components/SaveButton.svelte';
 
@@ -28,6 +30,14 @@
   let successMessage: string | null = null;
   let isSaving = false;
   let mounted = false;
+
+  interface CollectionToDelete {
+    id: string;
+    name: string;
+    linkCount: number;
+  }
+  let collectionToDelete: CollectionToDelete | null = null;
+  let deletingCollectionId: string | null = null;
 
   $: loading = $linksStore.loading;
   $: error = $linksStore.error;
@@ -239,6 +249,56 @@
   function clearSuccess(): void {
     successMessage = null;
   }
+
+  function handleDeleteCollection(
+    event: CustomEvent<{ id: string; name: string; linkCount: number }>
+  ): void {
+    collectionToDelete = event.detail;
+  }
+
+  async function handleConfirmDeleteCollection(): Promise<void> {
+    if (!collectionToDelete) {
+      return;
+    }
+
+    const { id, name } = collectionToDelete;
+    collectionToDelete = null;
+    deletingCollectionId = id;
+
+    try {
+      const result = await deleteCollection(id);
+
+      if (result.success) {
+        await linksStore.load();
+
+        if (result.movedCount > 0) {
+          successMessage = `Coleção ${name} excluída. ${result.movedCount} ${result.movedCount === 1 ? 'link movido' : 'links movidos'} para Inbox`;
+        } else {
+          successMessage = `Coleção ${name} excluída`;
+        }
+
+        if (expandedCollections.has(id)) {
+          expandedCollections.delete(id);
+          expandedCollections = expandedCollections;
+        }
+        if (!expandedCollections.has(INBOX_COLLECTION_ID)) {
+          expandedCollections.add(INBOX_COLLECTION_ID);
+          expandedCollections = expandedCollections;
+        }
+      } else {
+        errorMessage = result.error ?? 'Erro ao excluir coleção. Tente novamente.';
+      }
+    } catch (err) {
+      console.error('Failed to delete collection:', err);
+      errorMessage = 'Erro ao excluir coleção. Tente novamente.';
+    } finally {
+      deletingCollectionId = null;
+    }
+  }
+
+  function handleCancelDeleteCollection(): void {
+    collectionToDelete = null;
+  }
 </script>
 
 <main class="app" class:mounted>
@@ -286,9 +346,11 @@
               {collection}
               {links}
               expanded={expandedCollections.has(collection.id)}
+              isDeleting={deletingCollectionId === collection.id}
               on:toggle={handleToggle}
               on:open={handleOpenLink}
               on:remove={handleRemoveLink}
+              on:deleteCollection={handleDeleteCollection}
             />
           </div>
         {/each}
@@ -318,6 +380,15 @@
     cancelText="Cancelar"
     on:confirm={handleConfirmRemove}
     on:cancel={handleCancelRemove}
+  />
+{/if}
+
+{#if collectionToDelete}
+  <ConfirmDeleteDialog
+    collectionName={collectionToDelete.name}
+    linkCount={collectionToDelete.linkCount}
+    on:confirm={handleConfirmDeleteCollection}
+    on:cancel={handleCancelDeleteCollection}
   />
 {/if}
 

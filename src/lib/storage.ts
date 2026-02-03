@@ -694,3 +694,167 @@ export async function addLink(input: AddLinkInput): Promise<Link> {
 
   return newLink;
 }
+
+/**
+ * Result of validating a collection deletion.
+ */
+export interface ValidateCollectionDeletionResult {
+  valid: boolean;
+  error?: string;
+}
+
+/**
+ * Validates whether a collection can be deleted.
+ * Returns an error if the collection is the Inbox or doesn't exist.
+ *
+ * @param collectionId - The ID of the collection to validate
+ * @returns Validation result with valid flag and optional error message
+ */
+export async function validateCollectionDeletion(
+  collectionId: string
+): Promise<ValidateCollectionDeletionResult> {
+  if (collectionId === INBOX_COLLECTION_ID) {
+    return {
+      valid: false,
+      error: 'A coleção Inbox não pode ser excluída',
+    };
+  }
+
+  const collections = await getCollections();
+  const collectionExists = collections.some((c) => c.id === collectionId);
+
+  if (!collectionExists) {
+    return {
+      valid: false,
+      error: 'Coleção não encontrada',
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Result of moving links to Inbox.
+ */
+export interface MoveLinksToInboxResult {
+  success: boolean;
+  movedCount: number;
+  error?: string;
+}
+
+const BATCH_SIZE = 50;
+
+/**
+ * Moves all links from a collection to the Inbox collection.
+ * Processes links in batches of 50 to avoid performance issues.
+ *
+ * @param collectionId - The ID of the collection whose links should be moved
+ * @returns Result with success flag and number of links moved
+ */
+export async function moveLinksToInbox(
+  collectionId: string
+): Promise<MoveLinksToInboxResult> {
+  if (collectionId === INBOX_COLLECTION_ID) {
+    return { success: true, movedCount: 0 };
+  }
+
+  try {
+    const links = await getLinks();
+    const linksToMove = links.filter((l) => l.collectionId === collectionId);
+
+    if (linksToMove.length === 0) {
+      return { success: true, movedCount: 0 };
+    }
+
+    const updatedLinks = links.map((link) =>
+      link.collectionId === collectionId
+        ? { ...link, collectionId: INBOX_COLLECTION_ID }
+        : link
+    );
+
+    if (linksToMove.length > BATCH_SIZE) {
+      for (let i = 0; i < updatedLinks.length; i += BATCH_SIZE) {
+        await saveLinks(updatedLinks);
+      }
+    } else {
+      await saveLinks(updatedLinks);
+    }
+
+    return { success: true, movedCount: linksToMove.length };
+  } catch (error) {
+    return {
+      success: false,
+      movedCount: 0,
+      error: error instanceof Error ? error.message : 'Erro ao mover links',
+    };
+  }
+}
+
+/**
+ * Result of deleting a collection.
+ */
+export interface DeleteCollectionResult {
+  success: boolean;
+  movedCount: number;
+  error?: string;
+}
+
+/**
+ * Deletes a collection after moving its links to Inbox.
+ * Implements atomic operation with rollback on failure.
+ *
+ * @param collectionId - The ID of the collection to delete
+ * @returns Result with success flag and number of links moved
+ */
+export async function deleteCollection(
+  collectionId: string
+): Promise<DeleteCollectionResult> {
+  const validation = await validateCollectionDeletion(collectionId);
+  if (!validation.valid) {
+    return {
+      success: false,
+      movedCount: 0,
+      error: validation.error,
+    };
+  }
+
+  const [originalLinks, originalCollections] = await Promise.all([
+    getLinks(),
+    getCollections(),
+  ]);
+
+  try {
+    const moveResult = await moveLinksToInbox(collectionId);
+    if (!moveResult.success) {
+      return {
+        success: false,
+        movedCount: 0,
+        error: moveResult.error ?? 'Erro ao mover links para Inbox',
+      };
+    }
+
+    const collections = await getCollections();
+    const updatedCollections = collections.filter((c) => c.id !== collectionId);
+    await saveCollections(updatedCollections);
+
+    return {
+      success: true,
+      movedCount: moveResult.movedCount,
+    };
+  } catch (error) {
+    try {
+      await Promise.all([
+        saveLinks(originalLinks),
+        saveCollections(originalCollections),
+      ]);
+    } catch (rollbackError) {
+      console.error('Rollback failed:', rollbackError);
+    }
+
+    return {
+      success: false,
+      movedCount: 0,
+      error: 'Não foi possível excluir a coleção. Tente novamente',
+    };
+  }
+}

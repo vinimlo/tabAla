@@ -1,10 +1,22 @@
 /**
- * Unit tests for storage module - removeLink functionality.
+ * Unit tests for storage module - removeLink, moveLink, settings functionality.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mockStorage } from '../setup';
-import { removeLink, getLinks, getCollections, saveLinks, saveCollections } from '@/lib/storage';
-import type { Link, Collection } from '@/lib/types';
+import {
+  removeLink,
+  getLinks,
+  getCollections,
+  saveLinks,
+  saveCollections,
+  moveLink,
+  updateCollectionOrder,
+  getSettings,
+  saveSettings,
+  updateSettings,
+} from '@/lib/storage';
+import type { Link, Collection, Settings } from '@/lib/types';
+import { DEFAULT_SETTINGS } from '@/lib/types';
 
 const createMockLink = (overrides: Partial<Link> = {}): Link => ({
   id: 'link-1',
@@ -157,5 +169,107 @@ describe('removeLink', () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('Storage error');
+  });
+});
+
+describe('moveLink', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
+  });
+
+  it('should successfully move a link to another collection', async () => {
+    const collection1 = createMockCollection({ id: 'col-1' });
+    const collection2 = createMockCollection({ id: 'col-2', order: 1 });
+    const link = createMockLink({ id: 'link-1', collectionId: 'col-1' });
+    await saveLinks([link]);
+    await saveCollections([collection1, collection2]);
+
+    const result = await moveLink('link-1', 'col-2');
+
+    expect(result.success).toBe(true);
+
+    const links = await getLinks();
+    expect(links[0].collectionId).toBe('col-2');
+  });
+
+  it('should return error when link does not exist', async () => {
+    const collection = createMockCollection({ id: 'col-1' });
+    await saveCollections([collection]);
+
+    const result = await moveLink('non-existent', 'col-1');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Link não encontrado');
+  });
+
+  it('should return error when target collection does not exist', async () => {
+    const link = createMockLink({ id: 'link-1', collectionId: 'col-1' });
+    const collection = createMockCollection({ id: 'col-1' });
+    await saveLinks([link]);
+    await saveCollections([collection]);
+
+    const result = await moveLink('link-1', 'non-existent');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Coleção de destino não encontrada');
+  });
+});
+
+describe('updateCollectionOrder', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
+  });
+
+  it('should update collection order', async () => {
+    const collection1 = createMockCollection({ id: 'col-1', order: 0 });
+    const collection2 = createMockCollection({ id: 'col-2', order: 1 });
+    await saveCollections([collection1, collection2]);
+
+    // Reverse the order
+    const result = await updateCollectionOrder([collection2, collection1]);
+
+    expect(result.success).toBe(true);
+
+    const collections = await getCollections();
+    const col1 = collections.find((c) => c.id === 'col-1');
+    const col2 = collections.find((c) => c.id === 'col-2');
+    expect(col2!.order).toBe(0);
+    expect(col1!.order).toBe(1);
+  });
+});
+
+describe('settings', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
+  });
+
+  it('should return default settings when none exist', async () => {
+    const settings = await getSettings();
+
+    expect(settings).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('should save and retrieve settings', async () => {
+    const customSettings: Settings = {
+      newtabEnabled: false,
+      onboardingCompleted: true,
+    };
+
+    await saveSettings(customSettings);
+    const retrieved = await getSettings();
+
+    expect(retrieved).toEqual(customSettings);
+  });
+
+  it('should update specific settings fields', async () => {
+    await saveSettings({ newtabEnabled: true, onboardingCompleted: false });
+
+    const updated = await updateSettings({ onboardingCompleted: true });
+
+    expect(updated.newtabEnabled).toBe(true);
+    expect(updated.onboardingCompleted).toBe(true);
   });
 });

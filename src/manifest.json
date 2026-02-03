@@ -23,6 +23,9 @@
     "service_worker": "src/background/service-worker.ts",
     "type": "module"
   },
+  "chrome_url_overrides": {
+    "newtab": "src/newtab/index.html"
+  },
   "permissions": [
     "storage",
     "tabs",

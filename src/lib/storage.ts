@@ -23,8 +23,9 @@
  * ```
  */
 
-import type { Link, Collection, InboxCollection } from './types';
-import { INBOX_COLLECTION_ID, INBOX_COLLECTION_NAME } from './types';
+import type { Link, Collection, InboxCollection, Settings } from './types';
+import { INBOX_COLLECTION_ID, INBOX_COLLECTION_NAME, DEFAULT_SETTINGS } from './types';
+import { validateCollectionName } from './validation';
 
 /**
  * Represents a storage change for a single key.
@@ -752,49 +753,11 @@ export async function addLink(input: AddLinkInput): Promise<Link> {
 }
 
 /**
- * Result of collection name validation.
- */
-export interface ValidationResult {
-  valid: boolean;
-  error?: string;
-}
-
-/**
  * Result of validating a collection deletion.
  */
 export interface ValidateCollectionDeletionResult {
   valid: boolean;
   error?: string;
-}
-
-/**
- * Validates a collection name against business rules.
- * Checks for empty names and case-insensitive duplicates.
- *
- * @param name - The collection name to validate
- * @param existingCollections - Array of existing collections for duplicate check
- * @returns Validation result with valid flag and optional error message
- */
-export function validateCollectionName(
-  name: string,
-  existingCollections: Collection[]
-): ValidationResult {
-  const trimmedName = name.trim();
-
-  if (trimmedName.length === 0) {
-    return { valid: false, error: 'Nome da coleção não pode estar vazio' };
-  }
-
-  const nameLower = trimmedName.toLowerCase();
-  const isDuplicate = existingCollections.some(
-    (collection) => collection.name.toLowerCase() === nameLower
-  );
-
-  if (isDuplicate) {
-    return { valid: false, error: 'Já existe uma coleção com este nome' };
-  }
-
-  return { valid: true };
 }
 
 /**
@@ -847,7 +810,7 @@ export async function createCollection(input: CreateCollectionInput): Promise<Co
   const trimmedName = input.name.trim();
   const existingCollections = await getCollections();
 
-  const validation = validateCollectionName(trimmedName, existingCollections);
+  const validation = validateCollectionName(trimmedName, '', existingCollections);
   if (!validation.valid) {
     throw new StorageError(
       validation.error ?? 'Invalid collection name',
@@ -880,11 +843,8 @@ export interface MoveLinksToInboxResult {
   error?: string;
 }
 
-const BATCH_SIZE = 50;
-
 /**
  * Moves all links from a collection to the Inbox collection.
- * Processes links in batches of 50 to avoid performance issues.
  *
  * @param collectionId - The ID of the collection whose links should be moved
  * @returns Result with success flag and number of links moved
@@ -910,13 +870,7 @@ export async function moveLinksToInbox(
         : link
     );
 
-    if (linksToMove.length > BATCH_SIZE) {
-      for (let i = 0; i < updatedLinks.length; i += BATCH_SIZE) {
-        await saveLinks(updatedLinks);
-      }
-    } else {
-      await saveLinks(updatedLinks);
-    }
+    await saveLinks(updatedLinks);
 
     return { success: true, movedCount: linksToMove.length };
   } catch (error) {
@@ -993,6 +947,129 @@ export async function deleteCollection(
       success: false,
       movedCount: 0,
       error: 'Não foi possível excluir a coleção. Tente novamente',
+    };
+  }
+}
+
+// Settings functions
+
+/**
+ * Retrieves user settings from storage.
+ * Returns default settings if none exist.
+ *
+ * @returns The user's settings
+ */
+export async function getSettings(): Promise<Settings> {
+  const settings = await storage.get<Settings>('settings');
+  return settings ?? { ...DEFAULT_SETTINGS };
+}
+
+/**
+ * Saves user settings to storage.
+ *
+ * @param settings - The settings to save
+ */
+export async function saveSettings(settings: Settings): Promise<void> {
+  await storage.set('settings', settings);
+}
+
+/**
+ * Updates specific settings fields without overwriting others.
+ *
+ * @param updates - Partial settings to update
+ * @returns The updated settings
+ */
+export async function updateSettings(updates: Partial<Settings>): Promise<Settings> {
+  const current = await getSettings();
+  const updated = { ...current, ...updates };
+  await saveSettings(updated);
+  return updated;
+}
+
+// Link management functions for Kanban
+
+/**
+ * Result of moving a link operation.
+ */
+export interface MoveLinkResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Moves a link to a different collection.
+ *
+ * @param linkId - The ID of the link to move
+ * @param toCollectionId - The ID of the target collection
+ * @returns Result indicating success or failure
+ */
+export async function moveLink(
+  linkId: string,
+  toCollectionId: string
+): Promise<MoveLinkResult> {
+  try {
+    const links = await getLinks();
+    const linkIndex = links.findIndex((link) => link.id === linkId);
+
+    if (linkIndex === -1) {
+      return { success: false, error: 'Link não encontrado' };
+    }
+
+    const collections = await getCollections();
+    const targetExists = collections.some((c) => c.id === toCollectionId);
+
+    if (!targetExists) {
+      return { success: false, error: 'Coleção de destino não encontrada' };
+    }
+
+    const updatedLinks = links.map((link) =>
+      link.id === linkId ? { ...link, collectionId: toCollectionId } : link
+    );
+
+    await saveLinks(updatedLinks);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to move link:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao mover link',
+    };
+  }
+}
+
+/**
+ * Result of updating collection order.
+ */
+export interface UpdateCollectionOrderResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Updates the order of collections.
+ * The order is determined by the position in the array.
+ *
+ * @param orderedCollections - Collections in desired order
+ * @returns Result indicating success or failure
+ */
+export async function updateCollectionOrder(
+  orderedCollections: Collection[]
+): Promise<UpdateCollectionOrderResult> {
+  try {
+    const updatedCollections = orderedCollections.map((collection, index) => ({
+      ...collection,
+      order: index,
+    }));
+
+    await saveCollections(updatedCollections);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to update collection order:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao reordenar coleções',
     };
   }
 }

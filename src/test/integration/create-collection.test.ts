@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { get } from 'svelte/store';
 import { linksStore } from '@/popup/stores/links';
 import * as storage from '@/lib/storage';
+import { COLLECTION_NAME_ERRORS } from '@/lib/validation';
 import { mockStorage } from '../setup';
 import type { Collection } from '@/lib/types';
 
@@ -82,7 +83,7 @@ describe('Create Collection Integration', () => {
   describe('validation flow', () => {
     it('should reject empty name', async () => {
       await expect(linksStore.addCollection('')).rejects.toThrow(
-        'Nome da coleção não pode estar vazio'
+        COLLECTION_NAME_ERRORS.EMPTY
       );
 
       const state = get(linksStore);
@@ -93,7 +94,7 @@ describe('Create Collection Integration', () => {
       await linksStore.addCollection('Duplicada');
 
       await expect(linksStore.addCollection('Duplicada')).rejects.toThrow(
-        'Já existe uma coleção com este nome'
+        COLLECTION_NAME_ERRORS.DUPLICATE
       );
 
       const state = get(linksStore);
@@ -104,7 +105,7 @@ describe('Create Collection Integration', () => {
       await linksStore.addCollection('CaseSensitive');
 
       await expect(linksStore.addCollection('casesensitive')).rejects.toThrow(
-        'Já existe uma coleção com este nome'
+        COLLECTION_NAME_ERRORS.DUPLICATE
       );
     });
 
@@ -144,7 +145,7 @@ describe('Create Collection Integration', () => {
 
       const invalidResult = linksStore.validateCollection('Existente');
       expect(invalidResult.valid).toBe(false);
-      expect(invalidResult.error).toBe('Já existe uma coleção com este nome');
+      expect(invalidResult.error).toBe(COLLECTION_NAME_ERRORS.DUPLICATE);
     });
   });
 

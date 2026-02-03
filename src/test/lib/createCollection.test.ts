@@ -9,6 +9,7 @@ import {
   saveCollections,
   StorageError,
 } from '@/lib/storage';
+import { COLLECTION_NAME_ERRORS } from '@/lib/validation';
 import type { Collection } from '@/lib/types';
 
 const createMockCollection = (overrides: Partial<Collection> = {}): Collection => ({
@@ -92,7 +93,7 @@ describe('createCollection', () => {
     it('should throw StorageError for empty name', async () => {
       await expect(createCollection({ name: '' })).rejects.toThrow(StorageError);
       await expect(createCollection({ name: '' })).rejects.toThrow(
-        'Nome da coleção não pode estar vazio'
+        COLLECTION_NAME_ERRORS.EMPTY
       );
     });
 
@@ -105,7 +106,7 @@ describe('createCollection', () => {
 
       await expect(createCollection({ name: 'Duplicada' })).rejects.toThrow(StorageError);
       await expect(createCollection({ name: 'Duplicada' })).rejects.toThrow(
-        'Já existe uma coleção com este nome'
+        COLLECTION_NAME_ERRORS.DUPLICATE
       );
     });
 

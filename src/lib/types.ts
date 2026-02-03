@@ -251,3 +251,29 @@ export function isValidUrl(url: string): boolean {
     return false;
   }
 }
+
+/**
+ * Settings for the TabAla extension.
+ * Controls user preferences like newtab override behavior.
+ */
+export interface Settings {
+  /**
+   * Whether to use the TabAla dashboard as the new tab page.
+   * When enabled, popup shows mini-dashboard mode.
+   */
+  newtabEnabled: boolean;
+
+  /**
+   * Whether the user has completed the onboarding flow.
+   * Used to show the onboarding modal on first access.
+   */
+  onboardingCompleted: boolean;
+}
+
+/**
+ * Default settings for new installations.
+ */
+export const DEFAULT_SETTINGS: Settings = {
+  newtabEnabled: true,
+  onboardingCompleted: false,
+};

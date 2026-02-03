@@ -6,6 +6,7 @@
   import { openLinkInNewTab, getCurrentTab, isSaveableUrl } from '@/lib/tabs';
   import { deleteCollection } from '@/lib/storage';
   import { validateCollectionName } from '@/lib/validation';
+  import { BATCH_SIZE, SUCCESS_MESSAGES, UI_ERRORS } from '@/lib/constants';
   import { linksStore, linksByCollection } from '@stores/links';
   import {
     collectionFilterStore,
@@ -22,7 +23,6 @@
   import SaveButton from './components/SaveButton.svelte';
   import CreateCollectionModal from './components/CreateCollectionModal.svelte';
 
-  const BATCH_SIZE = 50;
 
   let expandedCollections: Set<string> = new Set([INBOX_COLLECTION_ID]);
   let visibleCount = BATCH_SIZE;
@@ -145,7 +145,7 @@
     const link = event.detail;
     const result = await openLinkInNewTab(link.url);
     if (!result.success) {
-      errorMessage = result.error ?? 'Erro ao abrir link. Tente novamente.';
+      errorMessage = result.error ?? UI_ERRORS.OPEN_LINK_FAILED;
     }
   }
 
@@ -169,7 +169,7 @@
       await linksStore.removeLink(linkId);
     } catch (err) {
       console.error('Failed to remove link:', err);
-      errorMessage = 'Erro ao remover link. Tente novamente.';
+      errorMessage = UI_ERRORS.REMOVE_LINK_FAILED;
     }
   }
 
@@ -226,12 +226,12 @@
       const tabInfo = await getCurrentTab();
 
       if (!tabInfo) {
-        errorMessage = 'Não foi possível obter a aba atual.';
+        errorMessage = UI_ERRORS.GET_CURRENT_TAB_FAILED;
         return;
       }
 
       if (!isSaveableUrl(tabInfo.url)) {
-        errorMessage = 'Esta página não pode ser salva.';
+        errorMessage = UI_ERRORS.PAGE_NOT_SAVEABLE;
         return;
       }
 
@@ -243,10 +243,10 @@
         collectionId: targetCollection,
       });
 
-      successMessage = 'Link salvo!';
+      successMessage = SUCCESS_MESSAGES.LINK_SAVED;
     } catch (err) {
       console.error('Failed to save current tab:', err);
-      errorMessage = 'Erro ao salvar link. Tente novamente.';
+      errorMessage = UI_ERRORS.SAVE_LINK_FAILED;
     } finally {
       isSaving = false;
     }
@@ -270,12 +270,12 @@
     try {
       const newCollection = await linksStore.addCollection(name);
       showCreateCollectionModal = false;
-      successMessage = `Coleção "${newCollection.name}" criada!`;
+      successMessage = SUCCESS_MESSAGES.COLLECTION_CREATED(newCollection.name);
       expandedCollections.add(newCollection.id);
       expandedCollections = expandedCollections;
     } catch (err) {
       console.error('Failed to create collection:', err);
-      errorMessage = err instanceof Error ? err.message : 'Erro ao criar coleção. Tente novamente.';
+      errorMessage = err instanceof Error ? err.message : UI_ERRORS.CREATE_COLLECTION_FAILED;
       showCreateCollectionModal = false;
     }
   }
@@ -300,12 +300,7 @@
 
       if (result.success) {
         await linksStore.load();
-
-        if (result.movedCount > 0) {
-          successMessage = `Coleção ${name} excluída. ${result.movedCount} ${result.movedCount === 1 ? 'link movido' : 'links movidos'} para Inbox`;
-        } else {
-          successMessage = `Coleção ${name} excluída`;
-        }
+        successMessage = SUCCESS_MESSAGES.COLLECTION_DELETED(name, result.movedCount);
 
         if (expandedCollections.has(id)) {
           expandedCollections.delete(id);
@@ -316,11 +311,11 @@
           expandedCollections = expandedCollections;
         }
       } else {
-        errorMessage = result.error ?? 'Erro ao excluir coleção. Tente novamente.';
+        errorMessage = result.error ?? UI_ERRORS.DELETE_COLLECTION_FAILED;
       }
     } catch (err) {
       console.error('Failed to delete collection:', err);
-      errorMessage = 'Erro ao excluir coleção. Tente novamente.';
+      errorMessage = UI_ERRORS.DELETE_COLLECTION_FAILED;
     } finally {
       deletingCollectionId = null;
     }
@@ -351,7 +346,7 @@
     } catch (err) {
       console.error('Failed to rename collection:', err);
       renameErrors = new Map(
-        renameErrors.set(id, 'Erro ao renomear. Tente novamente.')
+        renameErrors.set(id, UI_ERRORS.RENAME_COLLECTION_FAILED)
       );
     } finally {
       renamingCollections = new Set(

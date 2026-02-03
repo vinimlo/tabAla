@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "svelte": "^4.2.19",
+    "svelte-dnd-action": "^0.9.69",
     "webextension-polyfill": "^0.12.0"
   },
   "devDependencies": {

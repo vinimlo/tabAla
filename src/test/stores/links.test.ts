@@ -14,6 +14,13 @@ vi.mock('@/lib/storage', () => ({
   saveCollections: vi.fn(() => Promise.resolve()),
   initializeInbox: vi.fn(() => Promise.resolve()),
   removeCollection: vi.fn(() => Promise.resolve()),
+  createCollection: vi.fn(() => Promise.resolve({ id: 'new-collection', name: 'New', order: 1 })),
+  renameCollection: vi.fn(() => Promise.resolve({ success: true })),
+  moveLink: vi.fn(() => Promise.resolve({ success: true })),
+  updateCollectionOrder: vi.fn(() => Promise.resolve({ success: true })),
+  storage: {
+    watch: vi.fn(() => () => {}),
+  },
 }));
 
 const mockLinks: Link[] = [

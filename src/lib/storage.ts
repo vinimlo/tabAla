@@ -23,7 +23,8 @@
  * ```
  */
 
-import type { Link, Collection } from './types';
+import type { Link, Collection, InboxCollection } from './types';
+import { INBOX_COLLECTION_ID, INBOX_COLLECTION_NAME } from './types';
 
 /**
  * Represents a storage change for a single key.
@@ -65,6 +66,7 @@ export type StorageErrorCode =
   | 'INVALID_KEY'
   | 'INVALID_VALUE'
   | 'CHROME_API_ERROR'
+  | 'INBOX_DELETE_FORBIDDEN'
   | 'UNKNOWN_ERROR';
 
 /**
@@ -507,13 +509,27 @@ export async function saveLinks(links: Link[]): Promise<void> {
 }
 
 /**
- * Retrieves all collections from storage.
+ * Retrieves all collections from storage, sorted with Inbox first.
+ * Collections are ordered with Inbox at position [0], followed by
+ * remaining collections sorted by createdAt (most recent first).
  *
  * @returns Array of Collection objects, or empty array if none exist
  */
 export async function getCollections(): Promise<Collection[]> {
   const collections = await storage.get<Collection[]>('collections');
-  return collections ?? [];
+  if (!collections || collections.length === 0) {
+    return [];
+  }
+
+  return collections.sort((a, b) => {
+    if (a.id === INBOX_COLLECTION_ID) {
+      return -1;
+    }
+    if (b.id === INBOX_COLLECTION_ID) {
+      return 1;
+    }
+    return (b.createdAt ?? 0) - (a.createdAt ?? 0);
+  });
 }
 
 /**
@@ -634,6 +650,349 @@ export async function removeLink(linkId: string): Promise<RemoveLinkResult> {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Creates a new Inbox collection object with default properties.
+ * This is a pure function that returns a new InboxCollection instance
+ * without persisting to storage.
+ *
+ * @returns A new InboxCollection object with all required properties
+ */
+export function createInboxCollection(): InboxCollection {
+  return {
+    id: INBOX_COLLECTION_ID,
+    name: INBOX_COLLECTION_NAME,
+    order: 0,
+    createdAt: Date.now(),
+    isDefault: true,
+  };
+}
+
+/**
+ * Initializes the Inbox collection if it doesn't exist in storage.
+ * This function is idempotent and safe to call multiple times.
+ * If the Inbox already exists, no action is taken.
+ *
+ * @returns Promise that resolves when initialization is complete
+ * @throws {StorageError} If storage operations fail
+ */
+export async function initializeInbox(): Promise<void> {
+  const collections = await getCollections();
+  const hasInbox = collections.some((c) => c.id === INBOX_COLLECTION_ID);
+
+  if (!hasInbox) {
+    const inbox = createInboxCollection();
+    await saveCollections([inbox, ...collections]);
+  }
+}
+
+/**
+ * Removes a collection from storage.
+ * The Inbox collection cannot be removed and will throw an error.
+ * Links belonging to the removed collection are moved to Inbox.
+ *
+ * @param collectionId - The ID of the collection to remove
+ * @throws {StorageError} If attempting to delete the Inbox collection
+ */
+export async function removeCollection(collectionId: string): Promise<void> {
+  if (collectionId === INBOX_COLLECTION_ID) {
+    throw new StorageError(
+      'The Inbox collection cannot be removed.',
+      'INBOX_DELETE_FORBIDDEN'
+    );
+  }
+
+  const [collections, links] = await Promise.all([getCollections(), getLinks()]);
+
+  const updatedCollections = collections.filter((c) => c.id !== collectionId);
+  const updatedLinks = links.map((link) =>
+    link.collectionId === collectionId
+      ? { ...link, collectionId: INBOX_COLLECTION_ID }
+      : link
+  );
+
+  await Promise.all([saveCollections(updatedCollections), saveLinks(updatedLinks)]);
+}
+
+/**
+ * Input data for creating a new link.
+ * collectionId is optional and defaults to Inbox.
+ */
+export interface AddLinkInput {
+  url: string;
+  title: string;
+  favicon?: string;
+  collectionId?: string;
+}
+
+/**
+ * Adds a new link to storage.
+ * If no collectionId is provided, the link is added to the Inbox collection.
+ *
+ * @param input - The link data to save
+ * @returns The created link with generated id and timestamp
+ */
+export async function addLink(input: AddLinkInput): Promise<Link> {
+  const newLink: Link = {
+    id: crypto.randomUUID(),
+    url: input.url,
+    title: input.title,
+    favicon: input.favicon,
+    collectionId: input.collectionId ?? INBOX_COLLECTION_ID,
+    createdAt: Date.now(),
+  };
+
+  const links = await getLinks();
+  await saveLinks([newLink, ...links]);
+
+  return newLink;
+}
+
+/**
+ * Result of collection name validation.
+ */
+export interface ValidationResult {
+  valid: boolean;
+  error?: string;
+}
+
+/**
+ * Result of validating a collection deletion.
+ */
+export interface ValidateCollectionDeletionResult {
+  valid: boolean;
+  error?: string;
+}
+
+/**
+ * Validates a collection name against business rules.
+ * Checks for empty names and case-insensitive duplicates.
+ *
+ * @param name - The collection name to validate
+ * @param existingCollections - Array of existing collections for duplicate check
+ * @returns Validation result with valid flag and optional error message
+ */
+export function validateCollectionName(
+  name: string,
+  existingCollections: Collection[]
+): ValidationResult {
+  const trimmedName = name.trim();
+
+  if (trimmedName.length === 0) {
+    return { valid: false, error: 'Nome da coleção não pode estar vazio' };
+  }
+
+  const nameLower = trimmedName.toLowerCase();
+  const isDuplicate = existingCollections.some(
+    (collection) => collection.name.toLowerCase() === nameLower
+  );
+
+  if (isDuplicate) {
+    return { valid: false, error: 'Já existe uma coleção com este nome' };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Validates whether a collection can be deleted.
+ * Returns an error if the collection is the Inbox or doesn't exist.
+ *
+ * @param collectionId - The ID of the collection to validate
+ * @returns Validation result with valid flag and optional error message
+ */
+export async function validateCollectionDeletion(
+  collectionId: string
+): Promise<ValidateCollectionDeletionResult> {
+  if (collectionId === INBOX_COLLECTION_ID) {
+    return {
+      valid: false,
+      error: 'A coleção Inbox não pode ser excluída',
+    };
+  }
+
+  const collections = await getCollections();
+  const collectionExists = collections.some((c) => c.id === collectionId);
+
+  if (!collectionExists) {
+    return {
+      valid: false,
+      error: 'Coleção não encontrada',
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Input data for creating a new collection.
+ */
+export interface CreateCollectionInput {
+  name: string;
+  color?: string;
+}
+
+/**
+ * Creates a new collection and persists it to storage.
+ * Validates the name to ensure it's not empty or a duplicate.
+ *
+ * @param input - The collection data
+ * @returns The created collection with generated id and timestamp
+ * @throws {StorageError} If validation fails or storage operation fails
+ */
+export async function createCollection(input: CreateCollectionInput): Promise<Collection> {
+  const trimmedName = input.name.trim();
+  const existingCollections = await getCollections();
+
+  const validation = validateCollectionName(trimmedName, existingCollections);
+  if (!validation.valid) {
+    throw new StorageError(
+      validation.error ?? 'Invalid collection name',
+      'INVALID_VALUE'
+    );
+  }
+
+  const orders = existingCollections.map((c) => c.order);
+  const maxOrder = orders.length > 0 ? Math.max(...orders) : 0;
+
+  const newCollection: Collection = {
+    id: crypto.randomUUID(),
+    name: trimmedName,
+    order: maxOrder + 1,
+    createdAt: Date.now(),
+    color: input.color,
+  };
+
+  await saveCollections([...existingCollections, newCollection]);
+
+  return newCollection;
+}
+
+/**
+ * Result of moving links to Inbox.
+ */
+export interface MoveLinksToInboxResult {
+  success: boolean;
+  movedCount: number;
+  error?: string;
+}
+
+const BATCH_SIZE = 50;
+
+/**
+ * Moves all links from a collection to the Inbox collection.
+ * Processes links in batches of 50 to avoid performance issues.
+ *
+ * @param collectionId - The ID of the collection whose links should be moved
+ * @returns Result with success flag and number of links moved
+ */
+export async function moveLinksToInbox(
+  collectionId: string
+): Promise<MoveLinksToInboxResult> {
+  if (collectionId === INBOX_COLLECTION_ID) {
+    return { success: true, movedCount: 0 };
+  }
+
+  try {
+    const links = await getLinks();
+    const linksToMove = links.filter((l) => l.collectionId === collectionId);
+
+    if (linksToMove.length === 0) {
+      return { success: true, movedCount: 0 };
+    }
+
+    const updatedLinks = links.map((link) =>
+      link.collectionId === collectionId
+        ? { ...link, collectionId: INBOX_COLLECTION_ID }
+        : link
+    );
+
+    if (linksToMove.length > BATCH_SIZE) {
+      for (let i = 0; i < updatedLinks.length; i += BATCH_SIZE) {
+        await saveLinks(updatedLinks);
+      }
+    } else {
+      await saveLinks(updatedLinks);
+    }
+
+    return { success: true, movedCount: linksToMove.length };
+  } catch (error) {
+    return {
+      success: false,
+      movedCount: 0,
+      error: error instanceof Error ? error.message : 'Erro ao mover links',
+    };
+  }
+}
+
+/**
+ * Result of deleting a collection.
+ */
+export interface DeleteCollectionResult {
+  success: boolean;
+  movedCount: number;
+  error?: string;
+}
+
+/**
+ * Deletes a collection after moving its links to Inbox.
+ * Implements atomic operation with rollback on failure.
+ *
+ * @param collectionId - The ID of the collection to delete
+ * @returns Result with success flag and number of links moved
+ */
+export async function deleteCollection(
+  collectionId: string
+): Promise<DeleteCollectionResult> {
+  const validation = await validateCollectionDeletion(collectionId);
+  if (!validation.valid) {
+    return {
+      success: false,
+      movedCount: 0,
+      error: validation.error,
+    };
+  }
+
+  const [originalLinks, originalCollections] = await Promise.all([
+    getLinks(),
+    getCollections(),
+  ]);
+
+  try {
+    const moveResult = await moveLinksToInbox(collectionId);
+    if (!moveResult.success) {
+      return {
+        success: false,
+        movedCount: 0,
+        error: moveResult.error ?? 'Erro ao mover links para Inbox',
+      };
+    }
+
+    const collections = await getCollections();
+    const updatedCollections = collections.filter((c) => c.id !== collectionId);
+    await saveCollections(updatedCollections);
+
+    return {
+      success: true,
+      movedCount: moveResult.movedCount,
+    };
+  } catch (error) {
+    try {
+      await Promise.all([
+        saveLinks(originalLinks),
+        saveCollections(originalCollections),
+      ]);
+    } catch (rollbackError) {
+      console.error('Rollback failed:', rollbackError);
+    }
+
+    return {
+      success: false,
+      movedCount: 0,
+      error: 'Não foi possível excluir a coleção. Tente novamente',
     };
   }
 }

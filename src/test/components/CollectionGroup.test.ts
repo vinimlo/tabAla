@@ -61,28 +61,30 @@ describe('CollectionGroup Component', () => {
   });
 
   it('should dispatch toggle event when header clicked', async () => {
-    const { component } = render(CollectionGroup, {
+    const { component, container } = render(CollectionGroup, {
       props: { collection: mockCollection, links: mockLinks, expanded: true },
     });
     const toggleHandler = vi.fn();
     component.$on('toggle', toggleHandler);
 
-    const header = screen.getByRole('button', { name: /Inbox/i });
-    await fireEvent.click(header);
+    const header = container.querySelector('header.header');
+    expect(header).not.toBeNull();
+    await fireEvent.click(header!);
 
     expect(toggleHandler).toHaveBeenCalledTimes(1);
     expect(toggleHandler.mock.calls[0][0].detail).toBe('inbox');
   });
 
   it('should dispatch toggle event on Enter key', async () => {
-    const { component } = render(CollectionGroup, {
+    const { component, container } = render(CollectionGroup, {
       props: { collection: mockCollection, links: mockLinks, expanded: true },
     });
     const toggleHandler = vi.fn();
     component.$on('toggle', toggleHandler);
 
-    const header = screen.getByRole('button', { name: /Inbox/i });
-    await fireEvent.keyDown(header, { key: 'Enter' });
+    const header = container.querySelector('header.header');
+    expect(header).not.toBeNull();
+    await fireEvent.keyDown(header!, { key: 'Enter' });
 
     expect(toggleHandler).toHaveBeenCalledTimes(1);
   });
@@ -116,10 +118,11 @@ describe('CollectionGroup Component', () => {
   });
 
   it('should have aria-expanded attribute on header', () => {
-    render(CollectionGroup, {
+    const { container } = render(CollectionGroup, {
       props: { collection: mockCollection, links: mockLinks, expanded: true },
     });
-    const header = screen.getByRole('button', { name: /Inbox/i });
+    const header = container.querySelector('header.header');
+    expect(header).not.toBeNull();
     expect(header).toHaveAttribute('aria-expanded', 'true');
   });
 

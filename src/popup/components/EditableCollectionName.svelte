@@ -24,7 +24,9 @@
   }
 
   function handleSave(): void {
-    if (saving) return;
+    if (saving) {
+      return;
+    }
     dispatch('save', inputValue);
   }
 
@@ -46,20 +48,22 @@
   }
 
   function handleBlur(): void {
-    if (!editing) return;
+    if (!editing) {
+      return;
+    }
     handleSave();
   }
 
   function handleNameClick(event: MouseEvent): void {
     event.stopPropagation();
-    startEditing();
+    void startEditing();
   }
 
   function handleNameKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       event.stopPropagation();
-      startEditing();
+      void startEditing();
     }
   }
 

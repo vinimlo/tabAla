@@ -2,19 +2,24 @@
   import { createEventDispatcher } from 'svelte';
   import { slide } from 'svelte/transition';
   import type { Link, Collection } from '@/lib/types';
+  import { isInboxCollection } from '@/lib/types';
   import LinkItem from './LinkItem.svelte';
   import EditableCollectionName from './EditableCollectionName.svelte';
 
   export let collection: Collection;
   export let links: Link[];
   export let expanded: boolean = true;
+  export let isDeleting: boolean = false;
   export let renameError: string | null = null;
   export let isRenaming: boolean = false;
+
+  $: canDelete = !isInboxCollection(collection);
 
   const dispatch = createEventDispatcher<{
     open: Link;
     remove: string;
     toggle: string;
+    deleteCollection: { id: string; name: string; linkCount: number };
     rename: { id: string; newName: string };
     cancelRename: string;
   }>();
@@ -22,7 +27,9 @@
   let editableNameRef: EditableCollectionName;
 
   function toggleExpanded(): void {
-    if (editableNameRef?.isEditing()) return;
+    if (editableNameRef?.isEditing() === true) {
+      return;
+    }
     dispatch('toggle', collection.id);
   }
 
@@ -35,10 +42,39 @@
   }
 
   function handleKeydown(event: KeyboardEvent): void {
-    if (editableNameRef?.isEditing()) return;
+    if (editableNameRef?.isEditing() === true) {
+      return;
+    }
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       toggleExpanded();
+    }
+  }
+
+  function handleDeleteClick(event: MouseEvent): void {
+    event.stopPropagation();
+    if (!canDelete || isDeleting) {
+      return;
+    }
+    dispatch('deleteCollection', {
+      id: collection.id,
+      name: collection.name,
+      linkCount: links.length,
+    });
+  }
+
+  function handleDeleteKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!canDelete || isDeleting) {
+        return;
+      }
+      dispatch('deleteCollection', {
+        id: collection.id,
+        name: collection.name,
+        linkCount: links.length,
+      });
     }
   }
 
@@ -74,6 +110,36 @@
       on:cancel={handleCancelRename}
     />
     <span class="count">{links.length}</span>
+    {#if canDelete}
+      <button
+        class="delete-btn"
+        class:deleting={isDeleting}
+        on:click={handleDeleteClick}
+        on:keydown={handleDeleteKeydown}
+        disabled={isDeleting}
+        title="Excluir coleção"
+        aria-label="Excluir coleção {collection.name}"
+        type="button"
+      >
+        {#if isDeleting}
+          <span class="spinner"></span>
+        {:else}
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        {/if}
+      </button>
+    {/if}
   </header>
 
   {#if expanded && links.length > 0}
@@ -143,6 +209,65 @@
     font-weight: 500;
     color: var(--text-tertiary);
     font-variant-numeric: tabular-nums;
+  }
+
+  .delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    opacity: 0;
+    transition: all var(--duration-fast) var(--ease-out);
+    flex-shrink: 0;
+  }
+
+  .header:hover .delete-btn {
+    opacity: 1;
+  }
+
+  .delete-btn:hover {
+    color: var(--error);
+    background-color: rgba(248, 113, 113, 0.1);
+  }
+
+  .delete-btn:focus {
+    outline: none;
+    opacity: 1;
+  }
+
+  .delete-btn:focus-visible {
+    outline: 1px solid var(--accent);
+  }
+
+  .delete-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .delete-btn.deleting {
+    opacity: 1;
+  }
+
+  .delete-btn .spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .links {

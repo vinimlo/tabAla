@@ -12,6 +12,8 @@ vi.mock('@/lib/storage', () => ({
   saveLinks: vi.fn(() => Promise.resolve()),
   getCollections: vi.fn(() => Promise.resolve([])),
   saveCollections: vi.fn(() => Promise.resolve()),
+  initializeInbox: vi.fn(() => Promise.resolve()),
+  removeCollection: vi.fn(() => Promise.resolve()),
 }));
 
 const mockLinks: Link[] = [
@@ -77,20 +79,22 @@ describe('linksStore', () => {
       expect(state.links[1].id).toBe('link-1');
     });
 
-    it('should create Inbox collection if not exists', async () => {
+    it('should initialize Inbox collection via initializeInbox', async () => {
       vi.mocked(storage.getLinks).mockResolvedValue([]);
-      vi.mocked(storage.getCollections).mockResolvedValue([]);
+      vi.mocked(storage.getCollections).mockResolvedValue([
+        { id: 'inbox', name: 'Inbox', order: 0, isDefault: true },
+      ]);
 
       await linksStore.load();
 
       const state = get(linksStore);
       expect(state.collections).toHaveLength(1);
       expect(state.collections[0].id).toBe('inbox');
-      expect(storage.saveCollections).toHaveBeenCalled();
+      expect(storage.initializeInbox).toHaveBeenCalled();
     });
 
     it('should handle errors gracefully', async () => {
-      vi.mocked(storage.getLinks).mockRejectedValue(new Error('Storage error'));
+      vi.mocked(storage.initializeInbox).mockRejectedValue(new Error('Storage error'));
 
       await linksStore.load();
 

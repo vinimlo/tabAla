@@ -1,12 +1,22 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import { fade } from 'svelte/transition';
   import type { Link } from '@/lib/types';
   import { INBOX_COLLECTION_ID } from '@/lib/types';
   import { openLinkInNewTab, getCurrentTab, isSaveableUrl } from '@/lib/tabs';
+  import { deleteCollection } from '@/lib/storage';
   import { linksStore, linksByCollection } from '@stores/links';
+  import {
+    collectionFilterStore,
+    selectedCollectionId,
+    ALL_COLLECTIONS_FILTER,
+  } from '@stores/collectionFilter';
+  import { filterLinksByCollection, countLinksByCollection } from '@/lib/filters';
   import CollectionGroup from '@components/CollectionGroup.svelte';
+  import CollectionSelector from '@components/CollectionSelector.svelte';
   import EmptyState from '@components/EmptyState.svelte';
   import ConfirmDialog from './components/ConfirmDialog.svelte';
+  import ConfirmDeleteDialog from './components/ConfirmDeleteDialog.svelte';
   import Toast from './components/Toast.svelte';
   import SaveButton from './components/SaveButton.svelte';
   import CreateCollectionModal from './components/CreateCollectionModal.svelte';
@@ -23,26 +33,98 @@
   let mounted = false;
   let showCreateCollectionModal = false;
 
+  interface CollectionToDelete {
+    id: string;
+    name: string;
+    linkCount: number;
+  }
+  let collectionToDelete: CollectionToDelete | null = null;
+  let deletingCollectionId: string | null = null;
+
   $: loading = $linksStore.loading;
   $: error = $linksStore.error;
   $: collections = $linksStore.collections;
-  $: totalLinks = $linksStore.links.length;
+  $: allLinks = $linksStore.links;
+  $: totalLinks = allLinks.length;
+
+  $: linkCounts = countLinksByCollection(allLinks);
+
+  $: currentFilter = $selectedCollectionId;
+  $: filteredLinks = filterLinksByCollection(allLinks, currentFilter);
+  $: filteredCount = filteredLinks.length;
+  $: isFiltered = currentFilter !== ALL_COLLECTIONS_FILTER && currentFilter !== null;
+
   $: isEmpty = loading === false && totalLinks === 0;
+  $: isFilteredEmpty = loading === false && filteredCount === 0 && totalLinks > 0;
+
+  $: {
+    if (!loading && collections.length > 0) {
+      collectionFilterStore.validateSelection(collections.map((c) => c.id));
+    }
+  }
 
   $: visibleCollections = collections.map((collection) => {
-    const allLinks = $linksByCollection.get(collection.id) ?? [];
+    const allCollectionLinks = $linksByCollection.get(collection.id) ?? [];
+    const shouldShow =
+      currentFilter === ALL_COLLECTIONS_FILTER ||
+      currentFilter === null ||
+      currentFilter === collection.id;
     return {
       collection,
-      links: allLinks,
+      links: shouldShow ? allCollectionLinks : [],
+      visible: shouldShow,
     };
-  }).filter((group) => group.links.length > 0 || group.collection.id === INBOX_COLLECTION_ID);
+  }).filter((group) => {
+    if (!group.visible) {
+      return false;
+    }
+    return group.links.length > 0 || group.collection.id === INBOX_COLLECTION_ID;
+  });
 
-  $: hasMoreToLoad = visibleCount < totalLinks;
+  $: hasMoreToLoad = visibleCount < filteredCount;
+
+  function handleKeyboardShortcuts(event: KeyboardEvent): void {
+    if (event.ctrlKey || event.metaKey) {
+      const key = event.key;
+
+      if (key === '0') {
+        event.preventDefault();
+        collectionFilterStore.select(ALL_COLLECTIONS_FILTER);
+        return;
+      }
+
+      if (key === '1') {
+        event.preventDefault();
+        collectionFilterStore.select(INBOX_COLLECTION_ID);
+        return;
+      }
+
+      const num = parseInt(key, 10);
+      if (num >= 2 && num <= 9) {
+        event.preventDefault();
+        const nonInboxCollections = collections.filter(
+          (c) => c.id !== INBOX_COLLECTION_ID
+        );
+        const targetCollection = nonInboxCollections[num - 2];
+        if (targetCollection) {
+          collectionFilterStore.select(targetCollection.id);
+        }
+      }
+    }
+  }
 
   onMount(() => {
     linksStore.load();
     expandedCollections = new Set([INBOX_COLLECTION_ID]);
     setTimeout(() => mounted = true, 50);
+
+    document.addEventListener('keydown', handleKeyboardShortcuts);
+  });
+
+  onDestroy(() => {
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('keydown', handleKeyboardShortcuts);
+    }
   });
 
   function handleToggle(event: CustomEvent<string>): void {
@@ -104,8 +186,29 @@
     const scrollPercentage = (scrollTop + clientHeight) / scrollHeight;
 
     if (scrollPercentage >= 0.8) {
-      visibleCount = Math.min(visibleCount + BATCH_SIZE, totalLinks);
+      visibleCount = Math.min(visibleCount + BATCH_SIZE, filteredCount);
     }
+  }
+
+  function handleCollectionSelect(event: CustomEvent<string>): void {
+    const collectionId = event.detail;
+    collectionFilterStore.select(collectionId);
+    visibleCount = BATCH_SIZE;
+
+    if (collectionId !== ALL_COLLECTIONS_FILTER) {
+      expandedCollections.add(collectionId);
+      expandedCollections = expandedCollections;
+    }
+  }
+
+  function getTargetCollectionForSave(): string {
+    if (
+      currentFilter === ALL_COLLECTIONS_FILTER ||
+      currentFilter === null
+    ) {
+      return INBOX_COLLECTION_ID;
+    }
+    return currentFilter;
   }
 
   async function handleSaveCurrentTab(): Promise<void> {
@@ -128,11 +231,12 @@
         return;
       }
 
+      const targetCollection = getTargetCollectionForSave();
       await linksStore.addLink({
         url: tabInfo.url,
         title: tabInfo.title,
         favicon: tabInfo.favicon,
-        collectionId: INBOX_COLLECTION_ID,
+        collectionId: targetCollection,
       });
 
       successMessage = 'Link salvo!';
@@ -148,7 +252,7 @@
     successMessage = null;
   }
 
-  function openCreateCollectionModal(): void {
+function openCreateCollectionModal(): void {
     showCreateCollectionModal = true;
   }
 
@@ -171,6 +275,56 @@
       showCreateCollectionModal = false;
     }
   }
+
+  function handleDeleteCollection(
+    event: CustomEvent<{ id: string; name: string; linkCount: number }>
+  ): void {
+    collectionToDelete = event.detail;
+  }
+
+  async function handleConfirmDeleteCollection(): Promise<void> {
+    if (!collectionToDelete) {
+      return;
+    }
+
+    const { id, name } = collectionToDelete;
+    collectionToDelete = null;
+    deletingCollectionId = id;
+
+    try {
+      const result = await deleteCollection(id);
+
+      if (result.success) {
+        await linksStore.load();
+
+        if (result.movedCount > 0) {
+          successMessage = `Coleção ${name} excluída. ${result.movedCount} ${result.movedCount === 1 ? 'link movido' : 'links movidos'} para Inbox`;
+        } else {
+          successMessage = `Coleção ${name} excluída`;
+        }
+
+        if (expandedCollections.has(id)) {
+          expandedCollections.delete(id);
+          expandedCollections = expandedCollections;
+        }
+        if (!expandedCollections.has(INBOX_COLLECTION_ID)) {
+          expandedCollections.add(INBOX_COLLECTION_ID);
+          expandedCollections = expandedCollections;
+        }
+      } else {
+        errorMessage = result.error ?? 'Erro ao excluir coleção. Tente novamente.';
+      }
+    } catch (err) {
+      console.error('Failed to delete collection:', err);
+      errorMessage = 'Erro ao excluir coleção. Tente novamente.';
+    } finally {
+      deletingCollectionId = null;
+    }
+  }
+
+  function handleCancelDeleteCollection(): void {
+    collectionToDelete = null;
+  }
 </script>
 
 <main class="app" class:mounted>
@@ -186,6 +340,13 @@
     </div>
   {:else}
     <header class="header">
+      <CollectionSelector
+        {collections}
+        selectedId={currentFilter}
+        {linkCounts}
+        {totalLinks}
+        on:select={handleCollectionSelect}
+      />
       <button
         type="button"
         class="btn-new-collection"
@@ -209,8 +370,19 @@
       </button>
     </header>
 
+    {#if isFiltered}
+      <div class="filter-status" transition:fade={{ duration: 150 }}>
+        <span class="filter-count">{filteredCount} de {totalLinks} links</span>
+      </div>
+    {/if}
+
     {#if isEmpty}
       <EmptyState />
+    {:else if isFilteredEmpty}
+      <div class="empty-filter" transition:fade={{ duration: 200 }}>
+        <p>Nenhum link nesta coleção</p>
+        <span class="hint">Salve uma aba para começar</span>
+      </div>
     {:else}
       <div
         class="scroll-container"
@@ -223,9 +395,11 @@
               {collection}
               {links}
               expanded={expandedCollections.has(collection.id)}
+              isDeleting={deletingCollectionId === collection.id}
               on:toggle={handleToggle}
               on:open={handleOpenLink}
               on:remove={handleRemoveLink}
+              on:deleteCollection={handleDeleteCollection}
             />
           </div>
         {/each}
@@ -263,6 +437,15 @@
     existingNames={linksStore.getCollectionNames()}
     on:create={handleCreateCollection}
     on:cancel={closeCreateCollectionModal}
+  />
+{/if}
+
+{#if collectionToDelete}
+  <ConfirmDeleteDialog
+    collectionName={collectionToDelete.name}
+    linkCount={collectionToDelete.linkCount}
+    on:confirm={handleConfirmDeleteCollection}
+    on:cancel={handleCancelDeleteCollection}
   />
 {/if}
 
@@ -408,6 +591,43 @@
     border-color: var(--border-hover);
   }
 
+  .filter-status {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .filter-count {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    letter-spacing: 0.02em;
+  }
+
+  .empty-filter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: var(--space-2);
+    padding: var(--space-5);
+    text-align: center;
+  }
+
+  .empty-filter p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+
+  .empty-filter .hint {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+  }
+
   .scroll-container {
     flex: 1;
     overflow-y: auto;
@@ -467,9 +687,10 @@
 
   .header {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
     padding: var(--space-3);
-    padding-bottom: 0;
+    gap: var(--space-2);
   }
 
   .btn-new-collection {

@@ -1,0 +1,193 @@
+# ==============================================================================
+# TabAla - .gitignore
+# Extensão de navegador minimalista para organização temporária de links
+# Stack: Node.js, TypeScript, Svelte, Vite, @crxjs/vite-plugin, Vitest
+# ==============================================================================
+
+
+# ==============================================================================
+# Dependências
+# Pacotes instalados via npm/yarn/pnpm - devem ser reinstalados via package.json
+# ==============================================================================
+node_modules/
+
+
+# ==============================================================================
+# Build e Distribuição
+# Arquivos gerados durante o processo de build - podem ser recriados
+# ==============================================================================
+dist/
+build/
+.output/
+
+# TypeScript
+*.tsbuildinfo
+
+
+# ==============================================================================
+# Vite e Ferramentas de Build
+# Cache e arquivos temporários gerados pelo Vite e ferramentas relacionadas
+# ==============================================================================
+.vite/
+.turbo/
+
+
+# ==============================================================================
+# Extensão Chrome / @crxjs
+# Arquivos gerados pelo @crxjs/vite-plugin e empacotamento da extensão
+# IMPORTANTE: Arquivos .pem contêm chaves privadas - NUNCA versionar
+# ==============================================================================
+*.crx
+*.pem
+*.zip
+
+
+# ==============================================================================
+# Arquivos de Ambiente e Credenciais
+# SEGURANÇA: Nunca versionar arquivos com credenciais, tokens ou secrets
+# Use .env.example para documentar variáveis necessárias (sem valores reais)
+# ==============================================================================
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Exceção: arquivo de exemplo com variáveis documentadas (sem valores sensíveis)
+!.env.example
+
+# Atena - configurações e credenciais locais
+.atena/config.env
+
+# Hefesto - estado local e credenciais
+.hefesto/config.env
+.hefesto/auto_state.json
+.hefesto/auto_state.json.bak
+.hefesto/logs/
+
+
+# ==============================================================================
+# Cache de Ferramentas
+# Arquivos de cache que aceleram rebuilds mas não precisam ser versionados
+# ==============================================================================
+.eslintcache
+.stylelintcache
+.prettiercache
+
+
+# ==============================================================================
+# Logs
+# Arquivos de log gerados por npm, yarn, pnpm e aplicação
+# ==============================================================================
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+
+# ==============================================================================
+# Testes e Coverage
+# Relatórios de cobertura de testes - gerados durante execução de testes
+# ==============================================================================
+coverage/
+.nyc_output/
+
+
+# ==============================================================================
+# Arquivos Temporários
+# Arquivos temporários criados durante desenvolvimento ou por ferramentas
+# ==============================================================================
+*.tmp
+*.temp
+.temp/
+tmp/
+temp/
+
+
+# ==============================================================================
+# Sistema Operacional
+# Arquivos gerados automaticamente pelo sistema operacional
+# ==============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+desktop.ini
+
+# Linux
+*~
+
+
+# ==============================================================================
+# IDEs e Editores
+# Configurações locais de IDEs - cada desenvolvedor tem suas preferências
+# ==============================================================================
+
+# Visual Studio Code
+# Ignora configurações pessoais mas permite compartilhar extensões recomendadas
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+*.code-workspace
+
+# JetBrains (WebStorm, IntelliJ)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Vim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+.#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+
+# ==============================================================================
+# Docker
+# Volumes e arquivos locais gerados pelo ambiente Docker
+# ==============================================================================
+.docker/
+
+
+# ==============================================================================
+# Miscelânea
+# Outros arquivos que não devem ser versionados
+# ==============================================================================
+
+# Arquivos de debug
+*.pid
+*.seed
+*.pid.lock
+
+# Diretórios de pacotes opcionais
+.npm/
+.yarn/
+.pnpm-store/
+
+# Cache geral
+.cache/
+
+# Relatórios
+*.lcov

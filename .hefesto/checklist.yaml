@@ -1,0 +1,29 @@
+# Hefesto Checklist - tabAla
+# Este arquivo define comandos que o Hefesto executa automaticamente em cada fase
+#
+# Novos atributos disponíveis:
+#   ai_fix: true           - Tenta correção via IA quando falha
+#   max_retries: N         - Número máximo de tentativas de correção via IA
+#   propagate_failure: false - Se false, falha não bloqueia tasks dependentes
+
+version: 1
+name: "tabAla"
+
+hooks:
+  before_commit:
+    - name: "Lint code"
+      command: "make lint"
+      description: "Executa ESLint"
+      required: true
+      ai_fix: true
+      max_retries: 2
+      propagate_failure: false
+
+  # before_push:
+  #   - name: "Run tests"
+  #     command: "make test"
+  #     description: "Executa testes unitários"
+  #     required: true
+  #     ai_fix: true
+  #     max_retries: 2
+  #     propagate_failure: true

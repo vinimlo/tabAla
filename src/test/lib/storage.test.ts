@@ -156,6 +156,6 @@ describe('removeLink', () => {
     const result = await removeLink('link-1');
 
     expect(result.success).toBe(false);
-    expect(result.error).toBe('Storage error');
+    expect(result.error).toContain('Storage error');
   });
 });

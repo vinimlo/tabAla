@@ -25,4 +25,7 @@ async function generateIcons() {
   console.log('\nTodos os ícones foram gerados!');
 }
 
-generateIcons().catch(console.error);
+generateIcons().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

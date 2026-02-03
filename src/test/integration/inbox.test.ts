@@ -102,22 +102,18 @@ describe('Inbox Integration Tests', () => {
     });
 
     it('should throw error with INBOX_DELETE_FORBIDDEN code', async () => {
-      try {
-        await removeCollection(INBOX_COLLECTION_ID);
-        expect.fail('Should have thrown an error');
-      } catch (error) {
+      await expect(removeCollection(INBOX_COLLECTION_ID)).rejects.toSatisfy((error) => {
         expect(error).toBeInstanceOf(StorageError);
         expect((error as StorageError).code).toBe('INBOX_DELETE_FORBIDDEN');
-      }
+        return true;
+      });
     });
 
-    it('should throw error with Portuguese message', async () => {
-      try {
-        await removeCollection(INBOX_COLLECTION_ID);
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect((error as StorageError).message).toContain('Inbox não pode ser removida');
-      }
+    it('should throw error with English message', async () => {
+      await expect(removeCollection(INBOX_COLLECTION_ID)).rejects.toSatisfy((error) => {
+        expect((error as StorageError).message).toContain('Inbox collection cannot be removed');
+        return true;
+      });
     });
 
     it('should keep Inbox intact after failed deletion attempt', async () => {

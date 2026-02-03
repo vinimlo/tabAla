@@ -41,3 +41,45 @@ export async function saveCollections(collections: Collection[]): Promise<void> 
     throw error;
   }
 }
+
+export interface RemoveLinkResult {
+  success: boolean;
+  error?: string;
+  collectionRemoved?: boolean;
+}
+
+export async function removeLink(linkId: string): Promise<RemoveLinkResult> {
+  try {
+    const links = await getLinks();
+    const linkIndex = links.findIndex((link) => link.id === linkId);
+
+    if (linkIndex === -1) {
+      return { success: false, error: 'Link not found' };
+    }
+
+    const removedLink = links[linkIndex];
+    const collectionId = removedLink.collectionId;
+    const updatedLinks = links.filter((link) => link.id !== linkId);
+    await saveLinks(updatedLinks);
+
+    const remainingLinksInCollection = updatedLinks.filter(
+      (link) => link.collectionId === collectionId
+    );
+
+    let collectionRemoved = false;
+    if (remainingLinksInCollection.length === 0 && collectionId !== 'inbox') {
+      const collections = await getCollections();
+      const updatedCollections = collections.filter((c) => c.id !== collectionId);
+      await saveCollections(updatedCollections);
+      collectionRemoved = true;
+    }
+
+    return { success: true, collectionRemoved };
+  } catch (error) {
+    console.error('Failed to remove link from storage:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}

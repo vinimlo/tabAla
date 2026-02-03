@@ -5,7 +5,15 @@
 
 import { writable, derived, type Writable } from 'svelte/store';
 import type { Link, Collection } from '@/lib/types';
-import { getLinks, saveLinks, getCollections, saveCollections } from '@/lib/storage';
+import { INBOX_COLLECTION_ID } from '@/lib/types';
+import {
+  getLinks,
+  saveLinks,
+  getCollections,
+  saveCollections,
+  initializeInbox,
+  removeCollection as storageRemoveCollection,
+} from '@/lib/storage';
 
 interface LinksState {
   links: Link[];
@@ -17,9 +25,10 @@ interface LinksState {
 }
 
 const INBOX_COLLECTION: Collection = {
-  id: 'inbox',
+  id: INBOX_COLLECTION_ID,
   name: 'Inbox',
   order: 0,
+  isDefault: true,
 };
 
 function createLinksStore(): Writable<LinksState> & {
@@ -42,19 +51,13 @@ function createLinksStore(): Writable<LinksState> & {
     update((state) => ({ ...state, loading: true, error: null }));
 
     try {
+      await initializeInbox();
       const [links, collections] = await Promise.all([getLinks(), getCollections()]);
-
-      const hasInbox = collections.some((c) => c.id === 'inbox');
-      const finalCollections = hasInbox ? collections : [INBOX_COLLECTION, ...collections];
-
-      if (!hasInbox) {
-        await saveCollections(finalCollections);
-      }
 
       update((state) => ({
         ...state,
         links: links.sort((a, b) => b.createdAt - a.createdAt),
-        collections: finalCollections.sort((a, b) => a.order - b.order),
+        collections,
         loading: false,
         error: null,
       }));
@@ -187,31 +190,27 @@ function createLinksStore(): Writable<LinksState> & {
   }
 
   async function removeCollection(id: string): Promise<void> {
-    if (id === 'inbox') {
+    if (id === INBOX_COLLECTION_ID) {
       return;
     }
 
-    let linksToSave: Link[] = [];
-    let collectionsToSave: Collection[] = [];
     let previousLinks: Link[] = [];
     let previousCollections: Collection[] = [];
 
     update((state) => {
       previousLinks = state.links;
       previousCollections = state.collections;
-      linksToSave = state.links.map((l) =>
-        l.collectionId === id ? { ...l, collectionId: 'inbox' } : l
-      );
-      collectionsToSave = state.collections.filter((c) => c.id !== id);
       return {
         ...state,
-        collections: collectionsToSave,
-        links: linksToSave,
+        collections: state.collections.filter((c) => c.id !== id),
+        links: state.links.map((l) =>
+          l.collectionId === id ? { ...l, collectionId: INBOX_COLLECTION_ID } : l
+        ),
       };
     });
 
     try {
-      await Promise.all([saveLinks(linksToSave), saveCollections(collectionsToSave)]);
+      await storageRemoveCollection(id);
     } catch (error) {
       update((state) => ({
         ...state,
@@ -244,7 +243,7 @@ export const linksByCollection = derived(linksStore, ($store) => {
   }
 
   for (const link of $store.links) {
-    const links = grouped.get(link.collectionId) ?? grouped.get('inbox')!;
+    const links = grouped.get(link.collectionId) ?? grouped.get(INBOX_COLLECTION_ID)!;
     links.push(link);
   }
 

@@ -23,7 +23,8 @@
  * ```
  */
 
-import type { Link, Collection } from './types';
+import type { Link, Collection, InboxCollection } from './types';
+import { INBOX_COLLECTION_ID, INBOX_COLLECTION_NAME } from './types';
 
 /**
  * Represents a storage change for a single key.
@@ -65,6 +66,7 @@ export type StorageErrorCode =
   | 'INVALID_KEY'
   | 'INVALID_VALUE'
   | 'CHROME_API_ERROR'
+  | 'INBOX_DELETE_FORBIDDEN'
   | 'UNKNOWN_ERROR';
 
 /**
@@ -507,13 +509,27 @@ export async function saveLinks(links: Link[]): Promise<void> {
 }
 
 /**
- * Retrieves all collections from storage.
+ * Retrieves all collections from storage, sorted with Inbox first.
+ * Collections are ordered with Inbox at position [0], followed by
+ * remaining collections sorted by createdAt (most recent first).
  *
  * @returns Array of Collection objects, or empty array if none exist
  */
 export async function getCollections(): Promise<Collection[]> {
   const collections = await storage.get<Collection[]>('collections');
-  return collections ?? [];
+  if (!collections || collections.length === 0) {
+    return [];
+  }
+
+  return collections.sort((a, b) => {
+    if (a.id === INBOX_COLLECTION_ID) {
+      return -1;
+    }
+    if (b.id === INBOX_COLLECTION_ID) {
+      return 1;
+    }
+    return (b.createdAt ?? 0) - (a.createdAt ?? 0);
+  });
 }
 
 /**
@@ -580,4 +596,101 @@ export async function removeLink(linkId: string): Promise<RemoveLinkResult> {
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
+}
+
+/**
+ * Creates a new Inbox collection object with default properties.
+ * This is a pure function that returns a new InboxCollection instance
+ * without persisting to storage.
+ *
+ * @returns A new InboxCollection object with all required properties
+ */
+export function createInboxCollection(): InboxCollection {
+  return {
+    id: INBOX_COLLECTION_ID,
+    name: INBOX_COLLECTION_NAME,
+    order: 0,
+    createdAt: Date.now(),
+    isDefault: true,
+  };
+}
+
+/**
+ * Initializes the Inbox collection if it doesn't exist in storage.
+ * This function is idempotent and safe to call multiple times.
+ * If the Inbox already exists, no action is taken.
+ *
+ * @returns Promise that resolves when initialization is complete
+ * @throws {StorageError} If storage operations fail
+ */
+export async function initializeInbox(): Promise<void> {
+  const collections = await getCollections();
+  const hasInbox = collections.some((c) => c.id === INBOX_COLLECTION_ID);
+
+  if (!hasInbox) {
+    const inbox = createInboxCollection();
+    await saveCollections([inbox, ...collections]);
+  }
+}
+
+/**
+ * Removes a collection from storage.
+ * The Inbox collection cannot be removed and will throw an error.
+ * Links belonging to the removed collection are moved to Inbox.
+ *
+ * @param collectionId - The ID of the collection to remove
+ * @throws {StorageError} If attempting to delete the Inbox collection
+ */
+export async function removeCollection(collectionId: string): Promise<void> {
+  if (collectionId === INBOX_COLLECTION_ID) {
+    throw new StorageError(
+      'A coleção Inbox não pode ser removida.',
+      'INBOX_DELETE_FORBIDDEN'
+    );
+  }
+
+  const [collections, links] = await Promise.all([getCollections(), getLinks()]);
+
+  const updatedCollections = collections.filter((c) => c.id !== collectionId);
+  const updatedLinks = links.map((link) =>
+    link.collectionId === collectionId
+      ? { ...link, collectionId: INBOX_COLLECTION_ID }
+      : link
+  );
+
+  await Promise.all([saveCollections(updatedCollections), saveLinks(updatedLinks)]);
+}
+
+/**
+ * Input data for creating a new link.
+ * collectionId is optional and defaults to Inbox.
+ */
+export interface AddLinkInput {
+  url: string;
+  title: string;
+  favicon?: string;
+  collectionId?: string;
+}
+
+/**
+ * Adds a new link to storage.
+ * If no collectionId is provided, the link is added to the Inbox collection.
+ *
+ * @param input - The link data to save
+ * @returns The created link with generated id and timestamp
+ */
+export async function addLink(input: AddLinkInput): Promise<Link> {
+  const newLink: Link = {
+    id: crypto.randomUUID(),
+    url: input.url,
+    title: input.title,
+    favicon: input.favicon,
+    collectionId: input.collectionId ?? INBOX_COLLECTION_ID,
+    createdAt: Date.now(),
+  };
+
+  const links = await getLinks();
+  await saveLinks([newLink, ...links]);
+
+  return newLink;
 }

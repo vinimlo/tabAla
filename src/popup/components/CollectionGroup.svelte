@@ -2,11 +2,14 @@
   import { createEventDispatcher } from 'svelte';
   import { slide } from 'svelte/transition';
   import type { Link, Collection } from '@/lib/types';
+  import { isInboxCollection } from '@/lib/types';
   import LinkItem from './LinkItem.svelte';
 
   export let collection: Collection;
   export let links: Link[];
   export let expanded: boolean = true;
+
+  $: _canDelete = !isInboxCollection(collection);
 
   const dispatch = createEventDispatcher<{
     open: Link;

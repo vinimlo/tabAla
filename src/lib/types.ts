@@ -124,6 +124,50 @@ export interface Collection {
    * Optional - must be in #RGB or #RRGGBB format (e.g., "#F57" or "#FF5733").
    */
   color?: string;
+
+  /**
+   * Marks this collection as the system default (Inbox).
+   * Only one collection should have this flag set to true.
+   */
+  isDefault?: boolean;
+}
+
+/**
+ * Fixed identifier for the Inbox collection.
+ * This value is immutable and used to identify the system's default collection.
+ */
+export const INBOX_COLLECTION_ID = 'inbox';
+
+/**
+ * Default name for the Inbox collection.
+ */
+export const INBOX_COLLECTION_NAME = 'Inbox';
+
+/**
+ * Represents the system's default Inbox collection.
+ * Extends Collection with required properties specific to the Inbox.
+ */
+export interface InboxCollection extends Collection {
+  id: typeof INBOX_COLLECTION_ID;
+  isDefault: true;
+}
+
+/**
+ * Type guard to check if a collection is the Inbox collection.
+ *
+ * @param collection - The collection to check
+ * @returns true if the collection is the Inbox, false otherwise
+ *
+ * @example
+ * ```typescript
+ * const collection = getCollections()[0];
+ * if (isInboxCollection(collection)) {
+ *   console.log('This is the Inbox!');
+ * }
+ * ```
+ */
+export function isInboxCollection(collection: Collection): collection is InboxCollection {
+  return collection.id === INBOX_COLLECTION_ID;
 }
 
 /**

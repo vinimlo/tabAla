@@ -2,8 +2,15 @@
  * Unit tests for core types and validation functions.
  */
 import { describe, it, expect } from 'vitest';
-import type { Link, Collection } from '@/lib/types';
-import { generateId, isValidHexColor, isValidUrl } from '@/lib/types';
+import type { Link, Collection, InboxCollection } from '@/lib/types';
+import {
+  generateId,
+  isValidHexColor,
+  isValidUrl,
+  isInboxCollection,
+  INBOX_COLLECTION_ID,
+  INBOX_COLLECTION_NAME,
+} from '@/lib/types';
 
 describe('Link interface', () => {
   it('should accept a valid Link with all required fields', () => {
@@ -263,6 +270,60 @@ describe('isValidUrl()', () => {
     it('should return false for data protocol', () => {
       expect(isValidUrl('data:text/html,<h1>Hello</h1>')).toBe(false);
     });
+  });
+});
+
+describe('Inbox constants', () => {
+  it('INBOX_COLLECTION_ID should be "inbox"', () => {
+    expect(INBOX_COLLECTION_ID).toBe('inbox');
+  });
+
+  it('INBOX_COLLECTION_NAME should be "Inbox"', () => {
+    expect(INBOX_COLLECTION_NAME).toBe('Inbox');
+  });
+});
+
+describe('InboxCollection interface', () => {
+  it('should accept a valid InboxCollection', () => {
+    const inbox: InboxCollection = {
+      id: INBOX_COLLECTION_ID,
+      name: 'Inbox',
+      order: 0,
+      createdAt: Date.now(),
+      isDefault: true,
+    };
+
+    expect(inbox.id).toBe('inbox');
+    expect(inbox.isDefault).toBe(true);
+  });
+});
+
+describe('isInboxCollection', () => {
+  it('should return true for collection with inbox id', () => {
+    const inbox: Collection = {
+      id: INBOX_COLLECTION_ID,
+      name: 'Inbox',
+      order: 0,
+    };
+    expect(isInboxCollection(inbox)).toBe(true);
+  });
+
+  it('should return false for collection with different id', () => {
+    const collection: Collection = {
+      id: 'other',
+      name: 'Other',
+      order: 1,
+    };
+    expect(isInboxCollection(collection)).toBe(false);
+  });
+
+  it('should return false for collection with similar id', () => {
+    const collection: Collection = {
+      id: 'inbox2',
+      name: 'Inbox 2',
+      order: 1,
+    };
+    expect(isInboxCollection(collection)).toBe(false);
   });
 });
 

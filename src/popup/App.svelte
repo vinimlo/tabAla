@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { Link } from '@/lib/types';
+  import { INBOX_COLLECTION_ID } from '@/lib/types';
   import { openLinkInNewTab, getCurrentTab, isSaveableUrl } from '@/lib/tabs';
   import { linksStore, linksByCollection } from '@stores/links';
   import CollectionGroup from '@components/CollectionGroup.svelte';
@@ -11,7 +12,7 @@
 
   const BATCH_SIZE = 50;
 
-  let expandedCollections: Set<string> = new Set(['inbox']);
+  let expandedCollections: Set<string> = new Set([INBOX_COLLECTION_ID]);
   let visibleCount = BATCH_SIZE;
   let scrollContainer: HTMLElement;
   let linkToRemove: Link | null = null;
@@ -32,13 +33,13 @@
       collection,
       links: allLinks,
     };
-  }).filter((group) => group.links.length > 0 || group.collection.id === 'inbox');
+  }).filter((group) => group.links.length > 0 || group.collection.id === INBOX_COLLECTION_ID);
 
   $: hasMoreToLoad = visibleCount < totalLinks;
 
   onMount(() => {
     linksStore.load();
-    expandedCollections = new Set(['inbox']);
+    expandedCollections = new Set([INBOX_COLLECTION_ID]);
     setTimeout(() => mounted = true, 50);
   });
 
@@ -129,7 +130,7 @@
         url: tabInfo.url,
         title: tabInfo.title,
         favicon: tabInfo.favicon,
-        collectionId: 'inbox',
+        collectionId: INBOX_COLLECTION_ID,
       });
 
       successMessage = 'Link salvo!';

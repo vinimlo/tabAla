@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
-  import { fade } from 'svelte/transition';
+  import { fade, scale } from 'svelte/transition';
 
   export let message: string = 'Are you sure?';
   export let confirmText: string = 'Remover';
@@ -59,6 +59,7 @@
     class="dialog"
     bind:this={dialogElement}
     tabindex="-1"
+    transition:scale={{ duration: 200, start: 0.95, opacity: 0 }}
   >
     <p id="dialog-message">{message}</p>
     <div class="actions">
@@ -87,7 +88,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -95,12 +97,15 @@
   }
 
   .dialog {
-    background: white;
-    border-radius: 8px;
-    padding: 1.25rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
     max-width: 280px;
     width: 90%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.03);
   }
 
   .dialog:focus {
@@ -108,50 +113,60 @@
   }
 
   p {
-    margin: 0 0 1rem;
-    color: #333;
+    margin: 0 0 var(--space-5);
+    color: var(--text-primary);
     font-size: 0.9375rem;
     text-align: center;
     line-height: 1.4;
+    font-weight: 500;
   }
 
   .actions {
     display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
+    gap: var(--space-2);
+    justify-content: center;
   }
 
   .btn {
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    font-size: 0.875rem;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s;
+    transition: all var(--duration-fast) var(--ease-out);
     border: 1px solid transparent;
+    min-width: 80px;
   }
 
   .btn:focus {
-    outline: 2px solid #3b82f6;
+    outline: none;
+  }
+
+  .btn:focus-visible {
+    outline: 1px solid var(--accent);
     outline-offset: 2px;
   }
 
   .btn-cancel {
-    background: #f3f4f6;
-    color: #374151;
-    border-color: #d1d5db;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-color: var(--border);
   }
 
   .btn-cancel:hover {
-    background: #e5e7eb;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-color: var(--border-hover);
   }
 
   .btn-confirm {
-    background: #dc2626;
+    background: var(--error);
     color: white;
   }
 
   .btn-confirm:hover {
-    background: #b91c1c;
+    background: #dc2626;
+    box-shadow: 0 0 16px rgba(248, 113, 113, 0.3);
   }
 </style>

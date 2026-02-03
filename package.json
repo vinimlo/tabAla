@@ -19,7 +19,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
     "svelte": "^4.2.19",
@@ -43,6 +44,7 @@
     "jsdom": "^25.0.1",
     "prettier": "^3.4.2",
     "prettier-plugin-svelte": "^3.3.3",
+    "sharp": "^0.34.5",
     "svelte-check": "^4.1.1",
     "typescript": "^5.7.2",
     "vite": "^5.4.11",

@@ -27,7 +27,7 @@ describe('App Component', () => {
     cleanup();
   });
 
-  it('should render TabAla title in heading', () => {
+  it('should render TabAla watermark', () => {
     linksStore.set({
       links: [],
       collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
@@ -36,7 +36,7 @@ describe('App Component', () => {
     });
 
     render(App);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('TabAla');
+    expect(screen.getByText('tabala')).toBeInTheDocument();
   });
 
   it('should have main element', () => {
@@ -61,7 +61,7 @@ describe('App Component', () => {
     });
 
     render(App);
-    expect(screen.getByText('Nenhum link salvo ainda')).toBeInTheDocument();
+    expect(screen.getByText('Sua sala de espera')).toBeInTheDocument();
   });
 
   it('should show loading state when loading', () => {
@@ -73,7 +73,7 @@ describe('App Component', () => {
     });
 
     render(App);
-    expect(screen.getByText('Carregando...')).toBeInTheDocument();
+    expect(screen.getByText('carregando...')).toBeInTheDocument();
   });
 
   it('should show error state when error occurs', () => {

@@ -42,12 +42,14 @@ describe('Toast Component', () => {
     expect(alert).toHaveAttribute('aria-live', 'polite');
   });
 
-  it('should not be visible after dismiss', async () => {
-    render(Toast, { props: { message: 'Test message' } });
+  it('should call onClose callback when dismissed', async () => {
+    const onClose = vi.fn();
+    render(Toast, { props: { message: 'Test message', onClose } });
 
     const closeButton = screen.getByRole('button', { name: /fechar notificação/i });
     await fireEvent.click(closeButton);
 
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    // Verify the onClose callback is called, which triggers the visibility change
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

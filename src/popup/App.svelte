@@ -1,11 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { Link } from '@/lib/types';
+  import { openLinkInNewTab, getCurrentTab, isSaveableUrl } from '@/lib/tabs';
   import { linksStore, linksByCollection } from '@stores/links';
   import CollectionGroup from '@components/CollectionGroup.svelte';
   import EmptyState from '@components/EmptyState.svelte';
   import ConfirmDialog from './components/ConfirmDialog.svelte';
   import Toast from './components/Toast.svelte';
+  import SaveButton from './components/SaveButton.svelte';
 
   const BATCH_SIZE = 50;
 
@@ -14,6 +16,9 @@
   let scrollContainer: HTMLElement;
   let linkToRemove: Link | null = null;
   let errorMessage: string | null = null;
+  let successMessage: string | null = null;
+  let isSaving = false;
+  let mounted = false;
 
   $: loading = $linksStore.loading;
   $: error = $linksStore.error;
@@ -34,6 +39,7 @@
   onMount(() => {
     linksStore.load();
     expandedCollections = new Set(['inbox']);
+    setTimeout(() => mounted = true, 50);
   });
 
   function handleToggle(event: CustomEvent<string>): void {
@@ -48,11 +54,9 @@
 
   async function handleOpenLink(event: CustomEvent<Link>): Promise<void> {
     const link = event.detail;
-    try {
-      await chrome.tabs.create({ url: link.url });
-    } catch (err) {
-      console.error('Failed to open link:', err);
-      errorMessage = 'Erro ao abrir link. Tente novamente.';
+    const result = await openLinkInNewTab(link.url);
+    if (!result.success) {
+      errorMessage = result.error ?? 'Erro ao abrir link. Tente novamente.';
     }
   }
 
@@ -100,17 +104,53 @@
       visibleCount = Math.min(visibleCount + BATCH_SIZE, totalLinks);
     }
   }
+
+  async function handleSaveCurrentTab(): Promise<void> {
+    if (isSaving) {
+      return;
+    }
+
+    isSaving = true;
+
+    try {
+      const tabInfo = await getCurrentTab();
+
+      if (!tabInfo) {
+        errorMessage = 'Não foi possível obter a aba atual.';
+        return;
+      }
+
+      if (!isSaveableUrl(tabInfo.url)) {
+        errorMessage = 'Esta página não pode ser salva.';
+        return;
+      }
+
+      await linksStore.addLink({
+        url: tabInfo.url,
+        title: tabInfo.title,
+        favicon: tabInfo.favicon,
+        collectionId: 'inbox',
+      });
+
+      successMessage = 'Link salvo!';
+    } catch (err) {
+      console.error('Failed to save current tab:', err);
+      errorMessage = 'Erro ao salvar link. Tente novamente.';
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  function clearSuccess(): void {
+    successMessage = null;
+  }
 </script>
 
-<main class="app">
-  <header class="app-header">
-    <h1 class="app-title">TabAla</h1>
-  </header>
-
+<main class="app" class:mounted>
   {#if loading}
     <div class="loading">
       <div class="spinner"></div>
-      <span>Carregando...</span>
+      <span>carregando...</span>
     </div>
   {:else if error}
     <div class="error">
@@ -125,19 +165,31 @@
       bind:this={scrollContainer}
       on:scroll={handleScroll}
     >
-      {#each visibleCollections as { collection, links } (collection.id)}
-        <CollectionGroup
-          {collection}
-          {links}
-          expanded={expandedCollections.has(collection.id)}
-          on:toggle={handleToggle}
-          on:open={handleOpenLink}
-          on:remove={handleRemoveLink}
-        />
+      {#each visibleCollections as { collection, links }, i (collection.id)}
+        <div class="collection-wrapper" style="--delay: {i * 50}ms">
+          <CollectionGroup
+            {collection}
+            {links}
+            expanded={expandedCollections.has(collection.id)}
+            on:toggle={handleToggle}
+            on:open={handleOpenLink}
+            on:remove={handleRemoveLink}
+          />
+        </div>
       {/each}
     </div>
   {/if}
+
+  <SaveButton loading={isSaving} disabled={loading} on:click={handleSaveCurrentTab} />
+
+  <footer class="watermark">
+    <span>tabala</span>
+  </footer>
 </main>
+
+{#if successMessage}
+  <Toast message={successMessage} type="success" onClose={clearSuccess} />
+{/if}
 
 {#if errorMessage}
   <Toast message={errorMessage} onClose={clearError} />
@@ -154,6 +206,52 @@
 {/if}
 
 <style>
+  :global(:root) {
+    /* Base - Dark theme for futuristic feel */
+    --bg-primary: #0D0D0F;
+    --bg-secondary: #151518;
+    --bg-tertiary: #1C1C21;
+
+    /* Text - High contrast, refined */
+    --text-primary: #FAFAFA;
+    --text-secondary: #8A8A8E;
+    --text-tertiary: #4A4A4E;
+
+    /* Accent - Warm coral */
+    --accent: #FF6B4A;
+    --accent-soft: rgba(255, 107, 74, 0.12);
+    --accent-glow: rgba(255, 107, 74, 0.25);
+
+    /* Semantic */
+    --success: #4ADE80;
+    --error: #F87171;
+
+    /* Borders & Dividers */
+    --border: rgba(255, 255, 255, 0.06);
+    --border-hover: rgba(255, 255, 255, 0.12);
+
+    /* Spacing */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
+
+    /* Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+
+    /* Motion */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+    --duration-slow: 400ms;
+  }
+
   :global(*) {
     box-sizing: border-box;
   }
@@ -161,11 +259,13 @@
   :global(body) {
     margin: 0;
     padding: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: "Satoshi", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 14px;
     line-height: 1.5;
-    color: #333;
-    background-color: #fff;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   .app {
@@ -175,19 +275,14 @@
     max-height: 600px;
     min-width: 300px;
     max-width: 400px;
+    background: var(--bg-primary);
+    position: relative;
+    opacity: 0;
+    transition: opacity var(--duration-normal) var(--ease-out);
   }
 
-  .app-header {
-    flex-shrink: 0;
-    padding: 12px 16px;
-    border-bottom: 1px solid #eee;
-  }
-
-  .app-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
-    margin: 0;
+  .app.mounted {
+    opacity: 1;
   }
 
   .loading {
@@ -195,16 +290,19 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: var(--space-3);
     flex: 1;
-    color: #888;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    text-transform: lowercase;
   }
 
   .spinner {
-    width: 24px;
-    height: 24px;
-    border: 2px solid #eee;
-    border-top-color: #666;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -220,40 +318,44 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: var(--space-3);
     flex: 1;
-    padding: 24px;
+    padding: var(--space-5);
     text-align: center;
   }
 
   .error p {
-    color: #d00;
+    color: var(--error);
     margin: 0;
+    font-size: 0.875rem;
   }
 
   .error button {
-    padding: 8px 16px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    background: #fff;
-    color: #333;
-    font-size: 14px;
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.875rem;
     cursor: pointer;
-    transition: background-color 0.15s ease;
+    transition: all var(--duration-fast) var(--ease-out);
   }
 
   .error button:hover {
-    background-color: #f5f5f5;
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-hover);
   }
 
   .scroll-container {
     flex: 1;
     overflow-y: auto;
-    padding: 8px;
+    padding: var(--space-3);
+    padding-bottom: var(--space-6);
   }
 
   .scroll-container::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
   }
 
   .scroll-container::-webkit-scrollbar-track {
@@ -261,11 +363,44 @@
   }
 
   .scroll-container::-webkit-scrollbar-thumb {
-    background-color: #ddd;
-    border-radius: 3px;
+    background-color: var(--border);
+    border-radius: var(--radius-full);
   }
 
   .scroll-container::-webkit-scrollbar-thumb:hover {
-    background-color: #ccc;
+    background-color: var(--border-hover);
+  }
+
+  .collection-wrapper {
+    opacity: 0;
+    transform: translateY(8px);
+    animation: fadeSlideIn var(--duration-slow) var(--ease-out) forwards;
+    animation-delay: var(--delay, 0ms);
+  }
+
+  @keyframes fadeSlideIn {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .watermark {
+    position: absolute;
+    bottom: var(--space-3);
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .watermark span {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    opacity: 0.5;
   }
 </style>

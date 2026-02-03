@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { slide } from 'svelte/transition';
   import type { Link, Collection } from '@/lib/types';
   import LinkItem from './LinkItem.svelte';
 
@@ -42,28 +43,24 @@
     on:click={toggleExpanded}
     on:keydown={handleKeydown}
   >
-    <svg
-      class="chevron"
-      class:expanded
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-    >
-      <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-    </svg>
+    <span class="dot" class:expanded></span>
     <span class="name">{collection.name}</span>
     <span class="count">{links.length}</span>
   </header>
 
   {#if expanded && links.length > 0}
-    <div class="links">
-      {#each links as link (link.id)}
-        <LinkItem
-          {link}
-          on:open={handleOpen}
-          on:remove={handleRemove}
-        />
+    <div
+      class="links"
+      transition:slide={{ duration: 250, easing: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 }}
+    >
+      {#each links as link, i (link.id)}
+        <div class="link-wrapper" style="--link-delay: {i * 30}ms">
+          <LinkItem
+            {link}
+            on:open={handleOpen}
+            on:remove={handleRemove}
+          />
+        </div>
       {/each}
     </div>
   {/if}
@@ -71,59 +68,83 @@
 
 <style>
   .collection-group {
-    margin-bottom: 4px;
+    margin-bottom: var(--space-1);
   }
 
   .header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border-radius: 6px;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     user-select: none;
-    transition: background-color 0.15s ease;
+    transition: background-color var(--duration-fast) var(--ease-out);
   }
 
   .header:hover {
-    background-color: #f5f5f5;
+    background-color: var(--bg-secondary);
   }
 
   .header:focus {
-    outline: 2px solid #666;
-    outline-offset: -2px;
+    outline: none;
+    background-color: var(--bg-secondary);
   }
 
-  .chevron {
+  .header:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: -1px;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background-color: var(--text-tertiary);
+    transition: all var(--duration-fast) var(--ease-out);
     flex-shrink: 0;
-    color: #666;
-    transform: rotate(0deg);
-    transition: transform 0.15s ease;
   }
 
-  .chevron.expanded {
-    transform: rotate(90deg);
+  .dot.expanded {
+    background-color: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
   }
 
   .name {
     flex: 1;
-    font-size: 13px;
-    font-weight: 600;
-    color: #444;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .header:hover .name {
+    color: var(--text-primary);
   }
 
   .count {
-    font-size: 12px;
+    font-size: 0.6875rem;
     font-weight: 500;
-    color: #888;
-    background-color: #f0f0f0;
-    padding: 2px 8px;
-    border-radius: 10px;
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
   }
 
   .links {
-    padding-left: 8px;
+    padding-left: var(--space-4);
+    padding-top: var(--space-1);
+  }
+
+  .link-wrapper {
+    animation: linkFadeIn var(--duration-normal) var(--ease-out) forwards;
+    animation-delay: var(--link-delay, 0ms);
+    opacity: 0;
+  }
+
+  @keyframes linkFadeIn {
+    to {
+      opacity: 1;
+    }
   }
 </style>

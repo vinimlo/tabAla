@@ -44,6 +44,8 @@ describe('linksStore', () => {
       collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
       loading: true,
       error: null,
+      isAdding: false,
+      isRemoving: new Set(),
     });
   });
 

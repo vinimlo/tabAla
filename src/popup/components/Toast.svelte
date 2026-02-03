@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { fly, fade } from 'svelte/transition';
 
   export let message: string;
   export let duration: number = 3000;
+  export let type: 'error' | 'success' | 'info' = 'error';
   export let onClose: () => void = () => {};
 
   let visible = true;
@@ -25,68 +27,109 @@
 </script>
 
 {#if visible}
-  <div class="toast" role="alert" aria-live="polite">
-    <span class="toast-message">{message}</span>
-    <button
-      class="toast-close"
-      on:click={dismiss}
-      aria-label="Fechar notificação"
-      type="button"
+  <div
+    class="toast-backdrop"
+    transition:fade={{ duration: 150 }}
+  >
+    <div
+      class="toast"
+      class:error={type === 'error'}
+      class:success={type === 'success'}
+      role="alert"
+      aria-live="polite"
+      transition:fly={{ y: 20, duration: 200 }}
     >
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
+      <span class="toast-message">{message}</span>
+      <button
+        class="toast-close"
+        on:click={dismiss}
+        aria-label="Fechar notificação"
+        type="button"
       >
-        <path
-          d="M12 4L4 12M4 4L12 12"
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
           stroke="currentColor"
           stroke-width="2"
           stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
+        >
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
   </div>
 {/if}
 
 <style>
-  .toast {
+  .toast-backdrop {
     position: fixed;
-    bottom: 16px;
-    left: 16px;
-    right: 16px;
+    bottom: var(--space-4);
+    left: var(--space-4);
+    right: var(--space-4);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+  }
+
+  .toast {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding: 12px 16px;
-    background-color: #dc2626;
-    color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    animation: slideIn 0.2s ease-out;
-    z-index: 1000;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: var(--radius-full);
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    max-width: 340px;
+    width: 100%;
   }
 
-  @keyframes slideIn {
-    from {
-      transform: translateY(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
+  .toast.error {
+    border-color: rgba(248, 113, 113, 0.2);
+  }
+
+  .toast.error::before {
+    content: '';
+    position: absolute;
+    left: var(--space-4);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background-color: var(--error);
+    box-shadow: 0 0 8px var(--error);
+  }
+
+  .toast.success {
+    border-color: rgba(74, 222, 128, 0.2);
+  }
+
+  .toast.success::before {
+    content: '';
+    position: absolute;
+    left: var(--space-4);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background-color: var(--success);
+    box-shadow: 0 0 8px var(--success);
   }
 
   .toast-message {
-    font-size: 14px;
+    font-size: 0.8125rem;
     line-height: 1.4;
     flex: 1;
+    padding-left: var(--space-4);
   }
 
   .toast-close {
@@ -98,20 +141,23 @@
     padding: 0;
     background: transparent;
     border: none;
-    border-radius: 4px;
-    color: white;
+    border-radius: var(--radius-full);
+    color: var(--text-tertiary);
     cursor: pointer;
-    opacity: 0.8;
-    transition: opacity 0.15s ease;
+    transition: all var(--duration-fast) var(--ease-out);
     flex-shrink: 0;
   }
 
   .toast-close:hover {
-    opacity: 1;
+    color: var(--text-primary);
+    background-color: var(--border);
   }
 
   .toast-close:focus {
-    outline: 2px solid white;
-    outline-offset: 2px;
+    outline: none;
+  }
+
+  .toast-close:focus-visible {
+    outline: 1px solid var(--accent);
   }
 </style>

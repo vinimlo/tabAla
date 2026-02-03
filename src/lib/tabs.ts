@@ -3,25 +3,50 @@
  * Provides functions for opening links in new browser tabs.
  */
 
-export interface OpenLinkResult {
-  success: boolean;
-  error?: string;
+import { isValidUrl } from './types';
+
+// Re-export isValidUrl for backward compatibility
+export { isValidUrl } from './types';
+
+export interface CurrentTabInfo {
+  url: string;
+  title: string;
+  favicon?: string;
 }
 
 /**
- * Validates if a string is a valid URL that can be opened in a browser tab.
+ * Gets information about the currently active tab in the current window.
+ * Returns null if the tab cannot be accessed or has no valid URL/title.
  */
-export function isValidUrl(url: string): boolean {
-  if (!url || typeof url !== 'string') {
-    return false;
-  }
-
+export async function getCurrentTab(): Promise<CurrentTabInfo | null> {
   try {
-    const parsed = new URL(url);
-    return ['http:', 'https:', 'file:'].includes(parsed.protocol);
-  } catch {
-    return false;
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.url || !tab.title) {
+      return null;
+    }
+
+    return {
+      url: tab.url,
+      title: tab.title,
+      favicon: tab.favIconUrl,
+    };
+  } catch (error) {
+    console.error('Failed to get current tab:', error);
+    return null;
   }
+}
+
+/**
+ * Checks if a URL is saveable (not a browser internal URL).
+ */
+export function isSaveableUrl(url: string): boolean {
+  const blockedPrefixes = ['chrome://', 'chrome-extension://', 'about:', 'edge://', 'brave://'];
+  return !blockedPrefixes.some((prefix) => url.startsWith(prefix));
+}
+
+export interface OpenLinkResult {
+  success: boolean;
+  error?: string;
 }
 
 /**

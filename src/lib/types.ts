@@ -168,27 +168,41 @@ export function isValidHexColor(color: string): boolean {
 }
 
 /**
- * Validates if a string is a valid URL.
+ * Allowed URL protocols for browser tab navigation.
+ * These are the only protocols considered safe for opening in new tabs.
+ */
+const ALLOWED_URL_PROTOCOLS = ['http:', 'https:', 'file:'];
+
+/**
+ * Validates if a string is a valid URL that can be opened in a browser tab.
  *
  * Uses the native URL constructor for validation, which checks
- * for proper URL structure and protocol.
+ * for proper URL structure. Additionally validates that the protocol
+ * is in the allowed list (http, https, file) for security.
  *
  * @param url - The URL string to validate
- * @returns true if the URL is valid, false otherwise
+ * @returns true if the URL is valid and has an allowed protocol, false otherwise
  *
  * @example
  * ```typescript
  * isValidUrl('https://example.com');           // true
  * isValidUrl('http://localhost:3000/path');    // true
- * isValidUrl('chrome-extension://id/page');    // true
+ * isValidUrl('file:///path/to/file.html');     // true
+ * isValidUrl('javascript:alert(1)');           // false (dangerous protocol)
+ * isValidUrl('data:text/html,<h1>Hi</h1>');    // false (dangerous protocol)
  * isValidUrl('not-a-url');                     // false
  * isValidUrl('');                              // false
+ * isValidUrl(null);                            // false
  * ```
  */
 export function isValidUrl(url: string): boolean {
+  if (!url || typeof url !== 'string') {
+    return false;
+  }
+
   try {
-    new URL(url);
-    return true;
+    const parsed = new URL(url);
+    return ALLOWED_URL_PROTOCOLS.includes(parsed.protocol);
   } catch {
     return false;
   }

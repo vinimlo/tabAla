@@ -2,7 +2,7 @@
  * Unit tests for tabs.ts utility functions.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { isValidUrl, openLinkInNewTab } from '@/lib/tabs';
+import { isValidUrl, openLinkInNewTab, getCurrentTab, isSaveableUrl } from '@/lib/tabs';
 
 describe('isValidUrl', () => {
   it('should return true for valid http URL', () => {
@@ -128,5 +128,152 @@ describe('openLinkInNewTab', () => {
 
     expect(consoleSpy).toHaveBeenCalledWith('Failed to open link in new tab:', error);
     consoleSpy.mockRestore();
+  });
+});
+
+describe('getCurrentTab', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should return current tab info with url, title, and favicon', async () => {
+    vi.mocked(chrome.tabs.query).mockResolvedValueOnce([
+      {
+        id: 1,
+        index: 0,
+        windowId: 1,
+        highlighted: true,
+        active: true,
+        pinned: false,
+        incognito: false,
+        url: 'https://example.com',
+        title: 'Example Page',
+        favIconUrl: 'https://example.com/favicon.ico',
+      },
+    ]);
+
+    const result = await getCurrentTab();
+
+    expect(chrome.tabs.query).toHaveBeenCalledWith({ active: true, currentWindow: true });
+    expect(result).toEqual({
+      url: 'https://example.com',
+      title: 'Example Page',
+      favicon: 'https://example.com/favicon.ico',
+    });
+  });
+
+  it('should return null if no active tab found', async () => {
+    vi.mocked(chrome.tabs.query).mockResolvedValueOnce([]);
+
+    const result = await getCurrentTab();
+
+    expect(result).toBeNull();
+  });
+
+  it('should return null if tab has no url', async () => {
+    vi.mocked(chrome.tabs.query).mockResolvedValueOnce([
+      {
+        id: 1,
+        index: 0,
+        windowId: 1,
+        highlighted: true,
+        active: true,
+        pinned: false,
+        incognito: false,
+        title: 'Tab without URL',
+      },
+    ]);
+
+    const result = await getCurrentTab();
+
+    expect(result).toBeNull();
+  });
+
+  it('should return null if tab has no title', async () => {
+    vi.mocked(chrome.tabs.query).mockResolvedValueOnce([
+      {
+        id: 1,
+        index: 0,
+        windowId: 1,
+        highlighted: true,
+        active: true,
+        pinned: false,
+        incognito: false,
+        url: 'https://example.com',
+      },
+    ]);
+
+    const result = await getCurrentTab();
+
+    expect(result).toBeNull();
+  });
+
+  it('should handle favicon being undefined', async () => {
+    vi.mocked(chrome.tabs.query).mockResolvedValueOnce([
+      {
+        id: 1,
+        index: 0,
+        windowId: 1,
+        highlighted: true,
+        active: true,
+        pinned: false,
+        incognito: false,
+        url: 'https://example.com',
+        title: 'Example Page',
+      },
+    ]);
+
+    const result = await getCurrentTab();
+
+    expect(result).toEqual({
+      url: 'https://example.com',
+      title: 'Example Page',
+      favicon: undefined,
+    });
+  });
+
+  it('should return null when chrome.tabs.query fails', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(chrome.tabs.query).mockRejectedValueOnce(new Error('Query failed'));
+
+    const result = await getCurrentTab();
+
+    expect(result).toBeNull();
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+});
+
+describe('isSaveableUrl', () => {
+  it('should return true for https URLs', () => {
+    expect(isSaveableUrl('https://example.com')).toBe(true);
+  });
+
+  it('should return true for http URLs', () => {
+    expect(isSaveableUrl('http://example.com')).toBe(true);
+  });
+
+  it('should return true for file URLs', () => {
+    expect(isSaveableUrl('file:///path/to/file.html')).toBe(true);
+  });
+
+  it('should return false for chrome:// URLs', () => {
+    expect(isSaveableUrl('chrome://extensions')).toBe(false);
+  });
+
+  it('should return false for chrome-extension:// URLs', () => {
+    expect(isSaveableUrl('chrome-extension://abcdef/popup.html')).toBe(false);
+  });
+
+  it('should return false for about: URLs', () => {
+    expect(isSaveableUrl('about:blank')).toBe(false);
+  });
+
+  it('should return false for edge:// URLs', () => {
+    expect(isSaveableUrl('edge://settings')).toBe(false);
+  });
+
+  it('should return false for brave:// URLs', () => {
+    expect(isSaveableUrl('brave://settings')).toBe(false);
   });
 });

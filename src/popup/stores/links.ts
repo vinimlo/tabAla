@@ -12,6 +12,8 @@ interface LinksState {
   collections: Collection[];
   loading: boolean;
   error: string | null;
+  isAdding: boolean;
+  isRemoving: Set<string>;
 }
 
 const INBOX_COLLECTION: Collection = {
@@ -32,6 +34,8 @@ function createLinksStore(): Writable<LinksState> & {
     collections: [INBOX_COLLECTION],
     loading: true,
     error: null,
+    isAdding: false,
+    isRemoving: new Set(),
   });
 
   async function load(): Promise<void> {
@@ -47,12 +51,13 @@ function createLinksStore(): Writable<LinksState> & {
         await saveCollections(finalCollections);
       }
 
-      set({
+      update((state) => ({
+        ...state,
         links: links.sort((a, b) => b.createdAt - a.createdAt),
         collections: finalCollections.sort((a, b) => a.order - b.order),
         loading: false,
         error: null,
-      });
+      }));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load data';
       update((state) => ({ ...state, loading: false, error: message }));
@@ -60,6 +65,16 @@ function createLinksStore(): Writable<LinksState> & {
   }
 
   async function addLink(linkData: Omit<Link, 'id' | 'createdAt'>): Promise<void> {
+    let currentState: LinksState | null = null;
+    update((state) => {
+      currentState = state;
+      return state;
+    });
+
+    if (currentState!.isAdding) {
+      return;
+    }
+
     const newLink: Link = {
       ...linkData,
       id: crypto.randomUUID(),
@@ -72,6 +87,7 @@ function createLinksStore(): Writable<LinksState> & {
       return {
         ...state,
         links: linksToSave,
+        isAdding: true,
       };
     });
 
@@ -83,19 +99,34 @@ function createLinksStore(): Writable<LinksState> & {
         links: state.links.filter((l) => l.id !== newLink.id),
         error: 'Failed to save link',
       }));
+    } finally {
+      update((state) => ({ ...state, isAdding: false }));
     }
   }
 
   async function removeLink(id: string): Promise<void> {
+    let currentState: LinksState | null = null;
+    update((state) => {
+      currentState = state;
+      return state;
+    });
+
+    if (currentState!.isRemoving.has(id)) {
+      return;
+    }
+
     let removedLink: Link | undefined;
     let linksToSave: Link[] = [];
 
     update((state) => {
       removedLink = state.links.find((l) => l.id === id);
       linksToSave = state.links.filter((l) => l.id !== id);
+      const newIsRemoving = new Set(state.isRemoving);
+      newIsRemoving.add(id);
       return {
         ...state,
         links: linksToSave,
+        isRemoving: newIsRemoving,
       };
     });
 
@@ -109,6 +140,12 @@ function createLinksStore(): Writable<LinksState> & {
           error: 'Failed to remove link',
         }));
       }
+    } finally {
+      update((state) => {
+        const newIsRemoving = new Set(state.isRemoving);
+        newIsRemoving.delete(id);
+        return { ...state, isRemoving: newIsRemoving };
+      });
     }
   }
 

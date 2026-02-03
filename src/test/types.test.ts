@@ -218,8 +218,8 @@ describe('isValidUrl()', () => {
       expect(isValidUrl('https://example.com/page#section')).toBe(true);
     });
 
-    it('should return true for chrome-extension URL', () => {
-      expect(isValidUrl('chrome-extension://abcdef123456/popup.html')).toBe(true);
+    it('should return false for chrome-extension URL (restricted protocol)', () => {
+      expect(isValidUrl('chrome-extension://abcdef123456/popup.html')).toBe(false);
     });
 
     it('should return true for file URL', () => {
@@ -244,6 +244,25 @@ describe('isValidUrl()', () => {
       expect(isValidUrl('http://')).toBe(false);
     });
 
+    it('should return false for null', () => {
+      expect(isValidUrl(null as unknown as string)).toBe(false);
+    });
+
+    it('should return false for undefined', () => {
+      expect(isValidUrl(undefined as unknown as string)).toBe(false);
+    });
+
+    it('should return false for number', () => {
+      expect(isValidUrl(12345 as unknown as string)).toBe(false);
+    });
+
+    it('should return false for javascript protocol', () => {
+      expect(isValidUrl('javascript:alert(1)')).toBe(false);
+    });
+
+    it('should return false for data protocol', () => {
+      expect(isValidUrl('data:text/html,<h1>Hello</h1>')).toBe(false);
+    });
   });
 });
 

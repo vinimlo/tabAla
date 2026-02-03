@@ -696,11 +696,49 @@ export async function addLink(input: AddLinkInput): Promise<Link> {
 }
 
 /**
+ * Result of collection name validation.
+ */
+export interface ValidationResult {
+  valid: boolean;
+  error?: string;
+}
+
+/**
  * Result of validating a collection deletion.
  */
 export interface ValidateCollectionDeletionResult {
   valid: boolean;
   error?: string;
+}
+
+/**
+ * Validates a collection name against business rules.
+ * Checks for empty names and case-insensitive duplicates.
+ *
+ * @param name - The collection name to validate
+ * @param existingCollections - Array of existing collections for duplicate check
+ * @returns Validation result with valid flag and optional error message
+ */
+export function validateCollectionName(
+  name: string,
+  existingCollections: Collection[]
+): ValidationResult {
+  const trimmedName = name.trim();
+
+  if (trimmedName.length === 0) {
+    return { valid: false, error: 'Nome da coleção não pode estar vazio' };
+  }
+
+  const nameLower = trimmedName.toLowerCase();
+  const isDuplicate = existingCollections.some(
+    (collection) => collection.name.toLowerCase() === nameLower
+  );
+
+  if (isDuplicate) {
+    return { valid: false, error: 'Já existe uma coleção com este nome' };
+  }
+
+  return { valid: true };
 }
 
 /**
@@ -731,6 +769,50 @@ export async function validateCollectionDeletion(
   }
 
   return { valid: true };
+}
+
+/**
+ * Input data for creating a new collection.
+ */
+export interface CreateCollectionInput {
+  name: string;
+  color?: string;
+}
+
+/**
+ * Creates a new collection and persists it to storage.
+ * Validates the name to ensure it's not empty or a duplicate.
+ *
+ * @param input - The collection data
+ * @returns The created collection with generated id and timestamp
+ * @throws {StorageError} If validation fails or storage operation fails
+ */
+export async function createCollection(input: CreateCollectionInput): Promise<Collection> {
+  const trimmedName = input.name.trim();
+  const existingCollections = await getCollections();
+
+  const validation = validateCollectionName(trimmedName, existingCollections);
+  if (!validation.valid) {
+    throw new StorageError(
+      validation.error ?? 'Invalid collection name',
+      'INVALID_VALUE'
+    );
+  }
+
+  const orders = existingCollections.map((c) => c.order);
+  const maxOrder = orders.length > 0 ? Math.max(...orders) : 0;
+
+  const newCollection: Collection = {
+    id: crypto.randomUUID(),
+    name: trimmedName,
+    order: maxOrder + 1,
+    createdAt: Date.now(),
+    color: input.color,
+  };
+
+  await saveCollections([...existingCollections, newCollection]);
+
+  return newCollection;
 }
 
 /**

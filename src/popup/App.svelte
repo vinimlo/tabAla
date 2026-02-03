@@ -19,6 +19,7 @@
   import ConfirmDeleteDialog from './components/ConfirmDeleteDialog.svelte';
   import Toast from './components/Toast.svelte';
   import SaveButton from './components/SaveButton.svelte';
+  import CreateCollectionModal from './components/CreateCollectionModal.svelte';
 
   const BATCH_SIZE = 50;
 
@@ -30,6 +31,7 @@
   let successMessage: string | null = null;
   let isSaving = false;
   let mounted = false;
+  let showCreateCollectionModal = false;
 
   interface CollectionToDelete {
     id: string;
@@ -250,6 +252,30 @@
     successMessage = null;
   }
 
+function openCreateCollectionModal(): void {
+    showCreateCollectionModal = true;
+  }
+
+  function closeCreateCollectionModal(): void {
+    showCreateCollectionModal = false;
+  }
+
+  async function handleCreateCollection(event: CustomEvent<string>): Promise<void> {
+    const name = event.detail;
+
+    try {
+      const newCollection = await linksStore.addCollection(name);
+      showCreateCollectionModal = false;
+      successMessage = `Coleção "${newCollection.name}" criada!`;
+      expandedCollections.add(newCollection.id);
+      expandedCollections = expandedCollections;
+    } catch (err) {
+      console.error('Failed to create collection:', err);
+      errorMessage = err instanceof Error ? err.message : 'Erro ao criar coleção. Tente novamente.';
+      showCreateCollectionModal = false;
+    }
+  }
+
   function handleDeleteCollection(
     event: CustomEvent<{ id: string; name: string; linkCount: number }>
   ): void {
@@ -312,16 +338,37 @@
       <p>Erro ao carregar dados</p>
       <button type="button" on:click={() => linksStore.load()}>Tentar novamente</button>
     </div>
-  {:else if isEmpty}
-    <EmptyState />
   {:else}
-    <CollectionSelector
-      {collections}
-      selectedId={currentFilter}
-      {linkCounts}
-      {totalLinks}
-      on:select={handleCollectionSelect}
-    />
+    <header class="header">
+      <CollectionSelector
+        {collections}
+        selectedId={currentFilter}
+        {linkCounts}
+        {totalLinks}
+        on:select={handleCollectionSelect}
+      />
+      <button
+        type="button"
+        class="btn-new-collection"
+        on:click={openCreateCollectionModal}
+        aria-label="Nova Coleção"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Nova Coleção</span>
+      </button>
+    </header>
 
     {#if isFiltered}
       <div class="filter-status" transition:fade={{ duration: 150 }}>
@@ -329,7 +376,9 @@
       </div>
     {/if}
 
-    {#if isFilteredEmpty}
+    {#if isEmpty}
+      <EmptyState />
+    {:else if isFilteredEmpty}
       <div class="empty-filter" transition:fade={{ duration: 200 }}>
         <p>Nenhum link nesta coleção</p>
         <span class="hint">Salve uma aba para começar</span>
@@ -380,6 +429,14 @@
     cancelText="Cancelar"
     on:confirm={handleConfirmRemove}
     on:cancel={handleCancelRemove}
+  />
+{/if}
+
+{#if showCreateCollectionModal}
+  <CreateCollectionModal
+    existingNames={linksStore.getCollectionNames()}
+    on:create={handleCreateCollection}
+    on:cancel={closeCreateCollectionModal}
   />
 {/if}
 
@@ -626,5 +683,49 @@
     text-transform: uppercase;
     color: var(--text-tertiary);
     opacity: 0.5;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-3);
+    gap: var(--space-2);
+  }
+
+  .btn-new-collection {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+
+  .btn-new-collection:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+  }
+
+  .btn-new-collection:focus {
+    outline: none;
+  }
+
+  .btn-new-collection:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .btn-new-collection svg {
+    width: 14px;
+    height: 14px;
   }
 </style>

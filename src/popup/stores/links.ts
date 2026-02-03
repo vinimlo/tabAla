@@ -10,9 +10,11 @@ import {
   getLinks,
   saveLinks,
   getCollections,
-  saveCollections,
   initializeInbox,
   removeCollection as storageRemoveCollection,
+  createCollection as storageCreateCollection,
+  validateCollectionName,
+  type ValidationResult,
 } from '@/lib/storage';
 
 interface LinksState {
@@ -37,6 +39,8 @@ function createLinksStore(): Writable<LinksState> & {
   removeLink: (id: string) => Promise<void>;
   addCollection: (name: string) => Promise<Collection>;
   removeCollection: (id: string) => Promise<void>;
+  getCollectionNames: () => string[];
+  validateCollection: (name: string) => ValidationResult;
 } {
   const { subscribe, set, update } = writable<LinksState>({
     links: [],
@@ -152,41 +156,39 @@ function createLinksStore(): Writable<LinksState> & {
     }
   }
 
-  async function addCollection(name: string): Promise<Collection> {
+  function getCollectionNames(): string[] {
+    let names: string[] = [];
+    update((state) => {
+      names = state.collections.map((c) => c.name);
+      return state;
+    });
+    return names;
+  }
+
+  function validateCollection(name: string): ValidationResult {
     let currentCollections: Collection[] = [];
     update((state) => {
       currentCollections = state.collections;
       return state;
     });
+    return validateCollectionName(name, currentCollections);
+  }
 
-    const orders: number[] = currentCollections.map((c: Collection): number => c.order);
-    const maxOrder = orders.length > 0 ? Math.max(...orders) : 0;
-    const newCollection: Collection = {
-      id: crypto.randomUUID(),
-      name,
-      order: maxOrder + 1,
-    };
-
-    let collectionsToSave: Collection[] = [];
-    update((state) => {
-      collectionsToSave = [...state.collections, newCollection].sort((a, b) => a.order - b.order);
-      return {
-        ...state,
-        collections: collectionsToSave,
-      };
-    });
-
+  async function addCollection(name: string): Promise<Collection> {
     try {
-      await saveCollections(collectionsToSave);
-    } catch (error) {
+      const newCollection = await storageCreateCollection({ name });
+
       update((state) => ({
         ...state,
-        collections: state.collections.filter((c) => c.id !== newCollection.id),
-        error: 'Failed to save collection',
+        collections: [...state.collections, newCollection].sort((a, b) => a.order - b.order),
       }));
-    }
 
-    return newCollection;
+      return newCollection;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save collection';
+      update((state) => ({ ...state, error: message }));
+      throw error;
+    }
   }
 
   async function removeCollection(id: string): Promise<void> {
@@ -230,6 +232,8 @@ function createLinksStore(): Writable<LinksState> & {
     removeLink,
     addCollection,
     removeCollection,
+    getCollectionNames,
+    validateCollection,
   };
 }
 
@@ -243,7 +247,14 @@ export const linksByCollection = derived(linksStore, ($store) => {
   }
 
   for (const link of $store.links) {
-    const links = grouped.get(link.collectionId) ?? grouped.get(INBOX_COLLECTION_ID)!;
+    let links = grouped.get(link.collectionId);
+    if (!links) {
+      links = grouped.get(INBOX_COLLECTION_ID);
+      if (!links) {
+        links = [];
+        grouped.set(INBOX_COLLECTION_ID, links);
+      }
+    }
     links.push(link);
   }
 

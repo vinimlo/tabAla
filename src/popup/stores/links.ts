@@ -5,7 +5,13 @@
 
 import { writable, derived, type Writable } from 'svelte/store';
 import type { Link, Collection } from '@/lib/types';
-import { getLinks, saveLinks, getCollections, saveCollections } from '@/lib/storage';
+import {
+  getLinks,
+  saveLinks,
+  getCollections,
+  saveCollections,
+  renameCollection as storageRenameCollection,
+} from '@/lib/storage';
 
 interface LinksState {
   links: Link[];
@@ -28,6 +34,7 @@ function createLinksStore(): Writable<LinksState> & {
   removeLink: (id: string) => Promise<void>;
   addCollection: (name: string) => Promise<Collection>;
   removeCollection: (id: string) => Promise<void>;
+  renameCollection: (id: string, newName: string) => Promise<void>;
 } {
   const { subscribe, set, update } = writable<LinksState>({
     links: [],
@@ -222,6 +229,38 @@ function createLinksStore(): Writable<LinksState> & {
     }
   }
 
+  async function renameCollection(id: string, newName: string): Promise<void> {
+    let previousCollections: Collection[] = [];
+
+    update((state) => {
+      previousCollections = state.collections;
+      const updatedCollections = state.collections.map((c) =>
+        c.id === id ? { ...c, name: newName } : c
+      );
+      return {
+        ...state,
+        collections: updatedCollections,
+      };
+    });
+
+    try {
+      const result = await storageRenameCollection(id, newName);
+      if (!result.success) {
+        update((state) => ({
+          ...state,
+          collections: previousCollections,
+          error: result.error ?? 'Erro ao renomear coleção',
+        }));
+      }
+    } catch (error) {
+      update((state) => ({
+        ...state,
+        collections: previousCollections,
+        error: 'Erro ao renomear coleção',
+      }));
+    }
+  }
+
   return {
     subscribe,
     set,
@@ -231,6 +270,7 @@ function createLinksStore(): Writable<LinksState> & {
     removeLink,
     addCollection,
     removeCollection,
+    renameCollection,
   };
 }
 

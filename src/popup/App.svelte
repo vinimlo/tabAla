@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import type { Link } from '@/lib/types';
   import { openLinkInNewTab, getCurrentTab, isSaveableUrl } from '@/lib/tabs';
+  import { validateCollectionName } from '@/lib/validation';
   import { linksStore, linksByCollection } from '@stores/links';
   import CollectionGroup from '@components/CollectionGroup.svelte';
   import EmptyState from '@components/EmptyState.svelte';
@@ -19,6 +20,9 @@
   let successMessage: string | null = null;
   let isSaving = false;
   let mounted = false;
+  let renameErrors: Map<string, string | null> = new Map();
+  let renamingCollections: Set<string> = new Set();
+  let collectionGroupRefs: Map<string, CollectionGroup> = new Map();
 
   $: loading = $linksStore.loading;
   $: error = $linksStore.error;
@@ -143,6 +147,41 @@
 
   function clearSuccess(): void {
     successMessage = null;
+  }
+
+  async function handleRename(
+    event: CustomEvent<{ id: string; newName: string }>
+  ): Promise<void> {
+    const { id, newName } = event.detail;
+    const trimmedName = newName.trim();
+
+    const validation = validateCollectionName(trimmedName, id, collections);
+    if (!validation.valid) {
+      renameErrors = new Map(renameErrors.set(id, validation.error ?? null));
+      return;
+    }
+
+    renameErrors = new Map(renameErrors.set(id, null));
+    renamingCollections = new Set(renamingCollections.add(id));
+
+    try {
+      await linksStore.renameCollection(id, trimmedName);
+      collectionGroupRefs.get(id)?.exitEditMode();
+    } catch (err) {
+      console.error('Failed to rename collection:', err);
+      renameErrors = new Map(
+        renameErrors.set(id, 'Erro ao renomear. Tente novamente.')
+      );
+    } finally {
+      renamingCollections = new Set(
+        [...renamingCollections].filter((cid) => cid !== id)
+      );
+    }
+  }
+
+  function handleCancelRename(event: CustomEvent<string>): void {
+    const id = event.detail;
+    renameErrors = new Map(renameErrors.set(id, null));
   }
 </script>
 

@@ -3,18 +3,26 @@
   import { slide } from 'svelte/transition';
   import type { Link, Collection } from '@/lib/types';
   import LinkItem from './LinkItem.svelte';
+  import EditableCollectionName from './EditableCollectionName.svelte';
 
   export let collection: Collection;
   export let links: Link[];
   export let expanded: boolean = true;
+  export let renameError: string | null = null;
+  export let isRenaming: boolean = false;
 
   const dispatch = createEventDispatcher<{
     open: Link;
     remove: string;
     toggle: string;
+    rename: { id: string; newName: string };
+    cancelRename: string;
   }>();
 
+  let editableNameRef: EditableCollectionName;
+
   function toggleExpanded(): void {
+    if (editableNameRef?.isEditing()) return;
     dispatch('toggle', collection.id);
   }
 
@@ -27,10 +35,23 @@
   }
 
   function handleKeydown(event: KeyboardEvent): void {
+    if (editableNameRef?.isEditing()) return;
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       toggleExpanded();
     }
+  }
+
+  function handleRename(event: CustomEvent<string>): void {
+    dispatch('rename', { id: collection.id, newName: event.detail });
+  }
+
+  function handleCancelRename(): void {
+    dispatch('cancelRename', collection.id);
+  }
+
+  export function exitEditMode(): void {
+    editableNameRef?.exitEditMode();
   }
 </script>
 
@@ -44,7 +65,14 @@
     on:keydown={handleKeydown}
   >
     <span class="dot" class:expanded></span>
-    <span class="name">{collection.name}</span>
+    <EditableCollectionName
+      bind:this={editableNameRef}
+      name={collection.name}
+      error={renameError}
+      saving={isRenaming}
+      on:save={handleRename}
+      on:cancel={handleCancelRename}
+    />
     <span class="count">{links.length}</span>
   </header>
 
@@ -108,20 +136,6 @@
   .dot.expanded {
     background-color: var(--accent);
     box-shadow: 0 0 8px var(--accent-glow);
-  }
-
-  .name {
-    flex: 1;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    text-transform: lowercase;
-    letter-spacing: 0.02em;
-    transition: color var(--duration-fast) var(--ease-out);
-  }
-
-  .header:hover .name {
-    color: var(--text-primary);
   }
 
   .count {

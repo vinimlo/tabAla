@@ -2,23 +2,39 @@
   import { createEventDispatcher } from 'svelte';
   import { fade } from 'svelte/transition';
   import type { Link } from '@/lib/types';
+  import { openLinkInNewTab } from '@/lib/tabs';
 
   export let link: Link;
 
   const dispatch = createEventDispatcher<{
+    error: { message: string };
     remove: { linkId: string };
-    open: { url: string };
   }>();
 
+  let isLoading = false;
   let isHovering = false;
+
+  async function handleOpenLink() {
+    if (isLoading) {
+      return;
+    }
+
+    isLoading = true;
+
+    try {
+      const result = await openLinkInNewTab(link.url);
+
+      if (!result.success && result.error) {
+        dispatch('error', { message: result.error });
+      }
+    } finally {
+      isLoading = false;
+    }
+  }
 
   function handleRemoveClick(event: MouseEvent) {
     event.stopPropagation();
     dispatch('remove', { linkId: link.id });
-  }
-
-  function handleOpenClick() {
-    dispatch('open', { url: link.url });
   }
 
   function getFaviconUrl(url: string): string {
@@ -50,9 +66,10 @@
 >
   <button
     class="link-content"
-    on:click={handleOpenClick}
+    on:click={handleOpenLink}
+    disabled={isLoading}
     type="button"
-    aria-label="Open {link.title}"
+    aria-label="Abrir {link.title || 'link'} em nova aba"
   >
     <div class="favicon-wrapper">
       {#if link.favicon || link.url}
@@ -82,14 +99,17 @@
       <span class="link-title">{link.title || 'Untitled'}</span>
       <span class="link-url">{truncateUrl(link.url)}</span>
     </div>
+    {#if isLoading}
+      <span class="open-spinner" aria-hidden="true"></span>
+    {/if}
   </button>
 
-  {#if isHovering}
+  {#if isHovering && !isLoading}
     <button
       class="remove-btn"
       on:click={handleRemoveClick}
       type="button"
-      aria-label="Remove link"
+      aria-label="Remover link"
       transition:fade={{ duration: 100 }}
     >
       <svg
@@ -142,6 +162,11 @@
     border-radius: 4px;
   }
 
+  .link-content:disabled {
+    cursor: wait;
+    opacity: 0.7;
+  }
+
   .favicon-wrapper {
     position: relative;
     width: 24px;
@@ -191,6 +216,23 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .open-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #e5e7eb;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .remove-btn {

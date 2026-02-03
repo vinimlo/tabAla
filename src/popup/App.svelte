@@ -5,20 +5,30 @@
   import { getLinks, removeLink } from '@/lib/storage';
   import LinkItem from './components/LinkItem.svelte';
   import ConfirmDialog from './components/ConfirmDialog.svelte';
+  import Toast from './components/Toast.svelte';
 
   let links: Link[] = [];
   let isLoading = true;
+  let errorMessage: string | null = null;
   let linkToRemove: Link | null = null;
 
   onMount(async () => {
     try {
       links = await getLinks();
     } catch (error) {
-      console.error('Failed to load links:', error);
+      errorMessage = error instanceof Error ? error.message : 'Erro ao carregar links';
     } finally {
       isLoading = false;
     }
   });
+
+  function handleLinkError(event: CustomEvent<{ message: string }>) {
+    errorMessage = event.detail.message;
+  }
+
+  function clearError() {
+    errorMessage = null;
+  }
 
   function handleRemoveRequest(event: CustomEvent<{ linkId: string }>) {
     const link = links.find((l) => l.id === event.detail.linkId);
@@ -39,16 +49,12 @@
     if (result.success) {
       links = links.filter((l) => l.id !== linkId);
     } else {
-      console.error('Failed to remove link:', result.error);
+      errorMessage = result.error || 'Erro ao remover link';
     }
   }
 
   function handleCancelRemove() {
     linkToRemove = null;
-  }
-
-  function handleOpenLink(event: CustomEvent<{ url: string }>) {
-    void chrome.tabs.create({ url: event.detail.url, active: true });
   }
 </script>
 
@@ -81,14 +87,18 @@
         <div animate:flip={{ duration: 200 }}>
           <LinkItem
             {link}
+            on:error={handleLinkError}
             on:remove={handleRemoveRequest}
-            on:open={handleOpenLink}
           />
         </div>
       {/each}
     </div>
   {/if}
 </main>
+
+{#if errorMessage}
+  <Toast message={errorMessage} onClose={clearError} />
+{/if}
 
 {#if linkToRemove}
   <ConfirmDialog

@@ -1,5 +1,9 @@
 /**
  * App component test.
+ *
+ * Note: Async tests for loading links are challenging with Svelte + Vitest
+ * due to module mocking limitations. The core functionality is tested in
+ * storage.test.ts and component tests (LinkItem, ConfirmDialog).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
@@ -25,19 +29,16 @@ describe('App Component', () => {
 
   it('should show loading state initially', () => {
     render(App);
-    expect(screen.getByText('Carregando...')).toBeInTheDocument();
+    expect(screen.getByRole('main')).toBeInTheDocument();
+    const spinner = document.querySelector('.spinner');
+    expect(spinner).toBeInTheDocument();
   });
 
   it('should have header with title', () => {
     const { container } = render(App);
-    const header = container.querySelector('.header');
-    expect(header).not.toBeNull();
-    expect(header?.querySelector('h1')?.textContent).toBe('TabAla');
-  });
-
-  it('should have content area', () => {
-    const { container } = render(App);
-    const content = container.querySelector('.content');
-    expect(content).not.toBeNull();
+    const main = container.querySelector('main');
+    const h1 = main?.querySelector('h1');
+    expect(h1).not.toBeNull();
+    expect(h1?.textContent).toBe('TabAla');
   });
 });

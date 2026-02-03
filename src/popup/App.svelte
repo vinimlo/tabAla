@@ -1,13 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { flip } from 'svelte/animate';
   import type { Link } from '@/lib/types';
-  import { getLinks } from '@/lib/storage';
+  import { getLinks, removeLink } from '@/lib/storage';
   import LinkItem from './components/LinkItem.svelte';
+  import ConfirmDialog from './components/ConfirmDialog.svelte';
   import Toast from './components/Toast.svelte';
 
   let links: Link[] = [];
   let isLoading = true;
   let errorMessage: string | null = null;
+  let linkToRemove: Link | null = null;
 
   onMount(async () => {
     try {
@@ -26,72 +29,153 @@
   function clearError() {
     errorMessage = null;
   }
+
+  function handleRemoveRequest(event: CustomEvent<{ linkId: string }>) {
+    const link = links.find((l) => l.id === event.detail.linkId);
+    if (link) {
+      linkToRemove = link;
+    }
+  }
+
+  async function handleConfirmRemove() {
+    if (!linkToRemove) {
+      return;
+    }
+
+    const linkId = linkToRemove.id;
+    linkToRemove = null;
+
+    const result = await removeLink(linkId);
+    if (result.success) {
+      links = links.filter((l) => l.id !== linkId);
+    } else {
+      errorMessage = result.error || 'Erro ao remover link';
+    }
+  }
+
+  function handleCancelRemove() {
+    linkToRemove = null;
+  }
 </script>
 
 <main>
-  <header class="header">
+  <header>
     <h1>TabAla</h1>
   </header>
 
-  <div class="content">
-    {#if isLoading}
-      <p class="empty-state">Carregando...</p>
-    {:else if links.length === 0}
-      <p class="empty-state">Nenhum link salvo ainda.</p>
-    {:else}
-      <ul class="links-list" role="list">
-        {#each links as link (link.id)}
-          <LinkItem {link} on:error={handleLinkError} />
-        {/each}
-      </ul>
-    {/if}
-  </div>
-
-  {#if errorMessage}
-    <Toast message={errorMessage} onClose={clearError} />
+  {#if isLoading}
+    <div class="loading">
+      <span class="spinner"></span>
+    </div>
+  {:else if links.length === 0}
+    <div class="empty-state">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        aria-hidden="true"
+      >
+        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+        <polyline points="13 2 13 9 20 9" />
+      </svg>
+      <p>Nenhum link salvo</p>
+    </div>
+  {:else}
+    <div class="link-list" role="list">
+      {#each links as link (link.id)}
+        <div animate:flip={{ duration: 200 }}>
+          <LinkItem
+            {link}
+            on:error={handleLinkError}
+            on:remove={handleRemoveRequest}
+          />
+        </div>
+      {/each}
+    </div>
   {/if}
 </main>
 
+{#if errorMessage}
+  <Toast message={errorMessage} onClose={clearError} />
+{/if}
+
+{#if linkToRemove}
+  <ConfirmDialog
+    message="Remover este link?"
+    confirmText="Remover"
+    cancelText="Cancelar"
+    on:confirm={handleConfirmRemove}
+    on:cancel={handleCancelRemove}
+  />
+{/if}
+
 <style>
   main {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+    padding: 1rem;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100%;
+    box-sizing: border-box;
   }
 
-  .header {
-    padding: 16px;
+  header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
     border-bottom: 1px solid #e5e7eb;
   }
 
   h1 {
+    color: #1f2937;
     margin: 0;
-    font-size: 18px;
+    font-size: 1.25rem;
     font-weight: 600;
-    color: #111827;
   }
 
-  .content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
+  .loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem 0;
+  }
+
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #e5e7eb;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .empty-state {
-    text-align: center;
-    color: #6b7280;
-    font-size: 14px;
-    padding: 32px 16px;
-    margin: 0;
-  }
-
-  .links-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    color: #9ca3af;
+  }
+
+  .empty-state svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 0.75rem;
+  }
+
+  .empty-state p {
     margin: 0;
-    padding: 0;
-    list-style: none;
+    font-size: 0.875rem;
+  }
+
+  .link-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
   }
 </style>

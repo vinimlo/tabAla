@@ -8,8 +8,8 @@ import type { Link } from '@/lib/types';
 
 const createMockLink = (overrides: Partial<Link> = {}): Link => ({
   id: 'test-link-1',
-  url: 'https://example.com',
-  title: 'Example Link',
+  url: 'https://example.com/page',
+  title: 'Example Page',
   collectionId: 'inbox',
   createdAt: Date.now(),
   ...overrides,
@@ -21,45 +21,35 @@ describe('LinkItem Component', () => {
     vi.mocked(chrome.tabs.create).mockResolvedValue({ id: 1, url: '' } as chrome.tabs.Tab);
   });
 
-  it('should render link title and url', () => {
-    const link = createMockLink({ title: 'My Link', url: 'https://mysite.com' });
+  it('should render link title and URL', () => {
+    const link = createMockLink({ title: 'Test Title', url: 'https://test.com/path' });
     render(LinkItem, { props: { link } });
 
-    expect(screen.getByText('My Link')).toBeInTheDocument();
-    expect(screen.getByText('https://mysite.com')).toBeInTheDocument();
+    expect(screen.getByText('Test Title')).toBeInTheDocument();
+    expect(screen.getByText('test.com/path')).toBeInTheDocument();
   });
 
-  it('should render favicon when provided', () => {
-    const link = createMockLink({ favicon: 'https://example.com/favicon.ico' });
-    const { container } = render(LinkItem, { props: { link } });
+  it('should show "Untitled" for links without title', () => {
+    const link = createMockLink({ title: '' });
+    render(LinkItem, { props: { link } });
 
-    const favicon = container.querySelector('.link-favicon') as HTMLImageElement;
-    expect(favicon).toBeInTheDocument();
-    expect(favicon.src).toBe('https://example.com/favicon.ico');
-  });
-
-  it('should render placeholder icon when no favicon', () => {
-    const link = createMockLink({ favicon: undefined });
-    const { container } = render(LinkItem, { props: { link } });
-
-    expect(container.querySelector('.link-favicon-placeholder')).toBeInTheDocument();
+    expect(screen.getByText('Untitled')).toBeInTheDocument();
   });
 
   it('should have accessible open button', () => {
-    const link = createMockLink();
+    const link = createMockLink({ title: 'My Link' });
     render(LinkItem, { props: { link } });
 
-    const button = screen.getByRole('button', { name: /abrir link em nova aba/i });
-    expect(button).toBeInTheDocument();
-    expect(button).toHaveAttribute('title', 'Abrir em nova aba');
+    const openButton = screen.getByRole('button', { name: /abrir my link em nova aba/i });
+    expect(openButton).toBeInTheDocument();
   });
 
-  it('should call chrome.tabs.create when open button is clicked', async () => {
+  it('should call chrome.tabs.create when link content is clicked', async () => {
     const link = createMockLink({ url: 'https://test.com' });
     render(LinkItem, { props: { link } });
 
-    const button = screen.getByRole('button', { name: /abrir link em nova aba/i });
-    await fireEvent.click(button);
+    const openButton = screen.getByRole('button', { name: /abrir/i });
+    await fireEvent.click(openButton);
 
     await waitFor(() => {
       expect(chrome.tabs.create).toHaveBeenCalledWith({
@@ -80,17 +70,17 @@ describe('LinkItem Component', () => {
     const link = createMockLink();
     const { container } = render(LinkItem, { props: { link } });
 
-    const button = screen.getByRole('button', { name: /abrir link em nova aba/i });
+    const button = screen.getByRole('button', { name: /abrir/i });
     await fireEvent.click(button);
 
     await waitFor(() => {
-      expect(container.querySelector('.spinner')).toBeInTheDocument();
+      expect(container.querySelector('.open-spinner')).toBeInTheDocument();
     });
 
     resolveCreate({ id: 1, url: '' } as chrome.tabs.Tab);
 
     await waitFor(() => {
-      expect(container.querySelector('.spinner')).not.toBeInTheDocument();
+      expect(container.querySelector('.open-spinner')).not.toBeInTheDocument();
     });
   });
 
@@ -105,7 +95,7 @@ describe('LinkItem Component', () => {
     const link = createMockLink();
     render(LinkItem, { props: { link } });
 
-    const button = screen.getByRole('button', { name: /abrir link em nova aba/i });
+    const button = screen.getByRole('button', { name: /abrir/i });
     await fireEvent.click(button);
 
     await waitFor(() => {
@@ -126,7 +116,7 @@ describe('LinkItem Component', () => {
     const { component } = render(LinkItem, { props: { link } });
     component.$on('error', handleError);
 
-    const button = screen.getByRole('button', { name: /abrir link em nova aba/i });
+    const button = screen.getByRole('button', { name: /abrir/i });
     await fireEvent.click(button);
 
     await waitFor(() => {
@@ -146,7 +136,7 @@ describe('LinkItem Component', () => {
     const { component } = render(LinkItem, { props: { link } });
     component.$on('error', handleError);
 
-    const button = screen.getByRole('button', { name: /abrir link em nova aba/i });
+    const button = screen.getByRole('button', { name: /abrir/i });
     await fireEvent.click(button);
 
     await waitFor(() => {
@@ -157,7 +147,49 @@ describe('LinkItem Component', () => {
     });
   });
 
-  it('should render as list item', () => {
+  it('should dispatch remove event when remove button is clicked', async () => {
+    const link = createMockLink({ id: 'link-to-remove' });
+    const { component } = render(LinkItem, { props: { link } });
+
+    const handleRemove = vi.fn();
+    component.$on('remove', handleRemove);
+
+    const container = screen.getByRole('listitem');
+    await fireEvent.mouseEnter(container);
+
+    const removeButton = screen.getByRole('button', { name: /remover link/i });
+    await fireEvent.click(removeButton);
+
+    expect(handleRemove).toHaveBeenCalledTimes(1);
+    expect(handleRemove).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { linkId: 'link-to-remove' },
+      }),
+    );
+  });
+
+  it('should show remove button on hover', async () => {
+    const link = createMockLink();
+    render(LinkItem, { props: { link } });
+
+    expect(screen.queryByRole('button', { name: /remover link/i })).not.toBeInTheDocument();
+
+    const container = screen.getByRole('listitem');
+    await fireEvent.mouseEnter(container);
+
+    expect(screen.getByRole('button', { name: /remover link/i })).toBeInTheDocument();
+  });
+
+  it('should truncate long URLs', () => {
+    const longUrl = 'https://example.com/very/long/path/that/should/be/truncated/to/fit';
+    const link = createMockLink({ url: longUrl });
+    render(LinkItem, { props: { link } });
+
+    const urlElement = screen.getByText(/example\.com\/very\/long/);
+    expect(urlElement).toBeInTheDocument();
+  });
+
+  it('should render with proper role for accessibility', () => {
     const link = createMockLink();
     render(LinkItem, { props: { link } });
 
@@ -168,7 +200,7 @@ describe('LinkItem Component', () => {
     const link = createMockLink();
     render(LinkItem, { props: { link } });
 
-    const button = screen.getByRole('button', { name: /abrir link em nova aba/i });
+    const button = screen.getByRole('button', { name: /abrir/i });
     expect(button).not.toHaveAttribute('tabindex', '-1');
   });
 });

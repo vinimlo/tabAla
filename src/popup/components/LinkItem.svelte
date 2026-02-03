@@ -1,15 +1,18 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
+  import { fade } from 'svelte/transition';
   import type { Link } from '@/lib/types';
   import { openLinkInNewTab } from '@/lib/tabs';
-  import { createEventDispatcher } from 'svelte';
 
   export let link: Link;
 
   const dispatch = createEventDispatcher<{
     error: { message: string };
+    remove: { linkId: string };
   }>();
 
   let isLoading = false;
+  let isHovering = false;
 
   async function handleOpenLink() {
     if (isLoading) {
@@ -28,184 +31,239 @@
       isLoading = false;
     }
   }
+
+  function handleRemoveClick(event: MouseEvent) {
+    event.stopPropagation();
+    dispatch('remove', { linkId: link.id });
+  }
+
+  function getFaviconUrl(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      return `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`;
+    } catch {
+      return '';
+    }
+  }
+
+  function truncateUrl(url: string, maxLength: number = 40): string {
+    try {
+      const urlObj = new URL(url);
+      const display = `${urlObj.hostname}${urlObj.pathname}`;
+      return display.length > maxLength ? `${display.substring(0, maxLength)}...` : display;
+    } catch {
+      return url.length > maxLength ? `${url.substring(0, maxLength)}...` : url;
+    }
+  }
 </script>
 
-<li class="link-item">
-  {#if link.favicon}
-    <img
-      src={link.favicon}
-      alt=""
-      class="link-favicon"
-      width="16"
-      height="16"
-      aria-hidden="true"
-    />
-  {:else}
-    <div class="link-favicon-placeholder" aria-hidden="true">
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M8 1C4.13 1 1 4.13 1 8s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm0 12.5c-3.03 0-5.5-2.47-5.5-5.5S4.97 2.5 8 2.5s5.5 2.47 5.5 5.5-2.47 5.5-5.5 5.5z"
-          fill="currentColor"
-        />
-      </svg>
-    </div>
-  {/if}
-
-  <div class="link-content">
-    <span class="link-title" title={link.title}>{link.title}</span>
-    <span class="link-url" title={link.url}>{link.url}</span>
-  </div>
-
+<div
+  class="link-item"
+  on:mouseenter={() => (isHovering = true)}
+  on:mouseleave={() => (isHovering = false)}
+  role="listitem"
+  transition:fade={{ duration: 250 }}
+>
   <button
-    class="open-button"
+    class="link-content"
     on:click={handleOpenLink}
     disabled={isLoading}
-    aria-label="Abrir link em nova aba"
-    title="Abrir em nova aba"
     type="button"
+    aria-label="Abrir {link.title || 'link'} em nova aba"
   >
+    <div class="favicon-wrapper">
+      {#if link.favicon || link.url}
+        <img
+          src={link.favicon || getFaviconUrl(link.url)}
+          alt=""
+          class="favicon"
+          on:error={(e) => {
+            const target = e.currentTarget;
+            target.style.display = 'none';
+          }}
+        />
+      {/if}
+      <svg
+        class="favicon-placeholder"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </svg>
+    </div>
+    <div class="link-info">
+      <span class="link-title">{link.title || 'Untitled'}</span>
+      <span class="link-url">{truncateUrl(link.url)}</span>
+    </div>
     {#if isLoading}
-      <svg
-        class="spinner"
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-      >
-        <circle
-          cx="8"
-          cy="8"
-          r="6"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-dasharray="28"
-          stroke-dashoffset="10"
-        />
-      </svg>
-    {:else}
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-      >
-        <path
-          d="M6 3H3C2.44772 3 2 3.44772 2 4V13C2 13.5523 2.44772 14 3 14H12C12.5523 14 13 13.5523 13 13V10M9 2H14M14 2V7M14 2L6 10"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
+      <span class="open-spinner" aria-hidden="true"></span>
     {/if}
   </button>
-</li>
+
+  {#if isHovering && !isLoading}
+    <button
+      class="remove-btn"
+      on:click={handleRemoveClick}
+      type="button"
+      aria-label="Remover link"
+      transition:fade={{ duration: 100 }}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <path d="M3 6h18" />
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        <line x1="10" y1="11" x2="10" y2="17" />
+        <line x1="14" y1="11" x2="14" y2="17" />
+      </svg>
+    </button>
+  {/if}
+</div>
 
 <style>
   .link-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    background-color: #f9fafb;
-    border-radius: 8px;
-    transition: background-color 0.15s ease;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: background-color 0.15s;
   }
 
   .link-item:hover {
     background-color: #f3f4f6;
   }
 
-  .link-favicon {
-    flex-shrink: 0;
-    border-radius: 2px;
+  .link-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
   }
 
-  .link-favicon-placeholder {
+  .link-content:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .link-content:disabled {
+    cursor: wait;
+    opacity: 0.7;
+  }
+
+  .favicon-wrapper {
+    position: relative;
+    width: 24px;
+    height: 24px;
     flex-shrink: 0;
-    width: 16px;
-    height: 16px;
+  }
+
+  .favicon {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    object-fit: contain;
+  }
+
+  .favicon-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 24px;
+    height: 24px;
     color: #9ca3af;
   }
 
-  .link-content {
-    flex: 1;
-    min-width: 0;
+  .favicon + .favicon-placeholder {
+    display: none;
+  }
+
+  .link-info {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 0.125rem;
+    min-width: 0;
   }
 
   .link-title {
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 500;
-    color: #111827;
+    color: #1f2937;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .link-url {
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #6b7280;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .open-button {
+  .open-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #e5e7eb;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
     flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    background-color: transparent;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    color: #6b7280;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .open-button:hover:not(:disabled) {
-    background-color: #f3f4f6;
-    border-color: #d1d5db;
-    color: #374151;
-  }
-
-  .open-button:focus {
-    outline: 2px solid #3b82f6;
-    outline-offset: 2px;
-  }
-
-  .open-button:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
-
-  .spinner {
-    animation: spin 1s linear infinite;
+    margin-left: auto;
   }
 
   @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
     to {
       transform: rotate(360deg);
     }
+  }
+
+  .remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #9ca3af;
+    flex-shrink: 0;
+    transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+  }
+
+  .remove-btn:hover {
+    color: #dc2626;
+    background-color: #fef2f2;
+    border-color: #fecaca;
+  }
+
+  .remove-btn:focus {
+    outline: 2px solid #dc2626;
+    outline-offset: 2px;
+  }
+
+  .remove-btn svg {
+    width: 16px;
+    height: 16px;
   }
 </style>

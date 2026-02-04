@@ -47,7 +47,7 @@
     transition:scale={{ duration: 200, start: 0.95, opacity: 0 }}
   >
     <header class="modal-header">
-      <h2 id="settings-title">Configuracoes</h2>
+      <h2 id="settings-title">Configurações</h2>
       <button
         type="button"
         class="btn-close"
@@ -65,7 +65,7 @@
         <div class="setting-info">
           <span class="setting-label">Usar como nova aba</span>
           <span class="setting-description">
-            Substitui a pagina de nova aba do Chrome pelo dashboard do TabAla
+            Substitui a página de nova aba do Chrome pelo dashboard do TabAla
           </span>
         </div>
         <button
@@ -93,7 +93,7 @@
           </div>
           <div class="shortcut">
             <kbd>N</kbd>
-            <span>Nova colecao</span>
+            <span>Nova coleção</span>
           </div>
           <div class="shortcut">
             <kbd>Esc</kbd>

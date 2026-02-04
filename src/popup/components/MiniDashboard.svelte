@@ -45,12 +45,12 @@
       const tabInfo = await getCurrentTab();
 
       if (!tabInfo) {
-        dispatch('error', 'Nao foi possivel obter informacoes da aba');
+        dispatch('error', 'Não foi possível obter informações da aba');
         return;
       }
 
       if (!isSaveableUrl(tabInfo.url)) {
-        dispatch('error', 'Esta pagina nao pode ser salva');
+        dispatch('error', 'Esta página não pode ser salva');
         return;
       }
 
@@ -98,7 +98,7 @@
       type="button"
       class="btn-settings"
       on:click={() => dispatch('openSettings')}
-      aria-label="Configuracoes"
+      aria-label="Configurações"
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"/>

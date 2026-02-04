@@ -9,7 +9,7 @@ describe('Toast Component', () => {
   it('should render with provided message', () => {
     render(Toast, { props: { message: 'Test error message' } });
 
-    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
     expect(screen.getByText('Test error message')).toBeInTheDocument();
   });
 
@@ -32,14 +32,14 @@ describe('Toast Component', () => {
 
   it('should have default duration prop', () => {
     render(Toast, { props: { message: 'Test message' } });
-    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('should have aria-live attribute for accessibility', () => {
     render(Toast, { props: { message: 'Test message' } });
 
-    const alert = screen.getByRole('alert');
-    expect(alert).toHaveAttribute('aria-live', 'polite');
+    const status = screen.getByRole('status');
+    expect(status).toHaveAttribute('aria-live', 'polite');
   });
 
   it('should call onClose callback when dismissed', async () => {

@@ -8,12 +8,12 @@ import EmptyState from '@/popup/components/EmptyState.svelte';
 describe('EmptyState Component', () => {
   it('should render default message', () => {
     render(EmptyState);
-    expect(screen.getByText('Sua sala de espera')).toBeInTheDocument();
+    expect(screen.getByText('Sua sala de espera está vazia')).toBeInTheDocument();
   });
 
   it('should render default hint', () => {
     render(EmptyState);
-    expect(screen.getByText('Clique no botão + para salvar a aba atual')).toBeInTheDocument();
+    expect(screen.getByText('Salve sua primeira aba para começar')).toBeInTheDocument();
   });
 
   it('should render custom message when provided', () => {
@@ -26,10 +26,10 @@ describe('EmptyState Component', () => {
     expect(screen.getByText('Custom hint')).toBeInTheDocument();
   });
 
-  it('should render orb animation element', () => {
+  it('should render floating rectangles illustration', () => {
     const { container } = render(EmptyState);
-    const orb = container.querySelector('.orb');
-    expect(orb).toBeInTheDocument();
+    const illustration = container.querySelector('.illustration');
+    expect(illustration).toBeInTheDocument();
   });
 
   it('should have proper styling classes', () => {

@@ -1,0 +1,54 @@
+{
+  "name": "tabala",
+  "version": "1.0.0",
+  "description": "Extensão de navegador minimalista para organização temporária de links - uma sala de espera para processar abas depois",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src/ --ext .ts,.js,.svelte",
+    "lint:fix": "eslint src/ --ext .ts,.js,.svelte --fix",
+    "format": "prettier --write \"src/**/*.{ts,svelte,css,html}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,svelte,css,html}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "generate-icons": "node scripts/generate-icons.js"
+  },
+  "dependencies": {
+    "svelte": "^4.2.19",
+    "svelte-dnd-action": "^0.9.69",
+    "webextension-polyfill": "^0.12.0"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.3.0",
+    "@sveltejs/vite-plugin-svelte": "^3.1.2",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/svelte": "^5.2.6",
+    "@types/chrome": "^0.0.287",
+    "@types/node": "^20.19.30",
+    "@types/webextension-polyfill": "^0.12.1",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/ui": "^2.1.8",
+    "eslint": "^8.57.1",
+    "eslint-plugin-svelte": "^2.46.1",
+    "happy-dom": "^15.11.7",
+    "jsdom": "^25.0.1",
+    "prettier": "^3.4.2",
+    "prettier-plugin-svelte": "^3.3.3",
+    "sharp": "^0.34.5",
+    "svelte-check": "^4.1.1",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Squircle background -->
+  <rect
+    fill="#0D0D0F"
+    x="0" y="0"
+    width="128" height="128"
+    rx="28" ry="28"
+  />
+
+  <!-- T-tab in coral -->
+  <path
+    fill="#FF6B4A"
+    d="M29 32
+       C29 28 32 25 36 25
+       L92 25
+       C96 25 99 28 99 32
+       L99 45
+       C99 49 96 52 92 52
+       L74 52
+       L74 96
+       C74 100 71 103 67 103
+       L61 103
+       C57 103 54 100 54 96
+       L54 52
+       L36 52
+       C32 52 29 49 29 45
+       Z"
+  />
+</svg>

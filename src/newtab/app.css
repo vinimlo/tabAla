@@ -3,9 +3,6 @@
    A serene, refined dark interface for thoughtful link management
    ================================================================= */
 
-/* === FONT IMPORTS === */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
-
 :root {
   /* =================================================================
      SURFACES - Warm charcoal palette
@@ -46,6 +43,8 @@
   --semantic-success: #7CB890;   /* Verde sage, não neon */
   --semantic-error: #D4726A;     /* Rosa dusty, não vermelho agressivo */
   --semantic-warning: #D4A85A;   /* Âmbar quente */
+  --semantic-error-soft: rgba(212, 114, 106, 0.15);
+  --semantic-error-glow: rgba(212, 114, 106, 0.20);
 
   /* Legacy aliases */
   --success: var(--semantic-success);

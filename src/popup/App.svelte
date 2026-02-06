@@ -5,8 +5,10 @@
   import { INBOX_COLLECTION_ID } from '@/lib/types';
   import { getCurrentTab, isSaveableUrl, openLinkInNewTab } from '@/lib/tabs';
   import { linksStore, linksByCollection } from '@/lib/stores/links';
+  import { workspacesStore, collectionsByActiveWorkspace } from '@/lib/stores/workspaces';
   import Toast from './components/Toast.svelte';
   import ConfirmDialog from './components/ConfirmDialog.svelte';
+  import WorkspaceSelect from './components/WorkspaceSelect.svelte';
 
   let mounted = false;
   let selectedCollectionId = INBOX_COLLECTION_ID;
@@ -16,10 +18,18 @@
   let successMessage: string | null = null;
   let linkToRemove: Link | null = null;
 
-  $: loading = $linksStore.loading;
-  $: collections = $linksStore.collections;
+  $: loading = $linksStore.loading || $workspacesStore.loading;
+  $: workspaces = $workspacesStore.workspaces;
+  $: selectedWorkspaceId = $workspacesStore.activeWorkspaceId;
+  $: collections = $collectionsByActiveWorkspace;
   $: allLinks = $linksStore.links;
   $: totalLinks = allLinks.length;
+
+  function handleWorkspaceChange(event: CustomEvent<string>): void {
+    workspacesStore.setActiveWorkspace(event.detail);
+    // Reset to inbox when changing workspace
+    selectedCollectionId = INBOX_COLLECTION_ID;
+  }
 
   $: linkCounts = new Map<string, number>();
   $: {
@@ -31,8 +41,11 @@
     linkCounts = counts;
   }
 
-  onMount(() => {
-    void linksStore.load();
+  onMount(async () => {
+    await Promise.all([
+      workspacesStore.load(),
+      linksStore.load(),
+    ]);
     setTimeout(() => { mounted = true; }, 50);
   });
 
@@ -148,12 +161,22 @@
           </svg>
         </div>
         <div class="save-info">
-          <span class="save-label">Salvar em</span>
-          <select class="collection-select" bind:value={selectedCollectionId}>
-            {#each collections as col}
-              <option value={col.id}>{col.name}</option>
-            {/each}
-          </select>
+          {#if workspaces.length > 1}
+            <WorkspaceSelect
+              {workspaces}
+              selectedId={selectedWorkspaceId}
+              on:change={handleWorkspaceChange}
+              disabled={isSaving}
+            />
+          {/if}
+          <div class="collection-row">
+            <span class="save-label">Coleção</span>
+            <select class="collection-select" bind:value={selectedCollectionId} disabled={isSaving}>
+              {#each collections as col}
+                <option value={col.id}>{col.name}</option>
+              {/each}
+            </select>
+          </div>
         </div>
         <button
           type="button"
@@ -270,8 +293,6 @@
 {/if}
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
-
   :global(:root) {
     --surface-base: #0F0E11;
     --surface-elevated: #17161A;
@@ -465,6 +486,12 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .collection-row {
+    display: flex;
+    flex-direction: column;
     gap: 2px;
   }
 
@@ -489,6 +516,11 @@
 
   .collection-select:focus {
     outline: none;
+  }
+
+  .collection-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .collection-select option {

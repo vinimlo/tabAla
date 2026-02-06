@@ -130,6 +130,12 @@ export interface Collection {
    * Only one collection should have this flag set to true.
    */
   isDefault?: boolean;
+
+  /**
+   * ID of the workspace this collection belongs to.
+   * undefined for Inbox (global), 'general' for default workspace, or UUID for others.
+   */
+  workspaceId?: string;
 }
 
 /**
@@ -277,3 +283,117 @@ export const DEFAULT_SETTINGS: Settings = {
   newtabEnabled: true,
   onboardingCompleted: false,
 };
+
+// Workspace types
+
+/**
+ * Fixed identifier for the default "Geral" workspace.
+ * This value is immutable and used to identify the system's default workspace.
+ */
+export const DEFAULT_WORKSPACE_ID = 'general';
+
+/**
+ * Default name for the default workspace.
+ */
+export const DEFAULT_WORKSPACE_NAME = 'Geral';
+
+/**
+ * Maximum number of workspaces allowed.
+ */
+export const WORKSPACE_LIMIT = 12;
+
+/**
+ * Predefined color palette for workspaces.
+ * These colors are designed to work well with the dark theme.
+ */
+export const WORKSPACE_COLORS = [
+  '#E85D42', // Coral (accent principal - reservado para workspace Geral/default)
+  '#D4726A', // Dusty Rose
+  '#D4A85A', // Warm Amber
+  '#7CB890', // Sage Green
+  '#6B8AAF', // Slate Blue
+  '#9B8AA0', // Dusty Purple
+  '#5DA3A0', // Teal Muted
+  '#C4956A', // Warm Sand
+  '#8B7E6A', // Taupe
+  '#A08B7B', // Warm Gray
+] as const;
+
+/**
+ * Represents a workspace that groups collections.
+ *
+ * Workspaces allow users to organize their collections into logical contexts
+ * (e.g., "Work", "Personal", "Project X"). The "Geral" workspace is special -
+ * it's the default workspace and cannot be deleted.
+ *
+ * @example
+ * ```typescript
+ * const workspace: Workspace = {
+ *   id: 'general',
+ *   name: 'Geral',
+ *   color: '#3B82F6',
+ *   order: 0,
+ *   createdAt: 1704067200000,
+ *   isDefault: true
+ * };
+ * ```
+ */
+export interface Workspace {
+  /**
+   * Unique identifier for the workspace.
+   * 'general' for the default workspace, or UUID v4 for user-created workspaces.
+   */
+  id: string;
+
+  /**
+   * Display name of the workspace (max 50 characters).
+   * Shown in the UI for user identification.
+   */
+  name: string;
+
+  /**
+   * Optional description of the workspace (max 200 characters).
+   */
+  description?: string;
+
+  /**
+   * Hexadecimal color code for visual identification (#RRGGBB format).
+   * Used in the workspace rail and other UI elements.
+   */
+  color: string;
+
+  /**
+   * Display order for the workspace in the rail (lower = first).
+   */
+  order: number;
+
+  /**
+   * Unix timestamp (milliseconds) when the workspace was created.
+   */
+  createdAt: number;
+
+  /**
+   * Marks this workspace as the system default (Geral).
+   * Only the default workspace should have this flag set to true.
+   */
+  isDefault?: boolean;
+}
+
+/**
+ * Input data for creating a new workspace.
+ */
+export interface CreateWorkspaceInput {
+  name: string;
+  description?: string;
+  color: string;
+}
+
+/**
+ * Type guard to check if a workspace is the default workspace.
+ *
+ * @param workspace - The workspace to check
+ * @returns true if the workspace is the default, false otherwise
+ */
+export function isDefaultWorkspace(workspace: Workspace): boolean {
+  return workspace.id === DEFAULT_WORKSPACE_ID || workspace.isDefault === true;
+}

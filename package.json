@@ -1,7 +1,7 @@
 {
   "name": "tabala",
   "version": "1.0.0",
-  "description": "Extensão de navegador minimalista para organização temporária de links - uma sala de espera para processar abas depois",
+  "description": "Salve abas. Organize em coleções. Processe quando quiser.",
   "type": "module",
   "private": true,
   "engines": {

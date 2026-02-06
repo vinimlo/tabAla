@@ -2,15 +2,18 @@
   import { createEventDispatcher } from 'svelte';
   import { flip } from 'svelte/animate';
   import { dndzone } from 'svelte-dnd-action';
-  import type { Collection, Link } from '@/lib/types';
+  import type { Collection, Link, Workspace } from '@/lib/types';
   import { INBOX_COLLECTION_ID } from '@/lib/types';
   import { linksStore } from '@/lib/stores/links';
+  import { workspacesStore } from '@/lib/stores/workspaces';
   import { openLinkInNewTab } from '@/lib/tabs';
   import Column from './Column.svelte';
 
   export let collections: Collection[] = [];
   export let linksByCollection: Map<string, Link[]>;
   export let searchQuery: string = '';
+  export let workspaces: Workspace[] = [];
+  export let currentWorkspaceId: string = '';
 
   const dispatch = createEventDispatcher<{
     removeLink: { id: string; title: string };
@@ -96,6 +99,17 @@
   function handleTabDrop(event: CustomEvent<{ url: string; title: string; favicon?: string; collectionId: string }>): void {
     dispatch('tabDrop', event.detail);
   }
+
+  async function handleMoveToWorkspace(event: CustomEvent<{ collectionId: string; workspaceId: string }>): Promise<void> {
+    const { collectionId, workspaceId } = event.detail;
+    try {
+      await workspacesStore.moveCollectionToWorkspace(collectionId, workspaceId);
+      const workspace = workspaces.find((w) => w.id === workspaceId);
+      dispatch('success', `Coleção movida para "${workspace?.name ?? 'workspace'}"`);
+    } catch {
+      dispatch('error', 'Erro ao mover coleção');
+    }
+  }
 </script>
 
 <div class="kanban-board">
@@ -116,12 +130,15 @@
           collection={column}
           links={column.links}
           {searchQuery}
+          {workspaces}
+          {currentWorkspaceId}
           on:openLink={handleOpenLink}
           on:removeLink={handleRemoveLink}
           on:moveLink={handleMoveLink}
           on:renameCollection={handleRenameCollection}
           on:deleteCollection={handleDeleteCollection}
           on:tabDrop={handleTabDrop}
+          on:moveToWorkspace={handleMoveToWorkspace}
         />
       </div>
     {/each}

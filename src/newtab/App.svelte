@@ -3,11 +3,13 @@
   import './app.css';
   import { linksStore, linksByCollection } from '@/lib/stores/links';
   import { settingsStore } from '@/lib/stores/settings';
+  import { workspacesStore, collectionsByActiveWorkspace, activeWorkspace } from '@/lib/stores/workspaces';
   import type { BrowserTab, TabGroup } from '@/lib/tabs';
   import KanbanBoard from './components/KanbanBoard.svelte';
   import QuickActionsBar from './components/QuickActionsBar.svelte';
   import StatusBar from './components/StatusBar.svelte';
   import TabsSidebar from './components/TabsSidebar.svelte';
+  import WorkspaceRail from './components/WorkspaceRail.svelte';
   import Toast from '@/shared/components/Toast.svelte';
   import ConfirmDialog from '@/shared/components/ConfirmDialog.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
@@ -23,13 +25,15 @@
   let sidebarExpanded = false;
   let collectionFromGroup: { name: string; tabs: BrowserTab[] } | null = null;
 
-  $: loading = $linksStore.loading;
-  $: error = $linksStore.error;
-  $: collections = $linksStore.collections;
+  $: loading = $linksStore.loading || $workspacesStore.loading;
+  $: error = $linksStore.error ?? $workspacesStore.error;
+  $: collections = $collectionsByActiveWorkspace;
   $: links = $linksStore.links;
+  $: currentWorkspace = $activeWorkspace;
 
   onMount(async () => {
     await Promise.all([
+      workspacesStore.load(),
       linksStore.load(),
       settingsStore.load(),
     ]);
@@ -59,7 +63,8 @@
   async function handleCreateCollection(event: CustomEvent<string>): Promise<void> {
     const name = event.detail;
     try {
-      const newCollection = await linksStore.addCollection(name);
+      const activeWorkspaceId = $workspacesStore.activeWorkspaceId;
+      const newCollection = await linksStore.addCollection(name, activeWorkspaceId);
 
       // If creating from a tab group, save all tabs as links
       if (collectionFromGroup !== null) {
@@ -189,6 +194,11 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <main class="dashboard" class:mounted>
+  <WorkspaceRail
+    on:error={(e) => errorMessage = e.detail}
+    on:success={(e) => successMessage = e.detail}
+  />
+
   <TabsSidebar
     bind:expanded={sidebarExpanded}
     on:createCollectionFromGroup={handleCreateCollectionFromGroup}
@@ -217,13 +227,15 @@
         {collections}
         linksByCollection={$linksByCollection}
         {searchQuery}
+        workspaces={$workspacesStore.workspaces}
+        currentWorkspaceId={$workspacesStore.activeWorkspaceId}
         on:removeLink={handleRemoveLink}
         on:error={handleError}
         on:success={handleSuccess}
         on:tabDrop={handleTabDrop}
       />
 
-      <StatusBar {links} {collections} />
+      <StatusBar {links} {collections} workspace={currentWorkspace} />
     {/if}
   </div>
 </main>

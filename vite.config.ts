@@ -2,12 +2,38 @@ import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { crx } from '@crxjs/vite-plugin';
 import { fileURLToPath, URL } from 'node:url';
+import fs from 'node:fs';
+import path from 'node:path';
 import manifest from './src/manifest.json';
+import pkg from './package.json';
+
+const manifestWithVersion = {
+  ...manifest,
+  version: pkg.version,
+  description: pkg.description,
+};
 
 export default defineConfig(({ mode }) => ({
+  base: '',
   plugins: [
     svelte(),
-    crx({ manifest }),
+    crx({ manifest: manifestWithVersion }),
+    {
+      name: 'strip-crossorigin',
+      enforce: 'post' as const,
+      transformIndexHtml(html: string) {
+        return html.replace(/ crossorigin/g, '');
+      },
+    },
+    {
+      name: 'clean-vite-output',
+      closeBundle() {
+        const viteDir = path.resolve(fileURLToPath(new URL('.', import.meta.url)), 'dist/.vite');
+        if (fs.existsSync(viteDir)) {
+          fs.rmSync(viteDir, { recursive: true });
+        }
+      },
+    },
   ],
 
   resolve: {

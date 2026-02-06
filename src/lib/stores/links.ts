@@ -59,7 +59,7 @@ function createLinksStore(): Writable<LinksState> & {
   addLink: (link: Omit<Link, 'id' | 'createdAt'>) => Promise<void>;
   removeLink: (id: string) => Promise<void>;
   moveLink: (linkId: string, toCollectionId: string) => Promise<void>;
-  addCollection: (name: string) => Promise<Collection>;
+  addCollection: (name: string, workspaceId?: string) => Promise<Collection>;
   removeCollection: (id: string) => Promise<void>;
   renameCollection: (id: string, newName: string) => Promise<void>;
   reorderCollections: (orderedCollections: Collection[]) => Promise<void>;
@@ -266,14 +266,14 @@ function createLinksStore(): Writable<LinksState> & {
     return validateCollectionName(name, '', currentCollections);
   }
 
-  async function addCollection(name: string): Promise<Collection> {
+  async function addCollection(name: string, workspaceId?: string): Promise<Collection> {
     update((state) => ({
       ...state,
       pendingLocalUpdate: true,
     }));
 
     try {
-      const newCollection = await storageCreateCollection({ name });
+      const newCollection = await storageCreateCollection({ name, workspaceId });
 
       update((state) => ({
         ...state,

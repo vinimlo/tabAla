@@ -9,7 +9,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/svelte';
 import App from '@/popup/App.svelte';
 import { linksStore } from '@/popup/stores/links';
+import { workspacesStore } from '@/lib/stores/workspaces';
 import type { Link } from '@/lib/types';
+import { DEFAULT_WORKSPACE_ID, WORKSPACE_COLORS } from '@/lib/types';
 
 vi.mock('@/lib/storage', () => ({
   getLinks: vi.fn(() => Promise.resolve([])),
@@ -22,10 +24,48 @@ vi.mock('@/lib/storage', () => ({
   renameCollection: vi.fn(() => Promise.resolve({ success: true })),
   moveLink: vi.fn(() => Promise.resolve({ success: true })),
   updateCollectionOrder: vi.fn(() => Promise.resolve({ success: true })),
+  getWorkspaces: vi.fn(() => Promise.resolve([])),
+  saveWorkspaces: vi.fn(() => Promise.resolve()),
+  migrateToWorkspaces: vi.fn(() => Promise.resolve()),
+  initializeDefaultWorkspace: vi.fn(() => Promise.resolve()),
   storage: {
     watch: vi.fn(() => () => {}),
   },
 }));
+
+const defaultWorkspace = {
+  id: DEFAULT_WORKSPACE_ID,
+  name: 'Geral',
+  color: WORKSPACE_COLORS[0],
+  order: 0,
+  createdAt: Date.now(),
+  isDefault: true,
+};
+
+function setStoreState(linksState: {
+  links?: Link[];
+  collections?: { id: string; name: string; order: number }[];
+  loading?: boolean;
+  error?: string | null;
+}): void {
+  linksStore.set({
+    links: linksState.links ?? [],
+    collections: linksState.collections ?? [{ id: 'inbox', name: 'Inbox', order: 0 }],
+    loading: linksState.loading ?? false,
+    error: linksState.error ?? null,
+    isAdding: false,
+    isRemoving: new Set(),
+    pendingLocalUpdate: false,
+  });
+
+  workspacesStore.set({
+    workspaces: [defaultWorkspace],
+    activeWorkspaceId: DEFAULT_WORKSPACE_ID,
+    loading: false,
+    error: null,
+    pendingLocalUpdate: false,
+  });
+}
 
 describe('App Component', () => {
   beforeEach(() => {
@@ -37,28 +77,14 @@ describe('App Component', () => {
   });
 
   it('should render TabAla watermark', () => {
-    linksStore.set({
-      links: [],
-      collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
-      loading: false,
-      error: null,
-      isAdding: false,
-      isRemoving: new Set(),
-    });
+    setStoreState({});
 
     render(App);
     expect(screen.getByText('TabAla')).toBeInTheDocument();
   });
 
   it('should have main element', () => {
-    linksStore.set({
-      links: [],
-      collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
-      loading: false,
-      error: null,
-      isAdding: false,
-      isRemoving: new Set(),
-    });
+    setStoreState({});
 
     const { container } = render(App);
     const main = container.querySelector('main');
@@ -66,14 +92,7 @@ describe('App Component', () => {
   });
 
   it('should show collections when no links are saved', () => {
-    linksStore.set({
-      links: [],
-      collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
-      loading: false,
-      error: null,
-      isAdding: false,
-      isRemoving: new Set(),
-    });
+    setStoreState({});
 
     render(App);
     // When there are no links, the app still shows the collections list
@@ -90,6 +109,15 @@ describe('App Component', () => {
       error: null,
       isAdding: false,
       isRemoving: new Set(),
+      pendingLocalUpdate: false,
+    });
+    // Keep workspaces loading too
+    workspacesStore.set({
+      workspaces: [],
+      activeWorkspaceId: DEFAULT_WORKSPACE_ID,
+      loading: true,
+      error: null,
+      pendingLocalUpdate: false,
     });
 
     render(App);
@@ -99,14 +127,7 @@ describe('App Component', () => {
   it('should render save button even when error is set in store', () => {
     // Note: The popup App component doesn't display store.error directly,
     // it uses Toast for showing error messages from user actions
-    linksStore.set({
-      links: [],
-      collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
-      loading: false,
-      error: 'Test error',
-      isAdding: false,
-      isRemoving: new Set(),
-    });
+    setStoreState({ error: 'Test error' });
 
     render(App);
     // The component still renders normally - errors are handled via Toast
@@ -124,14 +145,7 @@ describe('App Component', () => {
       },
     ];
 
-    linksStore.set({
-      links: mockLinks,
-      collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
-      loading: false,
-      error: null,
-      isAdding: false,
-      isRemoving: new Set(),
-    });
+    setStoreState({ links: mockLinks });
 
     render(App);
     const inboxElements = screen.getAllByText('Inbox');

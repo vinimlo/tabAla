@@ -1,8 +1,9 @@
 <script lang="ts">
-  import type { Link, Collection } from '@/lib/types';
+  import type { Link, Collection, Workspace } from '@/lib/types';
 
   export let links: Link[] = [];
   export let collections: Collection[] = [];
+  export let workspace: Workspace | undefined = undefined;
 
   $: totalLinks = links.length;
   $: totalCollections = collections.length;
@@ -25,6 +26,13 @@
 
 <footer class="status-bar">
   <div class="stats">
+    {#if workspace}
+      <span class="stat workspace">
+        <span class="workspace-dot" style="--color: {workspace.color}"></span>
+        {workspace.name}
+      </span>
+      <span class="divider">•</span>
+    {/if}
     <span class="stat">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
@@ -107,6 +115,18 @@
   .last-saved {
     color: var(--text-tertiary);
     opacity: 0.8;
+  }
+
+  .workspace {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .workspace-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background-color: var(--color);
   }
 
   .brand {

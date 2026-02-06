@@ -23,9 +23,23 @@
  * ```
  */
 
-import type { Link, Collection, InboxCollection, Settings } from './types';
-import { INBOX_COLLECTION_ID, INBOX_COLLECTION_NAME, DEFAULT_SETTINGS } from './types';
-import { validateCollectionName } from './validation';
+import type { Link, Collection, InboxCollection, Settings, Workspace, CreateWorkspaceInput } from './types';
+import {
+  INBOX_COLLECTION_ID,
+  INBOX_COLLECTION_NAME,
+  DEFAULT_SETTINGS,
+  DEFAULT_WORKSPACE_ID,
+  DEFAULT_WORKSPACE_NAME,
+  WORKSPACE_COLORS,
+} from './types';
+import {
+  validateCollectionName,
+  validateWorkspaceName,
+  validateWorkspaceDescription,
+  validateWorkspaceColor,
+  validateWorkspaceLimit,
+  validateWorkspaceDeletion,
+} from './validation';
 
 /**
  * Represents a storage change for a single key.
@@ -796,6 +810,7 @@ export async function validateCollectionDeletion(
 export interface CreateCollectionInput {
   name: string;
   color?: string;
+  workspaceId?: string;
 }
 
 /**
@@ -827,6 +842,7 @@ export async function createCollection(input: CreateCollectionInput): Promise<Co
     order: maxOrder + 1,
     createdAt: Date.now(),
     color: input.color,
+    workspaceId: input.workspaceId ?? DEFAULT_WORKSPACE_ID,
   };
 
   await saveCollections([...existingCollections, newCollection]);
@@ -1072,4 +1088,367 @@ export async function updateCollectionOrder(
       error: error instanceof Error ? error.message : 'Erro ao reordenar coleções',
     };
   }
+}
+
+// Workspace storage functions
+
+/**
+ * Retrieves all workspaces from storage, sorted by order.
+ *
+ * @returns Array of Workspace objects, or empty array if none exist
+ */
+export async function getWorkspaces(): Promise<Workspace[]> {
+  const workspaces = await storage.get<Workspace[]>('workspaces');
+  if (!workspaces || workspaces.length === 0) {
+    return [];
+  }
+
+  return workspaces.sort((a, b) => a.order - b.order);
+}
+
+/**
+ * Saves workspaces array to storage.
+ *
+ * @param workspaces - Array of Workspace objects to save
+ */
+export async function saveWorkspaces(workspaces: Workspace[]): Promise<void> {
+  await storage.set('workspaces', workspaces);
+}
+
+/**
+ * Creates the default "Geral" workspace object.
+ * This is a pure function that returns a new Workspace instance
+ * without persisting to storage.
+ *
+ * @returns A new default Workspace object
+ */
+export function createDefaultWorkspace(): Workspace {
+  return {
+    id: DEFAULT_WORKSPACE_ID,
+    name: DEFAULT_WORKSPACE_NAME,
+    color: WORKSPACE_COLORS[0],
+    order: 0,
+    createdAt: Date.now(),
+    isDefault: true,
+  };
+}
+
+/**
+ * Initializes the default workspace if it doesn't exist in storage.
+ * This function is idempotent and safe to call multiple times.
+ * If the default workspace already exists, no action is taken.
+ *
+ * @returns Promise that resolves when initialization is complete
+ */
+export async function initializeDefaultWorkspace(): Promise<void> {
+  const workspaces = await getWorkspaces();
+  const hasDefault = workspaces.some((w) => w.id === DEFAULT_WORKSPACE_ID);
+
+  if (!hasDefault) {
+    const defaultWorkspace = createDefaultWorkspace();
+    await saveWorkspaces([defaultWorkspace, ...workspaces]);
+  }
+}
+
+/**
+ * Result of a workspace operation.
+ */
+export interface WorkspaceOperationResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Creates a new workspace and persists it to storage.
+ *
+ * @param input - The workspace data
+ * @returns The created workspace
+ * @throws {StorageError} If validation fails or storage operation fails
+ */
+export async function createWorkspace(input: CreateWorkspaceInput): Promise<Workspace> {
+  const trimmedName = input.name.trim();
+  const trimmedDescription = input.description?.trim();
+  const existingWorkspaces = await getWorkspaces();
+
+  // Validate limit
+  const limitValidation = validateWorkspaceLimit(existingWorkspaces);
+  if (!limitValidation.valid) {
+    throw new StorageError(
+      limitValidation.error ?? 'Workspace limit reached',
+      'INVALID_VALUE'
+    );
+  }
+
+  // Validate name
+  const nameValidation = validateWorkspaceName(trimmedName, '', existingWorkspaces);
+  if (!nameValidation.valid) {
+    throw new StorageError(
+      nameValidation.error ?? 'Invalid workspace name',
+      'INVALID_VALUE'
+    );
+  }
+
+  // Validate description
+  if (trimmedDescription) {
+    const descValidation = validateWorkspaceDescription(trimmedDescription);
+    if (!descValidation.valid) {
+      throw new StorageError(
+        descValidation.error ?? 'Invalid workspace description',
+        'INVALID_VALUE'
+      );
+    }
+  }
+
+  // Validate color
+  const colorValidation = validateWorkspaceColor(input.color);
+  if (!colorValidation.valid) {
+    throw new StorageError(
+      colorValidation.error ?? 'Invalid workspace color',
+      'INVALID_VALUE'
+    );
+  }
+
+  const orders = existingWorkspaces.map((w) => w.order);
+  const maxOrder = orders.length > 0 ? Math.max(...orders) : 0;
+
+  const newWorkspace: Workspace = {
+    id: crypto.randomUUID(),
+    name: trimmedName,
+    description: trimmedDescription,
+    color: input.color,
+    order: maxOrder + 1,
+    createdAt: Date.now(),
+  };
+
+  await saveWorkspaces([...existingWorkspaces, newWorkspace]);
+
+  return newWorkspace;
+}
+
+/**
+ * Updates an existing workspace.
+ *
+ * @param id - The ID of the workspace to update
+ * @param updates - Partial workspace data to update
+ * @returns Result indicating success or failure
+ */
+export async function updateWorkspace(
+  id: string,
+  updates: Partial<Omit<Workspace, 'id' | 'createdAt' | 'isDefault'>>
+): Promise<WorkspaceOperationResult> {
+  try {
+    const workspaces = await getWorkspaces();
+    const workspaceIndex = workspaces.findIndex((w) => w.id === id);
+
+    if (workspaceIndex === -1) {
+      return { success: false, error: 'Workspace não encontrado' };
+    }
+
+    const workspace = workspaces[workspaceIndex];
+
+    // Validate name update
+    if (updates.name !== undefined) {
+      const trimmedName = updates.name.trim();
+
+      // Check if trying to rename default workspace
+      if (workspace.isDefault === true || workspace.id === DEFAULT_WORKSPACE_ID) {
+        return { success: false, error: 'O workspace padrão não pode ser renomeado' };
+      }
+
+      const nameValidation = validateWorkspaceName(trimmedName, id, workspaces);
+      if (!nameValidation.valid) {
+        return { success: false, error: nameValidation.error };
+      }
+      updates.name = trimmedName;
+    }
+
+    // Validate description update
+    if (updates.description !== undefined) {
+      const trimmedDescription = updates.description.trim();
+      const descValidation = validateWorkspaceDescription(trimmedDescription);
+      if (!descValidation.valid) {
+        return { success: false, error: descValidation.error };
+      }
+      updates.description = trimmedDescription;
+    }
+
+    // Validate color update
+    if (updates.color !== undefined) {
+      const colorValidation = validateWorkspaceColor(updates.color);
+      if (!colorValidation.valid) {
+        return { success: false, error: colorValidation.error };
+      }
+    }
+
+    const updatedWorkspaces = workspaces.map((w) =>
+      w.id === id ? { ...w, ...updates } : w
+    );
+
+    await saveWorkspaces(updatedWorkspaces);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to update workspace:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao atualizar workspace',
+    };
+  }
+}
+
+/**
+ * Deletes a workspace and moves its collections to the default workspace.
+ *
+ * @param id - The ID of the workspace to delete
+ * @returns Result indicating success or failure
+ */
+export async function deleteWorkspace(id: string): Promise<WorkspaceOperationResult> {
+  try {
+    const workspaces = await getWorkspaces();
+
+    // Validate deletion
+    const validation = validateWorkspaceDeletion(id, workspaces);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+
+    // Move collections from deleted workspace to default workspace
+    const collections = await getCollections();
+    const updatedCollections = collections.map((c) =>
+      c.workspaceId === id ? { ...c, workspaceId: DEFAULT_WORKSPACE_ID } : c
+    );
+
+    // Remove the workspace
+    const updatedWorkspaces = workspaces.filter((w) => w.id !== id);
+
+    await Promise.all([
+      saveWorkspaces(updatedWorkspaces),
+      saveCollections(updatedCollections),
+    ]);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete workspace:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao excluir workspace',
+    };
+  }
+}
+
+/**
+ * Updates the order of workspaces.
+ *
+ * @param orderedWorkspaces - Workspaces in desired order
+ * @returns Result indicating success or failure
+ */
+export async function updateWorkspaceOrder(
+  orderedWorkspaces: Workspace[]
+): Promise<WorkspaceOperationResult> {
+  try {
+    const updatedWorkspaces = orderedWorkspaces.map((workspace, index) => ({
+      ...workspace,
+      order: index,
+    }));
+
+    await saveWorkspaces(updatedWorkspaces);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to update workspace order:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao reordenar workspaces',
+    };
+  }
+}
+
+/**
+ * Gets collections filtered by workspace ID.
+ *
+ * @param workspaceId - The ID of the workspace to filter by
+ * @returns Array of collections belonging to the workspace
+ */
+export async function getCollectionsByWorkspace(workspaceId: string): Promise<Collection[]> {
+  const collections = await getCollections();
+  return collections.filter((c) => c.workspaceId === workspaceId);
+}
+
+/**
+ * Moves a collection to a different workspace.
+ *
+ * @param collectionId - The ID of the collection to move
+ * @param workspaceId - The ID of the target workspace
+ * @returns Result indicating success or failure
+ */
+export async function moveCollectionToWorkspace(
+  collectionId: string,
+  workspaceId: string
+): Promise<WorkspaceOperationResult> {
+  try {
+    // Cannot move Inbox
+    if (collectionId === INBOX_COLLECTION_ID) {
+      return { success: false, error: 'O Inbox não pode ser movido' };
+    }
+
+    const [collections, workspaces] = await Promise.all([
+      getCollections(),
+      getWorkspaces(),
+    ]);
+
+    // Check if collection exists
+    const collection = collections.find((c) => c.id === collectionId);
+    if (!collection) {
+      return { success: false, error: 'Coleção não encontrada' };
+    }
+
+    // Check if workspace exists
+    const workspace = workspaces.find((w) => w.id === workspaceId);
+    if (!workspace) {
+      return { success: false, error: 'Workspace de destino não encontrado' };
+    }
+
+    const updatedCollections = collections.map((c) =>
+      c.id === collectionId ? { ...c, workspaceId } : c
+    );
+
+    await saveCollections(updatedCollections);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to move collection to workspace:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao mover coleção',
+    };
+  }
+}
+
+/**
+ * Migrates existing data to support workspaces.
+ * - Creates the default "Geral" workspace if not exists
+ * - Updates existing collections (except Inbox) to belong to "Geral"
+ *
+ * This function is idempotent and safe to call multiple times.
+ */
+export async function migrateToWorkspaces(): Promise<void> {
+  const workspaces = await getWorkspaces();
+
+  // If workspaces already exist, skip migration
+  if (workspaces.length > 0) {
+    return;
+  }
+
+  // Create default workspace
+  const defaultWorkspace = createDefaultWorkspace();
+  await saveWorkspaces([defaultWorkspace]);
+
+  // Update existing collections to belong to default workspace
+  // (except Inbox which remains global)
+  const collections = await getCollections();
+  const migratedCollections = collections.map((c) =>
+    c.id === INBOX_COLLECTION_ID ? c : { ...c, workspaceId: DEFAULT_WORKSPACE_ID }
+  );
+
+  await saveCollections(migratedCollections);
 }

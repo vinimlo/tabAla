@@ -2,7 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { flip } from 'svelte/animate';
   import { dndzone, SOURCES, TRIGGERS } from 'svelte-dnd-action';
-  import type { Collection, Link } from '@/lib/types';
+  import type { Collection, Link, Workspace } from '@/lib/types';
   import { INBOX_COLLECTION_ID } from '@/lib/types';
   import LinkCard from './LinkCard.svelte';
 
@@ -10,6 +10,8 @@
   export let links: Link[] = [];
   export let searchQuery: string = '';
   export let dragDisabled: boolean = false;
+  export let workspaces: Workspace[] = [];
+  export let currentWorkspaceId: string = '';
 
   const dispatch = createEventDispatcher<{
     openLink: Link;
@@ -18,13 +20,17 @@
     renameCollection: { id: string; newName: string };
     deleteCollection: { id: string; name: string; linkCount: number };
     tabDrop: { url: string; title: string; favicon?: string; collectionId: string };
+    moveToWorkspace: { collectionId: string; workspaceId: string };
   }>();
+
+  $: otherWorkspaces = workspaces.filter((w) => w.id !== currentWorkspaceId);
 
   const flipDurationMs = 200;
   let isTabDragOver = false;
   let isEditing = false;
   let editName = '';
   let showMenu = false;
+  let showMoveSubmenu = false;
   let menuRef: HTMLDivElement;
 
   $: isInbox = collection.id === INBOX_COLLECTION_ID;
@@ -95,6 +101,23 @@
 
   function closeMenu(): void {
     showMenu = false;
+    showMoveSubmenu = false;
+  }
+
+  function openMoveSubmenu(): void {
+    showMoveSubmenu = true;
+  }
+
+  function closeMoveSubmenu(): void {
+    showMoveSubmenu = false;
+  }
+
+  function handleMoveToWorkspace(workspaceId: string): void {
+    closeMenu();
+    dispatch('moveToWorkspace', {
+      collectionId: collection.id,
+      workspaceId,
+    });
   }
 
   function handleDeleteCollection(): void {
@@ -235,6 +258,39 @@
                 </svg>
                 Abrir todos
               </button>
+              {#if otherWorkspaces.length > 0}
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
+                <div class="menu-item-with-submenu" on:mouseenter={openMoveSubmenu} on:mouseleave={closeMoveSubmenu}>
+                  <button type="button" class="menu-item" on:click|stopPropagation={openMoveSubmenu}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                      <path d="M12 11v6M9 14l3-3 3 3"/>
+                    </svg>
+                    Mover para...
+                    <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                  </button>
+                  {#if showMoveSubmenu}
+                    <div class="submenu">
+                      {#each otherWorkspaces as ws}
+                        <button
+                          type="button"
+                          class="menu-item"
+                          on:click={() => handleMoveToWorkspace(ws.id)}
+                        >
+                          <span
+                            class="workspace-dot"
+                            class:is-default={ws.isDefault === true}
+                            style="--color: {ws.color}"
+                          ></span>
+                          {ws.name}
+                        </button>
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
+              {/if}
               <button type="button" class="menu-item menu-item-danger" on:click={handleDeleteCollection}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="3 6 5 6 21 6"/>
@@ -413,7 +469,7 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
     z-index: 100;
-    overflow: hidden;
+    overflow: visible;
     animation: menuSlide var(--duration-fast) var(--ease-spring);
   }
 
@@ -457,6 +513,43 @@
   .menu-item-danger:hover {
     background: rgba(212, 114, 106, 0.12);
     color: var(--semantic-error);
+  }
+
+  .menu-item-with-submenu {
+    position: relative;
+  }
+
+  .menu-item .chevron {
+    margin-left: auto;
+  }
+
+  .submenu {
+    position: absolute;
+    left: 100%;
+    top: -4px;
+    min-width: 170px;
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+    padding: var(--space-1) 0;
+    animation: menuSlide var(--duration-fast) var(--ease-spring);
+  }
+
+  .workspace-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-full);
+    background-color: var(--color);
+    flex-shrink: 0;
+    box-shadow:
+      0 0 0 1.5px rgba(255, 255, 255, 0.1),
+      0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .workspace-dot.is-default {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary, #d4563f));
   }
 
   .column-content {

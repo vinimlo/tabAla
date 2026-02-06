@@ -104,8 +104,12 @@
     showMoveSubmenu = false;
   }
 
-  function toggleMoveSubmenu(): void {
-    showMoveSubmenu = !showMoveSubmenu;
+  function openMoveSubmenu(): void {
+    showMoveSubmenu = true;
+  }
+
+  function closeMoveSubmenu(): void {
+    showMoveSubmenu = false;
   }
 
   function handleMoveToWorkspace(workspaceId: string): void {
@@ -255,8 +259,9 @@
                 Abrir todos
               </button>
               {#if otherWorkspaces.length > 0}
-                <div class="menu-item-with-submenu">
-                  <button type="button" class="menu-item" on:click|stopPropagation={toggleMoveSubmenu}>
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
+                <div class="menu-item-with-submenu" on:mouseenter={openMoveSubmenu} on:mouseleave={closeMoveSubmenu}>
+                  <button type="button" class="menu-item" on:click|stopPropagation={openMoveSubmenu}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                       <path d="M12 11v6M9 14l3-3 3 3"/>
@@ -274,7 +279,11 @@
                           class="menu-item"
                           on:click={() => handleMoveToWorkspace(ws.id)}
                         >
-                          <span class="workspace-dot" style="--color: {ws.color}"></span>
+                          <span
+                            class="workspace-dot"
+                            class:is-default={ws.isDefault === true}
+                            style="--color: {ws.color}"
+                          ></span>
                           {ws.name}
                         </button>
                       {/each}
@@ -517,22 +526,30 @@
   .submenu {
     position: absolute;
     left: 100%;
-    top: 0;
-    min-width: 160px;
+    top: -4px;
+    min-width: 170px;
     background: var(--surface-subtle);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
     overflow: hidden;
+    padding: var(--space-1) 0;
     animation: menuSlide var(--duration-fast) var(--ease-spring);
   }
 
   .workspace-dot {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border-radius: var(--radius-full);
     background-color: var(--color);
     flex-shrink: 0;
+    box-shadow:
+      0 0 0 1.5px rgba(255, 255, 255, 0.1),
+      0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .workspace-dot.is-default {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary, #d4563f));
   }
 
   .column-content {

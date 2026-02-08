@@ -1,13 +1,5 @@
-/**
- * Svelte store for managing workspaces state.
- * Provides reactive state management with persistence to chrome.storage.local.
- *
- * This is a shared store used by both popup and newtab interfaces.
- */
-
-import { writable, derived, type Readable } from 'svelte/store';
-import type { Workspace, CreateWorkspaceInput, Collection } from '@/lib/types';
-import { DEFAULT_WORKSPACE_ID, INBOX_COLLECTION_ID } from '@/lib/types';
+import { writable, derived, get, type Readable } from 'svelte/store';
+import { type Workspace, type CreateWorkspaceInput, type Collection, DEFAULT_WORKSPACE_ID, INBOX_COLLECTION_ID } from '@/lib/types';
 import {
   getWorkspaces,
   createWorkspace as storageCreateWorkspace,
@@ -17,14 +9,13 @@ import {
   moveCollectionToWorkspace as storageMoveCollectionToWorkspace,
   migrateToWorkspaces,
   initializeDefaultWorkspace,
+  getErrorMessage,
   storage,
 } from '@/lib/storage';
-import {
-  validateWorkspaceName,
-  validateWorkspaceLimit,
-  type ValidationResult,
-} from '@/lib/validation';
+import { validateWorkspaceName, validateWorkspaceLimit, type ValidationResult } from '@/lib/validation';
 import { linksStore } from './links';
+import { t } from '@/lib/i18n';
+import { optimisticUpdate } from './helpers';
 
 const ACTIVE_WORKSPACE_KEY = 'tabala_active_workspace';
 
@@ -45,17 +36,18 @@ function createWorkspacesStore(): ReturnType<typeof writable<WorkspacesState>> &
   reorderWorkspaces: (orderedWorkspaces: Workspace[]) => Promise<void>;
   moveCollectionToWorkspace: (collectionId: string, workspaceId: string) => Promise<void>;
   getWorkspaceNames: () => string[];
-  validateWorkspace: (name: string) => { valid: boolean; error?: string };
+  validateWorkspace: (name: string) => ValidationResult;
   isLimitReached: () => boolean;
   clearError: () => void;
 } {
-  const { subscribe, set, update } = writable<WorkspacesState>({
+  const store = writable<WorkspacesState>({
     workspaces: [],
     activeWorkspaceId: DEFAULT_WORKSPACE_ID,
     loading: true,
     error: null,
     pendingLocalUpdate: false,
   });
+  const { subscribe, set, update } = store;
 
   // Watch for storage changes from other contexts (popup <-> newtab)
   storage.watch((changes) => {
@@ -72,9 +64,6 @@ function createWorkspacesStore(): ReturnType<typeof writable<WorkspacesState>> &
     }
   });
 
-  /**
-   * Gets the persisted active workspace ID from localStorage.
-   */
   function getPersistedActiveWorkspaceId(): string {
     try {
       return localStorage.getItem(ACTIVE_WORKSPACE_KEY) ?? DEFAULT_WORKSPACE_ID;
@@ -83,9 +72,6 @@ function createWorkspacesStore(): ReturnType<typeof writable<WorkspacesState>> &
     }
   }
 
-  /**
-   * Persists the active workspace ID to localStorage.
-   */
   function persistActiveWorkspaceId(id: string): void {
     try {
       localStorage.setItem(ACTIVE_WORKSPACE_KEY, id);
@@ -94,10 +80,6 @@ function createWorkspacesStore(): ReturnType<typeof writable<WorkspacesState>> &
     }
   }
 
-  /**
-   * Loads workspaces from storage.
-   * Runs migration if needed.
-   */
   async function load(): Promise<void> {
     update((state) => ({ ...state, loading: true, error: null }));
 
@@ -121,14 +103,11 @@ function createWorkspacesStore(): ReturnType<typeof writable<WorkspacesState>> &
         error: null,
       }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Erro ao carregar workspaces';
+      const message = getErrorMessage(error, t('error_update_workspace_failed'));
       update((state) => ({ ...state, loading: false, error: message }));
     }
   }
 
-  /**
-   * Sets the active workspace.
-   */
   function setActiveWorkspace(id: string): void {
     update((state) => {
       const exists = state.workspaces.some((w) => w.id === id);
@@ -140,9 +119,6 @@ function createWorkspacesStore(): ReturnType<typeof writable<WorkspacesState>> &
     });
   }
 
-  /**
-   * Creates a new workspace.
-   */
   async function addWorkspace(input: CreateWorkspaceInput): Promise<Workspace> {
     update((state) => ({
       ...state,
@@ -159,7 +135,7 @@ function createWorkspacesStore(): ReturnType<typeof writable<WorkspacesState>> &
 
       return newWorkspace;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Erro ao criar workspace';
+      const message = getErrorMessage(error, t('error_update_workspace_failed'));
       update((state) => ({ ...state, error: message }));
       throw error;
     } finally {
@@ -170,58 +146,36 @@ function createWorkspacesStore(): ReturnType<typeof writable<WorkspacesState>> &
     }
   }
 
-  /**
-   * Updates a workspace.
-   */
   async function updateWorkspace(
     id: string,
     updates: Partial<Omit<Workspace, 'id' | 'createdAt' | 'isDefault'>>
   ): Promise<void> {
-    let previousWorkspaces: Workspace[] = [];
-
-    update((state) => {
-      previousWorkspaces = state.workspaces;
-      const updatedWorkspaces = state.workspaces.map((w) =>
-        w.id === id ? { ...w, ...updates } : w
-      );
-      return {
-        ...state,
-        workspaces: updatedWorkspaces,
-        pendingLocalUpdate: true,
-      };
-    });
-
-    try {
-      const result = await storageUpdateWorkspace(id, updates);
-      if (!result.success) {
-        update((state) => ({
+    await optimisticUpdate(
+      store,
+      (state) => ({
+        updated: {
           ...state,
-          workspaces: previousWorkspaces,
-          error: result.error ?? 'Erro ao atualizar workspace',
-        }));
-      }
-    } catch (error) {
-      update((state) => ({
-        ...state,
-        workspaces: previousWorkspaces,
-        error: 'Erro ao atualizar workspace',
-      }));
-    } finally {
-      update((state) => ({
-        ...state,
-        pendingLocalUpdate: false,
-      }));
-    }
+          workspaces: state.workspaces.map((w) =>
+            w.id === id ? { ...w, ...updates } : w
+          ),
+        },
+        rollback: { workspaces: state.workspaces } as Partial<WorkspacesState>,
+      }),
+      async () => {
+        const result = await storageUpdateWorkspace(id, updates);
+        return result.success ? null : (result.error ?? t('error_update_workspace_failed'));
+      },
+      t('error_update_workspace_failed')
+    );
   }
 
-  /**
-   * Deletes a workspace.
-   */
+  // Cannot use optimisticUpdate: rollback requires localStorage writes
+  // (restoring active workspace) and success requires reloading linksStore.
   async function removeWorkspace(id: string): Promise<void> {
     if (id === DEFAULT_WORKSPACE_ID) {
       update((state) => ({
         ...state,
-        error: 'O workspace padrão não pode ser excluído',
+        error: t('validation_workspace_default_delete'),
       }));
       return;
     }
@@ -244,70 +198,28 @@ function createWorkspacesStore(): ReturnType<typeof writable<WorkspacesState>> &
       persistActiveWorkspaceId(DEFAULT_WORKSPACE_ID);
     }
 
-    try {
-      const result = await storageDeleteWorkspace(id);
-      if (!result.success) {
-        update((state) => ({
-          ...state,
-          workspaces: previousWorkspaces,
-          activeWorkspaceId: wasActive ? id : state.activeWorkspaceId,
-          error: result.error ?? 'Erro ao excluir workspace',
-        }));
-        if (wasActive) {
-          persistActiveWorkspaceId(id);
-        }
-      } else {
-        // Reload links store to reflect collection changes
-        await linksStore.load();
-      }
-    } catch (error) {
+    function rollback(errorMsg: string): void {
       update((state) => ({
         ...state,
         workspaces: previousWorkspaces,
         activeWorkspaceId: wasActive ? id : state.activeWorkspaceId,
-        error: 'Erro ao excluir workspace',
+        error: errorMsg,
       }));
       if (wasActive) {
         persistActiveWorkspaceId(id);
       }
-    } finally {
-      update((state) => ({
-        ...state,
-        pendingLocalUpdate: false,
-      }));
     }
-  }
-
-  /**
-   * Reorders workspaces.
-   */
-  async function reorderWorkspaces(orderedWorkspaces: Workspace[]): Promise<void> {
-    let previousWorkspaces: Workspace[] = [];
-
-    update((state) => {
-      previousWorkspaces = state.workspaces;
-      return {
-        ...state,
-        workspaces: orderedWorkspaces,
-        pendingLocalUpdate: true,
-      };
-    });
 
     try {
-      const result = await storageUpdateWorkspaceOrder(orderedWorkspaces);
+      const result = await storageDeleteWorkspace(id);
       if (!result.success) {
-        update((state) => ({
-          ...state,
-          workspaces: previousWorkspaces,
-          error: result.error ?? 'Erro ao reordenar workspaces',
-        }));
+        rollback(result.error ?? t('error_delete_workspace_failed'));
+      } else {
+        // Reload links store to reflect collection changes
+        await linksStore.load();
       }
-    } catch (error) {
-      update((state) => ({
-        ...state,
-        workspaces: previousWorkspaces,
-        error: 'Erro ao reordenar workspaces',
-      }));
+    } catch {
+      rollback(t('error_delete_workspace_failed'));
     } finally {
       update((state) => ({
         ...state,
@@ -316,25 +228,35 @@ function createWorkspacesStore(): ReturnType<typeof writable<WorkspacesState>> &
     }
   }
 
-  /**
-   * Moves a collection to a different workspace.
-   * Uses optimistic update pattern: updates local state immediately,
-   * then persists to storage, rolling back on failure.
-   */
+  async function reorderWorkspaces(orderedWorkspaces: Workspace[]): Promise<void> {
+    await optimisticUpdate(
+      store,
+      (state) => ({
+        updated: { ...state, workspaces: orderedWorkspaces },
+        rollback: { workspaces: state.workspaces } as Partial<WorkspacesState>,
+      }),
+      async () => {
+        const result = await storageUpdateWorkspaceOrder(orderedWorkspaces);
+        return result.success ? null : (result.error ?? t('error_reorder_workspaces_failed'));
+      },
+      t('error_reorder_workspaces_failed')
+    );
+  }
+
+  // Cannot use optimisticUpdate: requires coordinating two stores
+  // (linksStore for collections and workspacesStore for pendingLocalUpdate).
   async function moveCollectionToWorkspace(
     collectionId: string,
     workspaceId: string
   ): Promise<void> {
-    // Optimistically update linksStore collections to reflect the move
     let previousCollections: Collection[] = [];
     linksStore.update((state) => {
       previousCollections = state.collections;
-      const updatedCollections = state.collections.map((c) =>
-        c.id === collectionId ? { ...c, workspaceId } : c
-      );
       return {
         ...state,
-        collections: updatedCollections,
+        collections: state.collections.map((c) =>
+          c.id === collectionId ? { ...c, workspaceId } : c
+        ),
         pendingLocalUpdate: true,
       };
     });
@@ -347,27 +269,23 @@ function createWorkspacesStore(): ReturnType<typeof writable<WorkspacesState>> &
     try {
       const result = await storageMoveCollectionToWorkspace(collectionId, workspaceId);
       if (!result.success) {
-        // Rollback on failure
         linksStore.update((state) => ({
           ...state,
           collections: previousCollections,
         }));
-        const errorMessage = result.error ?? 'Erro ao mover coleção';
         update((state) => ({
           ...state,
-          error: errorMessage,
+          error: result.error ?? t('error_move_collection_failed'),
         }));
-        throw new Error(errorMessage);
       }
-    } catch (error) {
-      // Rollback on exception
+    } catch {
       linksStore.update((state) => ({
         ...state,
         collections: previousCollections,
       }));
       update((state) => ({
         ...state,
-        error: 'Erro ao mover coleção',
+        error: t('error_move_collection_failed'),
       }));
     } finally {
       linksStore.update((state) => ({
@@ -381,45 +299,18 @@ function createWorkspacesStore(): ReturnType<typeof writable<WorkspacesState>> &
     }
   }
 
-  /**
-   * Gets workspace names for validation.
-   */
   function getWorkspaceNames(): string[] {
-    let names: string[] = [];
-    update((state) => {
-      names = state.workspaces.map((w) => w.name);
-      return state;
-    });
-    return names;
+    return get(store).workspaces.map((w) => w.name);
   }
 
-  /**
-   * Validates a workspace name.
-   */
   function validateWorkspace(name: string): ValidationResult {
-    let currentWorkspaces: Workspace[] = [];
-    update((state) => {
-      currentWorkspaces = state.workspaces;
-      return state;
-    });
-    return validateWorkspaceName(name, '', currentWorkspaces);
+    return validateWorkspaceName(name, '', get(store).workspaces);
   }
 
-  /**
-   * Checks if workspace limit is reached.
-   */
   function isLimitReached(): boolean {
-    let currentWorkspaces: Workspace[] = [];
-    update((state) => {
-      currentWorkspaces = state.workspaces;
-      return state;
-    });
-    return !validateWorkspaceLimit(currentWorkspaces).valid;
+    return !validateWorkspaceLimit(get(store).workspaces).valid;
   }
 
-  /**
-   * Clears the error state.
-   */
   function clearError(): void {
     update((state) => ({ ...state, error: null }));
   }
@@ -444,30 +335,18 @@ function createWorkspacesStore(): ReturnType<typeof writable<WorkspacesState>> &
 
 export const workspacesStore = createWorkspacesStore();
 
-/**
- * Derived store for the active workspace.
- */
 export const activeWorkspace: Readable<Workspace | undefined> = derived(
   workspacesStore,
   ($store) => $store.workspaces.find((w) => w.id === $store.activeWorkspaceId)
 );
 
-/**
- * Derived store for collections filtered by the active workspace.
- * Always includes Inbox (which is global).
- */
+/** Always includes Inbox (which is global across all workspaces). */
 export const collectionsByActiveWorkspace: Readable<Collection[]> = derived(
   [workspacesStore, linksStore],
   ([$workspacesStore, $linksStore]) => {
     const activeId = $workspacesStore.activeWorkspaceId;
-
-    return $linksStore.collections.filter((collection) => {
-      // Inbox is always visible (global)
-      if (collection.id === INBOX_COLLECTION_ID) {
-        return true;
-      }
-      // Show collections that belong to the active workspace
-      return collection.workspaceId === activeId;
-    });
+    return $linksStore.collections.filter(
+      (c) => c.id === INBOX_COLLECTION_ID || c.workspaceId === activeId
+    );
   }
 );

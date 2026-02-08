@@ -8,63 +8,50 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/svelte';
 import App from '@/popup/App.svelte';
-import { linksStore } from '@/popup/stores/links';
+import { linksStore } from '@/lib/stores/links';
 import { workspacesStore } from '@/lib/stores/workspaces';
 import type { Link } from '@/lib/types';
-import { DEFAULT_WORKSPACE_ID, WORKSPACE_COLORS } from '@/lib/types';
+import { DEFAULT_WORKSPACE_ID } from '@/lib/types';
+import { createMockLink, createMockWorkspace } from '../factories';
+const { createStorageMock } = await vi.hoisted(() => import('../mocks/storage'));
 
-vi.mock('@/lib/storage', () => ({
-  getLinks: vi.fn(() => Promise.resolve([])),
-  saveLinks: vi.fn(() => Promise.resolve()),
-  getCollections: vi.fn(() => Promise.resolve([])),
-  saveCollections: vi.fn(() => Promise.resolve()),
-  initializeInbox: vi.fn(() => Promise.resolve()),
-  removeCollection: vi.fn(() => Promise.resolve()),
-  createCollection: vi.fn(() => Promise.resolve({ id: 'new-collection', name: 'New', order: 1 })),
-  renameCollection: vi.fn(() => Promise.resolve({ success: true })),
-  moveLink: vi.fn(() => Promise.resolve({ success: true })),
-  updateCollectionOrder: vi.fn(() => Promise.resolve({ success: true })),
-  getWorkspaces: vi.fn(() => Promise.resolve([])),
-  saveWorkspaces: vi.fn(() => Promise.resolve()),
-  migrateToWorkspaces: vi.fn(() => Promise.resolve()),
-  initializeDefaultWorkspace: vi.fn(() => Promise.resolve()),
-  storage: {
-    watch: vi.fn(() => () => {}),
-  },
-}));
+vi.mock('@/lib/storage', () => createStorageMock());
 
-const defaultWorkspace = {
+const defaultWorkspace = createMockWorkspace({
   id: DEFAULT_WORKSPACE_ID,
   name: 'Geral',
-  color: WORKSPACE_COLORS[0],
-  order: 0,
-  createdAt: Date.now(),
   isDefault: true,
+});
+
+const DEFAULT_LINKS_STATE = {
+  links: [] as Link[],
+  collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
+  loading: false,
+  error: null,
+  isAdding: false,
+  isRemoving: new Set<string>(),
+  pendingLocalUpdate: false,
 };
 
-function setStoreState(linksState: {
+const DEFAULT_WORKSPACES_STATE = {
+  workspaces: [defaultWorkspace],
+  activeWorkspaceId: DEFAULT_WORKSPACE_ID,
+  loading: false,
+  error: null,
+  pendingLocalUpdate: false,
+};
+
+function setStoreState(overrides: {
   links?: Link[];
   collections?: { id: string; name: string; order: number }[];
   loading?: boolean;
   error?: string | null;
-}): void {
+} = {}): void {
   linksStore.set({
-    links: linksState.links ?? [],
-    collections: linksState.collections ?? [{ id: 'inbox', name: 'Inbox', order: 0 }],
-    loading: linksState.loading ?? false,
-    error: linksState.error ?? null,
-    isAdding: false,
-    isRemoving: new Set(),
-    pendingLocalUpdate: false,
+    ...DEFAULT_LINKS_STATE,
+    ...overrides,
   });
-
-  workspacesStore.set({
-    workspaces: [defaultWorkspace],
-    activeWorkspaceId: DEFAULT_WORKSPACE_ID,
-    loading: false,
-    error: null,
-    pendingLocalUpdate: false,
-  });
+  workspacesStore.set(DEFAULT_WORKSPACES_STATE);
 }
 
 describe('App Component', () => {
@@ -97,31 +84,16 @@ describe('App Component', () => {
     render(App);
     // When there are no links, the app still shows the collections list
     // Inbox appears in both the dropdown and collection header
-    const inboxElements = screen.getAllByText('Inbox');
+    const inboxElements = screen.getAllByText('common_inbox');
     expect(inboxElements.length).toBeGreaterThanOrEqual(1);
   });
 
   it('should show loading state when loading', () => {
-    linksStore.set({
-      links: [],
-      collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
-      loading: true,
-      error: null,
-      isAdding: false,
-      isRemoving: new Set(),
-      pendingLocalUpdate: false,
-    });
-    // Keep workspaces loading too
-    workspacesStore.set({
-      workspaces: [],
-      activeWorkspaceId: DEFAULT_WORKSPACE_ID,
-      loading: true,
-      error: null,
-      pendingLocalUpdate: false,
-    });
+    linksStore.set({ ...DEFAULT_LINKS_STATE, loading: true });
+    workspacesStore.set({ ...DEFAULT_WORKSPACES_STATE, workspaces: [], loading: true });
 
     render(App);
-    expect(screen.getByText('carregando...')).toBeInTheDocument();
+    expect(screen.getByText('common_loading')).toBeInTheDocument();
   });
 
   it('should render save button even when error is set in store', () => {
@@ -131,24 +103,16 @@ describe('App Component', () => {
 
     render(App);
     // The component still renders normally - errors are handled via Toast
-    expect(screen.getByText('Salvar')).toBeInTheDocument();
+    expect(screen.getByText('common_save')).toBeInTheDocument();
   });
 
   it('should display links grouped by collection', () => {
-    const mockLinks: Link[] = [
-      {
-        id: 'link-1',
-        url: 'https://example.com',
-        title: 'Example',
-        collectionId: 'inbox',
-        createdAt: Date.now(),
-      },
-    ];
-
-    setStoreState({ links: mockLinks });
+    setStoreState({
+      links: [createMockLink({ title: 'Example', collectionId: 'inbox' })],
+    });
 
     render(App);
-    const inboxElements = screen.getAllByText('Inbox');
+    const inboxElements = screen.getAllByText('common_inbox');
     expect(inboxElements.length).toBeGreaterThanOrEqual(1);
     // Note: Links are hidden by default (collapsed collections)
     // The count badges show "1" indicating the link is there

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { t, getCollectionDisplayName } from '@lib/i18n';
   import './app.css';
   import { linksStore, linksByCollection } from '@/lib/stores/links';
   import { settingsStore } from '@/lib/stores/settings';
@@ -13,9 +14,11 @@
   import Toast from '@/shared/components/Toast.svelte';
   import ConfirmDialog from '@/shared/components/ConfirmDialog.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
-  import CreateCollectionModal from './components/CreateCollectionModal.svelte';
+  import CreateCollectionModal from '@/shared/components/CreateCollectionModal.svelte';
+  import OnboardingWizard from './components/OnboardingWizard.svelte';
 
   let mounted = false;
+  let onboardingDismissed = false;
   let searchQuery = '';
   let errorMessage: string | null = null;
   let successMessage: string | null = null;
@@ -25,6 +28,7 @@
   let sidebarExpanded = false;
   let collectionFromGroup: { name: string; tabs: BrowserTab[] } | null = null;
 
+  $: showOnboarding = !onboardingDismissed && !$settingsStore.loading && !$settingsStore.settings.onboardingCompleted;
   $: loading = $linksStore.loading || $workspacesStore.loading;
   $: error = $linksStore.error ?? $workspacesStore.error;
   $: collections = $collectionsByActiveWorkspace;
@@ -44,27 +48,10 @@
     searchQuery = event.detail;
   }
 
-  function handleOpenSettings(): void {
-    showSettings = true;
-  }
-
-  function handleCloseSettings(): void {
-    showSettings = false;
-  }
-
-  function handleOpenCreateCollection(): void {
-    showCreateCollection = true;
-  }
-
-  function handleCloseCreateCollection(): void {
-    showCreateCollection = false;
-  }
-
   async function handleCreateCollection(event: CustomEvent<string>): Promise<void> {
     const name = event.detail;
     try {
-      const activeWorkspaceId = $workspacesStore.activeWorkspaceId;
-      const newCollection = await linksStore.addCollection(name, activeWorkspaceId);
+      const newCollection = await linksStore.addCollection(name, $workspacesStore.activeWorkspaceId);
 
       // If creating from a tab group, save all tabs as links
       if (collectionFromGroup !== null) {
@@ -76,15 +63,13 @@
             collectionId: newCollection.id,
           });
         }
-        successMessage = `Coleção "${name}" criada com ${collectionFromGroup.tabs.length} links`;
         collectionFromGroup = null;
-      } else {
-        successMessage = `Coleção "${name}" criada`;
       }
 
+      successMessage = t('success_collection_created', name);
       showCreateCollection = false;
     } catch (err) {
-      errorMessage = err instanceof Error ? err.message : 'Erro ao criar coleção';
+      errorMessage = err instanceof Error ? err.message : t('error_create_collection_failed');
       collectionFromGroup = null;
     }
   }
@@ -92,7 +77,7 @@
   function handleCreateCollectionFromGroup(event: CustomEvent<{ group: TabGroup; tabs: BrowserTab[] }>): void {
     const { group, tabs } = event.detail;
     collectionFromGroup = {
-      name: group.title || 'Novo grupo',
+      name: group.title || t('tabs_sidebar_unnamed_group'),
       tabs,
     };
     showCreateCollection = true;
@@ -109,9 +94,9 @@
 
     try {
       await linksStore.removeLink(linkToRemove.id);
-      successMessage = 'Link removido';
+      successMessage = t('success_link_removed');
     } catch (err) {
-      errorMessage = 'Erro ao remover link';
+      errorMessage = t('error_remove_link_failed');
     }
     linkToRemove = null;
   }
@@ -129,37 +114,31 @@
   }
 
   async function handleTabDrop(event: CustomEvent<{ url: string; title: string; favicon?: string; collectionId: string }>): Promise<void> {
-    const { url, title, favicon, collectionId } = event.detail;
+    const detail = event.detail;
 
     try {
-      await linksStore.addLink({
-        url,
-        title,
-        favicon,
-        collectionId,
-      });
+      await linksStore.addLink(detail);
 
-      const collectionName = collections.find(c => c.id === collectionId)?.name ?? 'coleção';
-      successMessage = `Link salvo em ${collectionName}`;
+      const col = collections.find(c => c.id === detail.collectionId);
+      const collectionName = col ? getCollectionDisplayName(col) : 'collection';
+      successMessage = t('success_link_saved_to', collectionName);
     } catch (err) {
-      errorMessage = 'Erro ao salvar link';
+      errorMessage = t('error_save_link_failed');
     }
   }
 
-  function clearError(): void {
-    errorMessage = null;
-  }
-
-  function clearSuccess(): void {
-    successMessage = null;
+  function isInputFocused(): boolean {
+    const tag = document.activeElement?.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA';
   }
 
   function handleKeydown(event: KeyboardEvent): void {
-    // Global keyboard shortcuts
+    if (showOnboarding) { return; }
+
     if (event.key === '/' || (event.ctrlKey && event.key === 'k')) {
       event.preventDefault();
-      const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
-      searchInput?.focus();
+      document.querySelector<HTMLInputElement>('[data-search-input]')?.focus();
+      return;
     }
 
     if (event.key === 'Escape') {
@@ -168,25 +147,20 @@
       showCreateCollection = false;
       linkToRemove = null;
       collectionFromGroup = null;
+      return;
     }
 
-    if (event.key === 'n' && !event.ctrlKey && !event.metaKey) {
-      const activeElement = document.activeElement;
-      const isInputFocused = activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA';
-      if (!isInputFocused) {
-        event.preventDefault();
-        handleOpenCreateCollection();
-      }
+    // Shortcuts below are ignored when typing in an input
+    if (isInputFocused() || event.ctrlKey || event.metaKey) {
+      return;
     }
 
-    // Toggle sidebar with 't' key
-    if (event.key === 't' && !event.ctrlKey && !event.metaKey) {
-      const activeElement = document.activeElement;
-      const isInputFocused = activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA';
-      if (!isInputFocused) {
-        event.preventDefault();
-        sidebarExpanded = !sidebarExpanded;
-      }
+    if (event.key === 'n') {
+      event.preventDefault();
+      showCreateCollection = true;
+    } else if (event.key === 't') {
+      event.preventDefault();
+      sidebarExpanded = !sidebarExpanded;
     }
   }
 </script>
@@ -208,19 +182,19 @@
     {#if loading}
       <div class="loading">
         <div class="spinner"></div>
-        <span>carregando...</span>
+        <span>{t('common_loading')}</span>
       </div>
     {:else if error}
       <div class="error-state">
-        <p>Erro ao carregar dados</p>
-        <button type="button" on:click={() => linksStore.load()}>Tentar novamente</button>
+        <p>{t('newtab_error_loading')}</p>
+        <button type="button" on:click={() => linksStore.load()}>{t('common_try_again')}</button>
       </div>
     {:else}
       <QuickActionsBar
         {searchQuery}
         on:search={handleSearch}
-        on:openSettings={handleOpenSettings}
-        on:newCollection={handleOpenCreateCollection}
+        on:openSettings={() => showSettings = true}
+        on:newCollection={() => showCreateCollection = true}
       />
 
       <KanbanBoard
@@ -241,25 +215,25 @@
 </main>
 
 {#if successMessage}
-  <Toast message={successMessage} type="success" onClose={clearSuccess} />
+  <Toast message={successMessage} type="success" onClose={() => successMessage = null} />
 {/if}
 
 {#if errorMessage}
-  <Toast message={errorMessage} onClose={clearError} />
+  <Toast message={errorMessage} onClose={() => errorMessage = null} />
 {/if}
 
 {#if linkToRemove}
   <ConfirmDialog
-    message="Remover este link?"
-    confirmText="Remover"
-    cancelText="Cancelar"
+    message={t('newtab_confirm_remove_link')}
+    confirmText={t('common_remove')}
+    cancelText={t('common_cancel')}
     on:confirm={confirmRemoveLink}
     on:cancel={cancelRemoveLink}
   />
 {/if}
 
 {#if showSettings}
-  <SettingsModal on:close={handleCloseSettings} />
+  <SettingsModal on:close={() => showSettings = false} />
 {/if}
 
 {#if showCreateCollection}
@@ -267,8 +241,12 @@
     existingNames={linksStore.getCollectionNames()}
     initialName={collectionFromGroup?.name ?? ''}
     on:create={handleCreateCollection}
-    on:cancel={handleCloseCreateCollection}
+    on:cancel={() => showCreateCollection = false}
   />
+{/if}
+
+{#if showOnboarding}
+  <OnboardingWizard on:close={() => onboardingDismissed = true} />
 {/if}
 
 <style>

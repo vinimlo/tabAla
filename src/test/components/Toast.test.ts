@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/svelte';
-import Toast from '@/popup/components/Toast.svelte';
+import Toast from '@/shared/components/Toast.svelte';
 
 describe('Toast Component', () => {
   it('should render with provided message', () => {
@@ -16,7 +16,7 @@ describe('Toast Component', () => {
   it('should have accessible close button', () => {
     render(Toast, { props: { message: 'Test message' } });
 
-    const closeButton = screen.getByRole('button', { name: /fechar notificação/i });
+    const closeButton = screen.getByRole('button', { name: /toast_close/i });
     expect(closeButton).toBeInTheDocument();
   });
 
@@ -24,7 +24,7 @@ describe('Toast Component', () => {
     const onClose = vi.fn();
     render(Toast, { props: { message: 'Test message', onClose } });
 
-    const closeButton = screen.getByRole('button', { name: /fechar notificação/i });
+    const closeButton = screen.getByRole('button', { name: /toast_close/i });
     await fireEvent.click(closeButton);
 
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -42,14 +42,4 @@ describe('Toast Component', () => {
     expect(status).toHaveAttribute('aria-live', 'polite');
   });
 
-  it('should call onClose callback when dismissed', async () => {
-    const onClose = vi.fn();
-    render(Toast, { props: { message: 'Test message', onClose } });
-
-    const closeButton = screen.getByRole('button', { name: /fechar notificação/i });
-    await fireEvent.click(closeButton);
-
-    // Verify the onClose callback is called, which triggers the visibility change
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
 });

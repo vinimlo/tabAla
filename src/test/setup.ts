@@ -11,58 +11,51 @@ type StorageCallback = (items: StorageData) => void;
 
 const mockStorage: StorageData = {};
 
-const createStorageArea = (): {
+function createStorageArea(): {
   get: ReturnType<typeof vi.fn>;
   set: ReturnType<typeof vi.fn>;
   remove: ReturnType<typeof vi.fn>;
   clear: ReturnType<typeof vi.fn>;
-} => ({
-  get: vi.fn((keys: string | string[] | null, callback?: StorageCallback) => {
-    const result: StorageData = {};
-    if (keys === null) {
-      Object.assign(result, mockStorage);
-    } else if (typeof keys === 'string') {
-      result[keys] = mockStorage[keys];
-    } else if (Array.isArray(keys)) {
-      keys.forEach((key) => {
-        result[key] = mockStorage[key];
-      });
-    }
-    if (callback) {
-      callback(result);
-    }
-    return Promise.resolve(result);
-  }),
+} {
+  return {
+    get: vi.fn((keys: string | string[] | null, callback?: StorageCallback) => {
+      const result: StorageData = {};
+      if (keys === null) {
+        Object.assign(result, mockStorage);
+      } else if (typeof keys === 'string') {
+        result[keys] = mockStorage[keys];
+      } else if (Array.isArray(keys)) {
+        for (const key of keys) {
+          result[key] = mockStorage[key];
+        }
+      }
+      callback?.(result);
+      return Promise.resolve(result);
+    }),
 
-  set: vi.fn((items: StorageData, callback?: () => void) => {
-    Object.assign(mockStorage, items);
-    if (callback) {
-      callback();
-    }
-    return Promise.resolve();
-  }),
+    set: vi.fn((items: StorageData, callback?: () => void) => {
+      Object.assign(mockStorage, items);
+      callback?.();
+      return Promise.resolve();
+    }),
 
-  remove: vi.fn((keys: string | string[], callback?: () => void) => {
-    const keysToRemove = Array.isArray(keys) ? keys : [keys];
-    keysToRemove.forEach((key) => {
-      delete mockStorage[key];
-    });
-    if (callback) {
-      callback();
-    }
-    return Promise.resolve();
-  }),
+    remove: vi.fn((keys: string | string[], callback?: () => void) => {
+      for (const key of Array.isArray(keys) ? keys : [keys]) {
+        delete mockStorage[key];
+      }
+      callback?.();
+      return Promise.resolve();
+    }),
 
-  clear: vi.fn((callback?: () => void) => {
-    Object.keys(mockStorage).forEach((key) => {
-      delete mockStorage[key];
-    });
-    if (callback) {
-      callback();
-    }
-    return Promise.resolve();
-  }),
-});
+    clear: vi.fn((callback?: () => void) => {
+      for (const key of Object.keys(mockStorage)) {
+        delete mockStorage[key];
+      }
+      callback?.();
+      return Promise.resolve();
+    }),
+  };
+}
 
 const chromeMock = {
   storage: {
@@ -117,8 +110,34 @@ const chromeMock = {
       removeListener: vi.fn(),
     },
   },
+
+  i18n: {
+    getMessage: vi.fn((key: string, _substitutions?: string | string[]) => key),
+    getUILanguage: vi.fn(() => 'en'),
+  },
 };
 
 vi.stubGlobal('chrome', chromeMock);
 
-export { chromeMock, mockStorage };
+// Mock window.matchMedia for theme detection
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
+function clearMockStorage(): void {
+  for (const key of Object.keys(mockStorage)) {
+    delete mockStorage[key];
+  }
+}
+
+export { chromeMock, mockStorage, clearMockStorage };

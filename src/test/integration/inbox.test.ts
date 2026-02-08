@@ -3,7 +3,7 @@
  * Tests the complete flow of Inbox creation, link management, and deletion protection.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { mockStorage } from '../setup';
+import { clearMockStorage } from '../setup';
 import {
   getCollections,
   saveCollections,
@@ -18,22 +18,20 @@ import {
 import {
   INBOX_COLLECTION_ID,
   INBOX_COLLECTION_NAME,
-  isInboxCollection,
 } from '@/lib/types';
 import type { Collection } from '@/lib/types';
+import { createMockCollection } from '../factories';
 
-const createMockCollection = (overrides: Partial<Collection> = {}): Collection => ({
-  id: 'collection-1',
-  name: 'Test Collection',
-  order: 1,
-  createdAt: Date.now(),
-  ...overrides,
-});
+/** Appends collections to storage alongside existing ones. */
+async function appendCollections(...collections: Collection[]): Promise<void> {
+  const existing = await getCollections();
+  await saveCollections([...existing, ...collections]);
+}
 
 describe('Inbox Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
+    clearMockStorage();
   });
 
   describe('Scenario 1: First Installation', () => {
@@ -53,7 +51,8 @@ describe('Inbox Integration Tests', () => {
       const collections = await getCollections();
       const inbox = collections[0];
 
-      expect(isInboxCollection(inbox)).toBe(true);
+      expect(inbox.id).toBe(INBOX_COLLECTION_ID);
+      expect(inbox.isDefault).toBe(true);
       expect(inbox.order).toBe(0);
       expect(inbox.createdAt).toBeDefined();
     });
@@ -78,9 +77,7 @@ describe('Inbox Integration Tests', () => {
     });
 
     it('should preserve explicit collectionId when provided', async () => {
-      const customCollection = createMockCollection({ id: 'custom' });
-      const existingCollections = await getCollections();
-      await saveCollections([...existingCollections, customCollection]);
+      await appendCollections(createMockCollection({ id: 'custom' }));
 
       const link = await addLink({
         url: 'https://example.com',
@@ -191,27 +188,25 @@ describe('Inbox Integration Tests', () => {
     });
 
     it('should always return Inbox at position [0]', async () => {
-      const collection1 = createMockCollection({ id: 'col-1', name: 'A Collection', createdAt: Date.now() - 1000 });
-      const collection2 = createMockCollection({ id: 'col-2', name: 'B Collection', createdAt: Date.now() });
-
-      const existingCollections = await getCollections();
-      await saveCollections([...existingCollections, collection1, collection2]);
+      await appendCollections(
+        createMockCollection({ id: 'col-1', name: 'A Collection', createdAt: Date.now() - 1000 }),
+        createMockCollection({ id: 'col-2', name: 'B Collection', createdAt: Date.now() }),
+      );
 
       const orderedCollections = await getCollections();
       expect(orderedCollections[0].id).toBe(INBOX_COLLECTION_ID);
     });
 
-    it('should order other collections by createdAt descending after Inbox', async () => {
-      const olderCollection = createMockCollection({ id: 'older', createdAt: 1000 });
-      const newerCollection = createMockCollection({ id: 'newer', createdAt: 2000 });
-
-      const existingCollections = await getCollections();
-      await saveCollections([...existingCollections, olderCollection, newerCollection]);
+    it('should order other collections by order ascending after Inbox', async () => {
+      await appendCollections(
+        createMockCollection({ id: 'first', order: 1 }),
+        createMockCollection({ id: 'second', order: 2 }),
+      );
 
       const orderedCollections = await getCollections();
       expect(orderedCollections[0].id).toBe(INBOX_COLLECTION_ID);
-      expect(orderedCollections[1].id).toBe('newer');
-      expect(orderedCollections[2].id).toBe('older');
+      expect(orderedCollections[1].id).toBe('first');
+      expect(orderedCollections[2].id).toBe('second');
     });
   });
 
@@ -221,14 +216,8 @@ describe('Inbox Integration Tests', () => {
     });
 
     it('should allow moving link from Inbox to another collection', async () => {
-      await addLink({
-        url: 'https://example.com',
-        title: 'Test Link',
-      });
-
-      const otherCollection = createMockCollection({ id: 'other' });
-      const existingCollections = await getCollections();
-      await saveCollections([...existingCollections, otherCollection]);
+      await addLink({ url: 'https://example.com', title: 'Test Link' });
+      await appendCollections(createMockCollection({ id: 'other' }));
 
       const links = await getLinks();
       const updatedLink = { ...links[0], collectionId: 'other' };
@@ -239,14 +228,8 @@ describe('Inbox Integration Tests', () => {
     });
 
     it('should keep Inbox available even when empty', async () => {
-      await addLink({
-        url: 'https://example.com',
-        title: 'Test Link',
-      });
-
-      const otherCollection = createMockCollection({ id: 'other' });
-      const existingCollections = await getCollections();
-      await saveCollections([...existingCollections, otherCollection]);
+      await addLink({ url: 'https://example.com', title: 'Test Link' });
+      await appendCollections(createMockCollection({ id: 'other' }));
 
       const links = await getLinks();
       const updatedLink = { ...links[0], collectionId: 'other' };
@@ -264,9 +247,7 @@ describe('Inbox Integration Tests', () => {
     });
 
     it('should allow removing non-Inbox collections', async () => {
-      const customCollection = createMockCollection({ id: 'custom' });
-      const existingCollections = await getCollections();
-      await saveCollections([...existingCollections, customCollection]);
+      await appendCollections(createMockCollection({ id: 'custom' }));
 
       await removeCollection('custom');
 
@@ -275,9 +256,7 @@ describe('Inbox Integration Tests', () => {
     });
 
     it('should move orphaned links to Inbox when collection is deleted', async () => {
-      const customCollection = createMockCollection({ id: 'custom' });
-      const existingCollections = await getCollections();
-      await saveCollections([...existingCollections, customCollection]);
+      await appendCollections(createMockCollection({ id: 'custom' }));
 
       await addLink({
         url: 'https://example.com',
@@ -311,23 +290,6 @@ describe('createInboxCollection', () => {
 
     expect(inbox1).not.toBe(inbox2);
     expect(inbox1.createdAt).toBeLessThanOrEqual(inbox2.createdAt);
-  });
-});
-
-describe('isInboxCollection', () => {
-  it('should return true for Inbox collection', () => {
-    const inbox = createInboxCollection();
-    expect(isInboxCollection(inbox)).toBe(true);
-  });
-
-  it('should return false for regular collection', () => {
-    const collection = createMockCollection({ id: 'other' });
-    expect(isInboxCollection(collection)).toBe(false);
-  });
-
-  it('should return false for collection with similar but different id', () => {
-    const collection = createMockCollection({ id: 'inbox2' });
-    expect(isInboxCollection(collection)).toBe(false);
   });
 });
 

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { t, getWorkspaceDisplayName } from '@lib/i18n';
   import type { Workspace } from '@/lib/types';
   import { WORKSPACE_COLORS } from '@/lib/types';
 
@@ -20,7 +21,7 @@
 </script>
 
 <div class="workspace-select-wrapper">
-  <span class="label">Workspace</span>
+  <span class="label">{t('popup_workspace')}</span>
   <div class="select-container">
     <span
       class="color-indicator"
@@ -33,7 +34,7 @@
       {disabled}
     >
       {#each workspaces as workspace}
-        <option value={workspace.id}>{workspace.name}</option>
+        <option value={workspace.id}>{getWorkspaceDisplayName(workspace)}</option>
       {/each}
     </select>
   </div>

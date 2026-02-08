@@ -3,10 +3,10 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
-import CreateCollectionModal from '@/popup/components/CreateCollectionModal.svelte';
+import CreateCollectionModal from '@/shared/components/CreateCollectionModal.svelte';
 
 function getInput(): HTMLInputElement {
-  return screen.getByPlaceholderText<HTMLInputElement>('Nome da coleção');
+  return screen.getByPlaceholderText<HTMLInputElement>('create_collection_placeholder');
 }
 
 async function typeText(input: HTMLInputElement, text: string): Promise<void> {
@@ -22,22 +22,22 @@ describe('CreateCollectionModal', () => {
   describe('rendering', () => {
     it('should render modal with title', () => {
       render(CreateCollectionModal);
-      expect(screen.getByText('Nova Coleção')).toBeInTheDocument();
+      expect(screen.getByText('create_collection_title')).toBeInTheDocument();
     });
 
     it('should render input field with placeholder', () => {
       render(CreateCollectionModal);
-      expect(screen.getByPlaceholderText('Nome da coleção')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('create_collection_placeholder')).toBeInTheDocument();
     });
 
     it('should render Cancelar button', () => {
       render(CreateCollectionModal);
-      expect(screen.getByText('Cancelar')).toBeInTheDocument();
+      expect(screen.getByText('common_cancel')).toBeInTheDocument();
     });
 
     it('should render Criar button', () => {
       render(CreateCollectionModal);
-      expect(screen.getByText('Criar')).toBeInTheDocument();
+      expect(screen.getByText('common_create')).toBeInTheDocument();
     });
 
     it('should show character count', () => {
@@ -67,7 +67,7 @@ describe('CreateCollectionModal', () => {
 
     it('should have focusable input element', () => {
       render(CreateCollectionModal);
-      const input = screen.getByPlaceholderText('Nome da coleção');
+      const input = screen.getByPlaceholderText('create_collection_placeholder');
       expect(input).toBeInTheDocument();
       expect(input).not.toBeDisabled();
     });
@@ -81,7 +81,7 @@ describe('CreateCollectionModal', () => {
       await typeText(input, 'Trabalho');
 
       await waitFor(() => {
-        expect(screen.getByText('Já existe uma coleção com este nome')).toBeInTheDocument();
+        expect(screen.getByText('validation_collection_name_duplicate')).toBeInTheDocument();
       });
     });
 
@@ -92,7 +92,7 @@ describe('CreateCollectionModal', () => {
       await typeText(input, 'trabalho');
 
       await waitFor(() => {
-        expect(screen.getByText('Já existe uma coleção com este nome')).toBeInTheDocument();
+        expect(screen.getByText('validation_collection_name_duplicate')).toBeInTheDocument();
       });
     });
 
@@ -102,13 +102,13 @@ describe('CreateCollectionModal', () => {
 
       await typeText(input, 'Trabalho');
       await waitFor(() => {
-        expect(screen.getByText('Já existe uma coleção com este nome')).toBeInTheDocument();
+        expect(screen.getByText('validation_collection_name_duplicate')).toBeInTheDocument();
       });
 
       await typeText(input, 'Estudos');
 
       await waitFor(() => {
-        expect(screen.queryByText('Já existe uma coleção com este nome')).not.toBeInTheDocument();
+        expect(screen.queryByText('validation_collection_name_duplicate')).not.toBeInTheDocument();
       });
     });
   });
@@ -116,7 +116,7 @@ describe('CreateCollectionModal', () => {
   describe('button states', () => {
     it('should disable Criar button when input is empty', () => {
       render(CreateCollectionModal);
-      const submitBtn = screen.getByText('Criar');
+      const submitBtn = screen.getByText('common_create');
 
       expect(submitBtn).toBeDisabled();
     });
@@ -124,7 +124,7 @@ describe('CreateCollectionModal', () => {
     it('should enable Criar button when input has valid text', async () => {
       render(CreateCollectionModal);
       const input = getInput();
-      const submitBtn = screen.getByText('Criar');
+      const submitBtn = screen.getByText('common_create');
 
       await typeText(input, 'Valid Name');
 
@@ -134,7 +134,7 @@ describe('CreateCollectionModal', () => {
     it('should disable Criar button when validation fails', async () => {
       render(CreateCollectionModal, { props: { existingNames: ['Existente'] } });
       const input = getInput();
-      const submitBtn = screen.getByText('Criar');
+      const submitBtn = screen.getByText('common_create');
 
       await typeText(input, 'Existente');
 
@@ -151,7 +151,7 @@ describe('CreateCollectionModal', () => {
       const input = getInput();
       await typeText(input, '  Nova Coleção  ');
 
-      const submitBtn = screen.getByText('Criar');
+      const submitBtn = screen.getByText('common_create');
       await fireEvent.click(submitBtn);
 
       expect(createHandler).toHaveBeenCalledWith(
@@ -164,7 +164,7 @@ describe('CreateCollectionModal', () => {
       const cancelHandler = vi.fn();
       component.$on('cancel', cancelHandler);
 
-      const cancelBtn = screen.getByText('Cancelar');
+      const cancelBtn = screen.getByText('common_cancel');
       await fireEvent.click(cancelBtn);
 
       expect(cancelHandler).toHaveBeenCalled();
@@ -239,10 +239,10 @@ describe('CreateCollectionModal', () => {
       const input = getInput();
       await typeText(input, 'Test');
 
-      const submitBtn = screen.getByText('Criar');
+      const submitBtn = screen.getByText('common_create');
       await fireEvent.click(submitBtn);
 
-      expect(screen.getByText('Criando...')).toBeInTheDocument();
+      expect(screen.getByText('common_creating')).toBeInTheDocument();
     });
 
     it('should disable buttons while submitting', async () => {
@@ -252,10 +252,10 @@ describe('CreateCollectionModal', () => {
       const input = getInput();
       await typeText(input, 'Test');
 
-      const submitBtn = screen.getByText('Criar');
+      const submitBtn = screen.getByText('common_create');
       await fireEvent.click(submitBtn);
 
-      expect(screen.getByText('Cancelar')).toBeDisabled();
+      expect(screen.getByText('common_cancel')).toBeDisabled();
     });
   });
 

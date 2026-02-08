@@ -1,7 +1,8 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { t } from '@lib/i18n';
   import type { BrowserTab } from '@/lib/tabs';
-  import { extractDomain } from '@/lib/tabs';
+  import { extractDomain, GROUP_COLORS } from '@/lib/tabs';
 
   export let tab: BrowserTab;
   export let isActive = false;
@@ -16,20 +17,7 @@
 
   $: domain = extractDomain(tab.url);
 
-  // Chrome tab group colors to hex
-  const groupColors: Record<string, string> = {
-    grey: '#5F6368',
-    blue: '#1A73E8',
-    red: '#D93025',
-    yellow: '#F9AB00',
-    green: '#188038',
-    pink: '#D01884',
-    purple: '#9334E6',
-    cyan: '#007B83',
-    orange: '#E8710A',
-  };
-
-  $: colorHex = groupColor ? groupColors[groupColor] || groupColor : undefined;
+  $: colorHex = groupColor ? GROUP_COLORS[groupColor] ?? groupColor : undefined;
 
   function handleClick(): void {
     dispatch('click');
@@ -90,7 +78,7 @@
     type="button"
     class="btn-close"
     on:click={handleClose}
-    aria-label="Fechar aba"
+    aria-label={t('tab_close')}
   >
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M18 6L6 18M6 6l12 12"/>
@@ -103,8 +91,8 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    padding: var(--space-2) var(--space-3) var(--space-2) var(--space-3);
-    background: var(--bg-secondary);
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-elevated);
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
     cursor: pointer;
@@ -113,7 +101,7 @@
   }
 
   .tab-item:hover {
-    background: var(--bg-tertiary);
+    background: var(--surface-overlay);
   }
 
   .tab-item:hover .btn-close {
@@ -121,8 +109,8 @@
   }
 
   .tab-item.active {
-    background: var(--bg-tertiary);
-    border-left: 2px solid var(--accent);
+    background: var(--surface-overlay);
+    border-left: 2px solid var(--accent-primary);
     padding-left: calc(var(--space-3) - 2px);
   }
 
@@ -160,21 +148,24 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     flex-shrink: 0;
     color: var(--text-tertiary);
+    background: var(--surface-overlay);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
   }
 
   .tab-icon img {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     object-fit: contain;
     border-radius: 2px;
   }
 
   .pinned .tab-icon {
-    color: var(--accent);
+    color: var(--accent-primary);
   }
 
   .tab-content {
@@ -220,8 +211,8 @@
   }
 
   .btn-close:hover {
-    background: rgba(248, 113, 113, 0.2);
-    color: var(--error);
+    background: var(--semantic-error-soft);
+    color: var(--semantic-error);
   }
 
   .btn-close:focus-visible {

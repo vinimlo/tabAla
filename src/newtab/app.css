@@ -3,124 +3,54 @@
    A serene, refined dark interface for thoughtful link management
    ================================================================= */
 
-:root {
-  /* =================================================================
-     SURFACES - Warm charcoal palette
-     ================================================================= */
-  --surface-base: #0F0E11;       /* Background principal - charcoal quente */
-  --surface-elevated: #17161A;   /* Cards e superfícies elevadas */
-  --surface-overlay: #1E1D22;    /* Hover states */
-  --surface-subtle: #26252B;     /* Elementos secundários */
+@import '../shared/styles/tokens.css';
 
-  /* Legacy aliases for compatibility */
-  --bg-primary: var(--surface-base);
-  --bg-secondary: var(--surface-elevated);
-  --bg-tertiary: var(--surface-overlay);
-  --bg-elevated: var(--surface-subtle);
+:root,
+[data-theme="dark"] {
+  /* Newtab-specific semantic colors */
+  --semantic-warning: #D4A85A;
 
-  /* =================================================================
-     TEXT - Cream white for reduced eye strain
-     ================================================================= */
-  --text-primary: #F5F3F0;       /* Cream white - reduz cansaço visual */
-  --text-secondary: #A8A5A0;     /* Texto de corpo */
-  --text-tertiary: #6B6865;      /* Texto auxiliar - WCAG AA compliant */
-
-  /* =================================================================
-     ACCENT - Refined coral
-     ================================================================= */
-  --accent-primary: #E85D42;     /* Principal */
-  --accent-secondary: #F07A62;   /* Hover */
-  --accent-soft: rgba(232, 93, 66, 0.12);
-  --accent-glow: rgba(232, 93, 66, 0.24);
-
-  /* Legacy aliases */
-  --accent: var(--accent-primary);
-  --accent-hover: var(--accent-secondary);
-
-  /* =================================================================
-     SEMANTIC - Muted, calming colors
-     ================================================================= */
-  --semantic-success: #7CB890;   /* Verde sage, não neon */
-  --semantic-error: #D4726A;     /* Rosa dusty, não vermelho agressivo */
-  --semantic-warning: #D4A85A;   /* Âmbar quente */
-  --semantic-error-soft: rgba(212, 114, 106, 0.15);
-  --semantic-error-glow: rgba(212, 114, 106, 0.20);
-
-  /* Legacy aliases */
-  --success: var(--semantic-success);
-  --error: var(--semantic-error);
-  --warning: var(--semantic-warning);
-
-  /* =================================================================
-     BORDERS - Subtle layering
-     ================================================================= */
-  --border-subtle: rgba(255, 255, 255, 0.04);
-  --border-default: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.12);
-
-  /* Legacy aliases */
-  --border: var(--border-default);
-  --border-hover: var(--border-strong);
-  --border-active: rgba(255, 255, 255, 0.18);
-
-  /* =================================================================
-     SHADOWS - Deep, layered
-     ================================================================= */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  /* Newtab-specific shadows */
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.6);
   --shadow-glow: 0 0 20px var(--accent-glow);
+  --shadow-card-hover: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
 
-  /* =================================================================
-     SPACING - Consistent scale
-     ================================================================= */
-  --space-1: 0.25rem;   /* 4px */
-  --space-2: 0.5rem;    /* 8px */
-  --space-3: 0.75rem;   /* 12px */
-  --space-4: 1rem;      /* 16px */
-  --space-5: 1.5rem;    /* 24px */
-  --space-6: 2rem;      /* 32px */
-  --space-8: 3rem;      /* 48px */
+[data-theme="light"] {
+  --semantic-warning: #B8912D;
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 20px var(--accent-glow);
+  --shadow-card-hover: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
 
-  /* =================================================================
-     RADIUS - Rounded and friendly
-     ================================================================= */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+:root {
+
+  /* Newtab-specific spacing */
+  --space-8: 3rem;
+
+  /* Newtab-specific radius */
   --radius-xl: 24px;
-  --radius-full: 9999px;
 
-  /* =================================================================
-     TYPOGRAPHY - Modern, readable
-     ================================================================= */
+  /* Newtab-specific typography */
   --font-display: "General Sans", "SF Pro Display", system-ui, sans-serif;
-  --font-body: "Inter", "SF Pro Text", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", "SF Mono", monospace;
 
-  /* Scale (adjusted for better readability) */
-  --text-xs: 0.75rem;    /* 12px - badges, URLs */
-  --text-sm: 0.875rem;   /* 14px - texto secundário */
-  --text-base: 1rem;     /* 16px - corpo */
-  --text-md: 1.25rem;    /* 20px - headers de seção */
-  --text-lg: 1.44rem;    /* 23px - títulos */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.25rem;
+  --text-lg: 1.44rem;
 
-  /* =================================================================
-     MOTION - Smooth and intentional
-     ================================================================= */
-  --duration-fast: 150ms;
+  /* Newtab-specific motion */
   --duration-normal: 250ms;
   --duration-slow: 400ms;
 
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
 
-  /* =================================================================
-     LAYOUT - Column system
-     ================================================================= */
+  /* Layout - Column system */
   --column-width: 320px;
   --column-min-width: 280px;
   --column-max-width: 360px;
@@ -218,6 +148,24 @@ body {
 /* =================================================================
    UTILITY CLASSES
    ================================================================= */
+
+/* Scrollbar utility - thin 4px scrollbar for content areas */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--border-default);
+  border-radius: var(--radius-full);
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: var(--border-strong);
+}
 
 /* Text utilities */
 .text-primary { color: var(--text-primary); }

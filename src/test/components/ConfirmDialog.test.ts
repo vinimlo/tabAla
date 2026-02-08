@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, screen } from '@testing-library/svelte';
-import ConfirmDialog from '@/popup/components/ConfirmDialog.svelte';
+import ConfirmDialog from '@/shared/components/ConfirmDialog.svelte';
 
 describe('ConfirmDialog', () => {
   beforeEach(() => {
@@ -13,7 +13,7 @@ describe('ConfirmDialog', () => {
   it('should render with default message', () => {
     render(ConfirmDialog);
 
-    expect(screen.getByText('Are you sure?')).toBeInTheDocument();
+    expect(screen.getByText('confirm_default_message')).toBeInTheDocument();
   });
 
   it('should render with custom message', () => {
@@ -40,7 +40,7 @@ describe('ConfirmDialog', () => {
     const handleConfirm = vi.fn();
     component.$on('confirm', handleConfirm);
 
-    const confirmButton = screen.getByRole('button', { name: 'Remover' });
+    const confirmButton = screen.getByRole('button', { name: 'common_remove' });
     await fireEvent.click(confirmButton);
 
     expect(handleConfirm).toHaveBeenCalledTimes(1);
@@ -52,7 +52,7 @@ describe('ConfirmDialog', () => {
     const handleCancel = vi.fn();
     component.$on('cancel', handleCancel);
 
-    const cancelButton = screen.getByRole('button', { name: 'Cancelar' });
+    const cancelButton = screen.getByRole('button', { name: 'common_cancel' });
     await fireEvent.click(cancelButton);
 
     expect(handleCancel).toHaveBeenCalledTimes(1);

@@ -1,12 +1,5 @@
-/**
- * Tab management utilities for the TabAla extension.
- * Provides functions for opening, listing, and managing browser tabs.
- */
-
 import { isValidUrl } from './types';
-
-// Re-export isValidUrl for backward compatibility
-export { isValidUrl } from './types';
+import { t } from './i18n';
 
 export interface CurrentTabInfo {
   url: string;
@@ -14,9 +7,6 @@ export interface CurrentTabInfo {
   favicon?: string;
 }
 
-/**
- * Represents a browser tab with all relevant information.
- */
 export interface BrowserTab {
   id: number;
   url: string;
@@ -29,9 +19,6 @@ export interface BrowserTab {
   index: number;
 }
 
-/**
- * Represents a Chrome tab group.
- */
 export interface TabGroup {
   id: number;
   title?: string;
@@ -40,9 +27,6 @@ export interface TabGroup {
   windowId: number;
 }
 
-/**
- * Organized tabs structure for the sidebar.
- */
 export interface OrganizedTabs {
   pinned: BrowserTab[];
   groups: Map<number, { group: TabGroup; tabs: BrowserTab[] }>;
@@ -50,10 +34,7 @@ export interface OrganizedTabs {
   activeTabId?: number;
 }
 
-/**
- * Gets information about the currently active tab in the current window.
- * Returns null if the tab cannot be accessed or has no valid URL/title.
- */
+/** Returns null if the tab cannot be accessed or has no valid URL/title. */
 export async function getCurrentTab(): Promise<CurrentTabInfo | null> {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -72,27 +53,20 @@ export async function getCurrentTab(): Promise<CurrentTabInfo | null> {
   }
 }
 
-/**
- * Checks if a URL is saveable (not a browser internal URL or localhost).
- */
-export function isSaveableUrl(url: string): boolean {
-  const blockedPrefixes = ['chrome://', 'chrome-extension://', 'about:', 'edge://', 'brave://'];
-  const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0'];
+const BLOCKED_PREFIXES = ['chrome://', 'chrome-extension://', 'about:', 'edge://', 'brave://'];
+const BLOCKED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0'];
 
-  if (blockedPrefixes.some((prefix) => url.startsWith(prefix))) {
+/** Returns false for browser internal URLs (chrome://, about:, etc.) and localhost. */
+export function isSaveableUrl(url: string): boolean {
+  if (BLOCKED_PREFIXES.some((prefix) => url.startsWith(prefix))) {
     return false;
   }
 
   try {
-    const parsed = new URL(url);
-    if (blockedHosts.includes(parsed.hostname)) {
-      return false;
-    }
+    return !BLOCKED_HOSTS.includes(new URL(url).hostname);
   } catch {
     return false;
   }
-
-  return true;
 }
 
 export interface OpenLinkResult {
@@ -100,17 +74,10 @@ export interface OpenLinkResult {
   error?: string;
 }
 
-/**
- * Opens a link in a new browser tab using the Chrome Extension API.
- * Returns a result object indicating success or failure with an error message.
- */
 export async function openLinkInNewTab(url: string): Promise<OpenLinkResult> {
   if (!isValidUrl(url)) {
     console.error('Invalid URL:', url);
-    return {
-      success: false,
-      error: 'URL inválido. Não foi possível abrir o link.',
-    };
+    return { success: false, error: t('error_tab_invalid_url') };
   }
 
   try {
@@ -118,16 +85,30 @@ export async function openLinkInNewTab(url: string): Promise<OpenLinkResult> {
     return { success: true };
   } catch (error) {
     console.error('Failed to open link in new tab:', error);
-    return {
-      success: false,
-      error: 'Erro ao abrir link. Tente novamente.',
-    };
+    return { success: false, error: t('error_open_link_failed') };
   }
 }
 
-/**
- * Gets all open tabs in the current window.
- */
+export async function openLinkInCurrentTab(url: string): Promise<OpenLinkResult> {
+  if (!isValidUrl(url)) {
+    console.error('Invalid URL:', url);
+    return { success: false, error: t('error_tab_invalid_url') };
+  }
+
+  try {
+    const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (currentTab?.id !== undefined) {
+      await chrome.tabs.update(currentTab.id, { url });
+    } else {
+      await chrome.tabs.create({ url, active: true });
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to open link in current tab:', error);
+    return { success: false, error: t('error_open_link_failed') };
+  }
+}
+
 export async function getAllTabs(): Promise<BrowserTab[]> {
   try {
     const tabs = await chrome.tabs.query({ currentWindow: true });
@@ -153,15 +134,10 @@ export async function getAllTabs(): Promise<BrowserTab[]> {
   }
 }
 
-/**
- * Gets all tab groups in the current window.
- */
 export async function getTabGroups(): Promise<TabGroup[]> {
   try {
-    // Check if tabGroups API is available
-    if (chrome.tabGroups === undefined) {
-      return [];
-    }
+    if (chrome.tabGroups === undefined) { return []; }
+
     const groups = await chrome.tabGroups.query({ windowId: chrome.windows.WINDOW_ID_CURRENT });
     return groups.map((group) => ({
       id: group.id,
@@ -176,9 +152,6 @@ export async function getTabGroups(): Promise<TabGroup[]> {
   }
 }
 
-/**
- * Gets tabs organized by pinned, groups, and ungrouped.
- */
 export async function getOrganizedTabs(): Promise<OrganizedTabs> {
   const [tabs, groups] = await Promise.all([getAllTabs(), getTabGroups()]);
 
@@ -187,12 +160,10 @@ export async function getOrganizedTabs(): Promise<OrganizedTabs> {
   const groupedTabs = new Map<number, { group: TabGroup; tabs: BrowserTab[] }>();
   let activeTabId: number | undefined;
 
-  // Initialize group entries
   for (const group of groups) {
     groupedTabs.set(group.id, { group, tabs: [] });
   }
 
-  // Organize tabs
   for (const tab of tabs) {
     if (tab.active) {
       activeTabId = tab.id;
@@ -215,9 +186,6 @@ export async function getOrganizedTabs(): Promise<OrganizedTabs> {
   };
 }
 
-/**
- * Focuses on a specific tab by making it active.
- */
 export async function focusTab(tabId: number): Promise<boolean> {
   try {
     await chrome.tabs.update(tabId, { active: true });
@@ -228,9 +196,6 @@ export async function focusTab(tabId: number): Promise<boolean> {
   }
 }
 
-/**
- * Closes a specific tab.
- */
 export async function closeTab(tabId: number): Promise<boolean> {
   try {
     await chrome.tabs.remove(tabId);
@@ -241,9 +206,18 @@ export async function closeTab(tabId: number): Promise<boolean> {
   }
 }
 
-/**
- * Extracts the domain from a URL.
- */
+export const GROUP_COLORS: Record<string, string> = {
+  grey: '#5F6368',
+  blue: '#1A73E8',
+  red: '#D93025',
+  yellow: '#F9AB00',
+  green: '#188038',
+  pink: '#D01884',
+  purple: '#9334E6',
+  cyan: '#007B83',
+  orange: '#E8710A',
+};
+
 export function extractDomain(url: string): string {
   try {
     const parsed = new URL(url);

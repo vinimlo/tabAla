@@ -1,50 +1,29 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
+  import { t } from '@lib/i18n';
+  import { COLLECTION_NAME_MAX_LENGTH, validateCollectionName } from '@/lib/validation';
 
   export let existingNames: string[] = [];
-
-  const MAX_NAME_LENGTH = 100;
+  export let initialName = '';
 
   const dispatch = createEventDispatcher<{
     create: string;
     cancel: void;
   }>();
 
-  let name = '';
+  let name = initialName;
   let inputElement: HTMLInputElement;
   let isSubmitting = false;
   let validationError: string | null = null;
 
-  export function resetSubmission(): void {
-    isSubmitting = false;
-  }
-
   $: trimmedName = name.trim();
-  $: {
-    if (trimmedName === '') {
-      validationError = null;
-    } else {
-      validationError = validateName(trimmedName);
-    }
-  }
+  $: validationError = trimmedName === '' ? null : validateName(trimmedName);
   $: canSubmit = trimmedName.length > 0 && validationError === null && !isSubmitting;
 
   function validateName(value: string): string | null {
-    if (value.length === 0) {
-      return 'Nome da coleção não pode estar vazio';
-    }
-
-    const nameLower = value.toLowerCase();
-    const isDuplicate = existingNames.some(
-      (existing) => existing.toLowerCase() === nameLower
-    );
-
-    if (isDuplicate) {
-      return 'Já existe uma coleção com este nome';
-    }
-
-    return null;
+    const result = validateCollectionName(value, existingNames);
+    return result.valid ? null : (result.error ?? null);
   }
 
   function handleSubmit(): void {
@@ -62,13 +41,9 @@
     dispatch('create', trimmedName);
   }
 
-  function handleCancel(): void {
-    dispatch('cancel');
-  }
-
   function handleKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
-      handleCancel();
+      dispatch('cancel');
     } else if (event.key === 'Enter' && canSubmit) {
       handleSubmit();
     }
@@ -76,32 +51,29 @@
 
   function handleBackdropClick(event: MouseEvent): void {
     if (event.target === event.currentTarget) {
-      handleCancel();
+      dispatch('cancel');
     }
   }
 
   function handleInput(event: Event): void {
     const target = event.target as HTMLInputElement;
-    if (target.value.length > MAX_NAME_LENGTH) {
-      target.value = target.value.slice(0, MAX_NAME_LENGTH);
+    if (target.value.length > COLLECTION_NAME_MAX_LENGTH) {
+      target.value = target.value.slice(0, COLLECTION_NAME_MAX_LENGTH);
       name = target.value;
     }
   }
 
   onMount(() => {
     // Reset state when modal opens to prevent stale state from previous usage
-    name = '';
+    name = initialName;
     isSubmitting = false;
     validationError = null;
 
-    document.addEventListener('keydown', handleKeydown);
     setTimeout(() => inputElement?.focus(), 50);
   });
-
-  onDestroy(() => {
-    document.removeEventListener('keydown', handleKeydown);
-  });
 </script>
+
+<svelte:window on:keydown={handleKeydown} />
 
 <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <div
@@ -117,7 +89,7 @@
     class="modal"
     transition:scale={{ duration: 200, start: 0.95, opacity: 0 }}
   >
-    <h2 id="modal-title">Nova Coleção</h2>
+    <h2 id="modal-title">{t('create_collection_title')}</h2>
 
     <form on:submit|preventDefault={handleSubmit}>
       <div class="input-wrapper" class:has-error={validationError !== null}>
@@ -126,13 +98,13 @@
           bind:this={inputElement}
           bind:value={name}
           on:input={handleInput}
-          placeholder="Nome da coleção"
-          maxlength={MAX_NAME_LENGTH}
+          placeholder={t('create_collection_placeholder')}
+          maxlength={COLLECTION_NAME_MAX_LENGTH}
           aria-describedby={validationError ? 'error-message' : undefined}
           aria-invalid={validationError !== null}
           disabled={isSubmitting}
         />
-        <span class="char-count">{trimmedName.length}/{MAX_NAME_LENGTH}</span>
+        <span class="char-count">{trimmedName.length}/{COLLECTION_NAME_MAX_LENGTH}</span>
       </div>
 
       {#if validationError}
@@ -143,10 +115,10 @@
         <button
           type="button"
           class="btn btn-cancel"
-          on:click={handleCancel}
+          on:click={() => dispatch('cancel')}
           disabled={isSubmitting}
         >
-          Cancelar
+          {t('common_cancel')}
         </button>
         <button
           type="submit"
@@ -155,9 +127,9 @@
         >
           {#if isSubmitting}
             <span class="spinner"></span>
-            Criando...
+            {t('common_creating')}
           {:else}
-            Criar
+            {t('common_create')}
           {/if}
         </button>
       </div>
@@ -185,7 +157,7 @@
     border: 1px solid var(--border-default);
     border-radius: var(--radius-xl);
     padding: var(--space-6);
-    max-width: 320px;
+    max-width: 400px;
     width: 90%;
     box-shadow:
       var(--shadow-xl),
@@ -197,7 +169,7 @@
     margin: 0 0 var(--space-5);
     color: var(--text-primary);
     font-family: var(--font-body);
-    font-size: var(--text-md);
+    font-size: var(--text-lg);
     font-weight: 600;
     text-align: center;
   }
@@ -217,13 +189,13 @@
   input {
     width: 100%;
     padding: var(--space-3) var(--space-4);
-    padding-right: calc(var(--space-4) + 40px);
+    padding-right: calc(var(--space-4) + 48px);
     background: var(--surface-overlay);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-lg);
     color: var(--text-primary);
     font-family: var(--font-body);
-    font-size: var(--text-sm);
+    font-size: var(--text-base);
     transition: all var(--duration-fast) var(--ease-out);
   }
 
@@ -247,12 +219,12 @@
   }
 
   .input-wrapper.has-error input:focus {
-    box-shadow: 0 0 0 3px rgba(212, 114, 106, 0.2);
+    box-shadow: 0 0 0 3px var(--semantic-error-glow);
   }
 
   .char-count {
     position: absolute;
-    right: var(--space-3);
+    right: var(--space-4);
     top: 50%;
     transform: translateY(-50%);
     font-family: var(--font-mono);
@@ -266,7 +238,7 @@
     padding: 0 var(--space-2);
     color: var(--semantic-error);
     font-family: var(--font-body);
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     line-height: 1.4;
   }
 
@@ -278,7 +250,7 @@
   }
 
   .btn {
-    padding: var(--space-2) var(--space-5);
+    padding: var(--space-3) var(--space-5);
     border-radius: var(--radius-lg);
     font-family: var(--font-body);
     font-size: var(--text-sm);
@@ -286,7 +258,7 @@
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
     border: 1px solid transparent;
-    min-width: 90px;
+    min-width: 100px;
     display: inline-flex;
     align-items: center;
     justify-content: center;

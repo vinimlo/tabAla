@@ -1,18 +1,20 @@
+*English | [Portugues (Brasil)](README.pt-BR.md)*
+
 # TabAla
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Chrome Extension](https://img.shields.io/badge/platform-Chrome-green.svg)](https://chrome.google.com)
 [![Manifest V3](https://img.shields.io/badge/manifest-v3-orange.svg)](https://developer.chrome.com/docs/extensions/mv3/)
 
-> Salve abas. Organize em coleções. Processe quando quiser.
+> Save tabs. Organize in collections. Process when you want.
 
 ## Features
 
-- Salve a aba atual com um clique
-- Organize links em coleções personalizadas
-- Inbox automático para links sem coleção
-- Dashboard no New Tab para visão completa
-- Funciona 100% offline (armazenamento local)
+- Save the current tab with one click
+- Organize links into custom collections
+- Automatic Inbox for uncategorized links
+- New Tab dashboard for a complete overview
+- Works 100% offline (local storage)
 
 ## Screenshots
 
@@ -20,25 +22,25 @@
   <img src="store-assets/screenshots/screenshot_newtab.png" width="600" alt="Dashboard">
 </p>
 
-## Instalação
+## Installation
 
 <!--
-### Chrome Web Store (em breve)
-[Instalar TabAla](link-da-store)
+### Chrome Web Store (coming soon)
+[Install TabAla](store-link)
 -->
 
 ### Manual
 
-1. Baixe a [última release](https://github.com/vinimlo/tabAla/releases)
-2. Acesse `chrome://extensions`
-3. Ative "Modo desenvolvedor"
-4. Clique em "Carregar sem compactação"
-5. Selecione a pasta `dist/`
+1. Download the [latest release](https://github.com/vinimlo/tabAla/releases)
+2. Go to `chrome://extensions`
+3. Enable "Developer mode"
+4. Click "Load unpacked"
+5. Select the `dist/` folder
 
-## Contribuindo
+## Contributing
 
-Quer contribuir? Veja o [guia de contribuição](CONTRIBUTING.md).
+Want to contribute? See the [contributing guide](CONTRIBUTING.md).
 
-## Licença
+## License
 
 [Apache 2.0](LICENSE)

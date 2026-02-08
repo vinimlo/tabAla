@@ -2,7 +2,7 @@
  * Unit tests for storage module - removeLink, moveLink, settings functionality.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mockStorage } from '../setup';
+import { clearMockStorage } from '../setup';
 import {
   removeLink,
   getLinks,
@@ -15,29 +15,14 @@ import {
   saveSettings,
   updateSettings,
 } from '@/lib/storage';
-import type { Link, Collection, Settings } from '@/lib/types';
+import type { Settings } from '@/lib/types';
 import { DEFAULT_SETTINGS } from '@/lib/types';
-
-const createMockLink = (overrides: Partial<Link> = {}): Link => ({
-  id: 'link-1',
-  url: 'https://example.com',
-  title: 'Example Link',
-  collectionId: 'collection-1',
-  createdAt: Date.now(),
-  ...overrides,
-});
-
-const createMockCollection = (overrides: Partial<Collection> = {}): Collection => ({
-  id: 'collection-1',
-  name: 'Test Collection',
-  order: 0,
-  ...overrides,
-});
+import { createMockLink, createMockCollection } from '../factories';
 
 describe('removeLink', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
+    clearMockStorage();
   });
 
   it('should successfully remove an existing link', async () => {
@@ -62,7 +47,7 @@ describe('removeLink', () => {
     const result = await removeLink('non-existent-id');
 
     expect(result.success).toBe(false);
-    expect(result.error).toBe('Link not found');
+    expect(result.error).toBe('storage_link_not_found');
 
     const links = await getLinks();
     expect(links).toHaveLength(1);
@@ -74,7 +59,7 @@ describe('removeLink', () => {
     const result = await removeLink('any-id');
 
     expect(result.success).toBe(false);
-    expect(result.error).toBe('Link not found');
+    expect(result.error).toBe('storage_link_not_found');
   });
 
   it('should remove collection when last link is removed', async () => {
@@ -175,7 +160,7 @@ describe('removeLink', () => {
 describe('moveLink', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
+    clearMockStorage();
   });
 
   it('should successfully move a link to another collection', async () => {
@@ -200,7 +185,7 @@ describe('moveLink', () => {
     const result = await moveLink('non-existent', 'col-1');
 
     expect(result.success).toBe(false);
-    expect(result.error).toBe('Link não encontrado');
+    expect(result.error).toBe('storage_link_not_found');
   });
 
   it('should return error when target collection does not exist', async () => {
@@ -212,14 +197,14 @@ describe('moveLink', () => {
     const result = await moveLink('link-1', 'non-existent');
 
     expect(result.success).toBe(false);
-    expect(result.error).toBe('Coleção de destino não encontrada');
+    expect(result.error).toBe('storage_target_collection_not_found');
   });
 });
 
 describe('updateCollectionOrder', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
+    clearMockStorage();
   });
 
   it('should update collection order', async () => {
@@ -243,7 +228,7 @@ describe('updateCollectionOrder', () => {
 describe('settings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
+    clearMockStorage();
   });
 
   it('should return default settings when none exist', async () => {
@@ -256,6 +241,7 @@ describe('settings', () => {
     const customSettings: Settings = {
       newtabEnabled: false,
       onboardingCompleted: true,
+      theme: 'dark',
     };
 
     await saveSettings(customSettings);
@@ -265,7 +251,7 @@ describe('settings', () => {
   });
 
   it('should update specific settings fields', async () => {
-    await saveSettings({ newtabEnabled: true, onboardingCompleted: false });
+    await saveSettings({ newtabEnabled: true, onboardingCompleted: false, theme: 'system' });
 
     const updated = await updateSettings({ onboardingCompleted: true });
 

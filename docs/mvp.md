@@ -1,249 +1,249 @@
-# Tabala
+# TabAla
 
-> Extensão de navegador minimalista para organização temporária de links.
+> Minimalist browser extension for temporary link organization.
 
-## Visão
+## Vision
 
-Uma "sala de espera" para links — não é bookmark permanente, é um buffer organizado para processar depois sem poluir o navegador.
+A "waiting room" for links — not a permanent bookmark, but an organized buffer to process later without cluttering the browser.
 
-## Problema
+## Problem
 
-- Acúmulo de abas abertas gera ansiedade e perda de foco
-- Soluções existentes são pagas ou limitadas
-- Bookmarks tradicionais viram cemitério de links
+- Accumulating open tabs causes anxiety and loss of focus
+- Existing solutions are paid or limited
+- Traditional bookmarks become a graveyard of links
 
-## Solução
+## Solution
 
-Extensão leve que permite salvar abas em coleções temporárias, com experiência clutter-free focada em estudantes e profissionais de tecnologia.
+A lightweight extension that lets you save tabs into temporary collections, with a clutter-free experience aimed at students and tech professionals.
 
-## Princípios
+## Principles
 
-- Minimalismo radical na interface
-- Zero fricção para salvar
-- Organização sem burocracia
-- Sensação de alívio e controle
-
----
-
-## Status do Projeto
-
-**Fase atual:** 0 - Fundação (em andamento)
-
-### Concluído
-- [x] Repositório GitHub criado
-- [x] Licença Apache 2.0 configurada
-- [x] Documentação base (MVP, CLAUDE.md, README.md)
-- [x] Integração Jira configurada (Atena + Hefesto)
-- [x] Code review configurado (CodeRabbit)
-- [x] `.gitignore` configurado
-
-### Pendente (Fase 0)
-- [ ] Criar `package.json` com dependências
-- [ ] Configurar TypeScript (`tsconfig.json`)
-- [ ] Configurar Vite (`vite.config.ts`)
-- [ ] Criar `src/manifest.json` (Manifest V3)
-- [ ] Estrutura `src/` (popup, background, lib)
-- [ ] Ícones placeholder em `public/`
-- [ ] "Hello TabAla" funcionando no popup
+- Radical minimalism in the interface
+- Zero friction to save
+- Organization without bureaucracy
+- A feeling of relief and control
 
 ---
 
-## MVP - Escopo
+## Project Status
 
-### Funcionalidades incluídas
+**Current phase:** 0 - Foundation (in progress)
 
-- Salvar aba atual com um clique
-- Criar e nomear coleções
-- Visualizar links organizados por coleção
-- Reabrir link salvo
-- Remover link da lista
-- Coleção padrão "Inbox" para links sem categoria
-- Persistência local no navegador
-- Toda a aplicação deve ser dockerizada e contar com comandos make para facilitar interações
+### Completed
+- [x] GitHub repository created
+- [x] Apache 2.0 license configured
+- [x] Base documentation (MVP, CLAUDE.md, README.md)
+- [x] Jira integration configured (Atena + Hefesto)
+- [x] Code review configured (CodeRabbit)
+- [x] `.gitignore` configured
 
-### Fora do MVP (futuro)
-
-- Compartilhamento de coleções
-- Sincronização entre dispositivos
-- Busca por links
-- Sistema de tags
-- Sugestões com IA
+### Pending (Phase 0)
+- [ ] Create `package.json` with dependencies
+- [ ] Configure TypeScript (`tsconfig.json`)
+- [ ] Configure Vite (`vite.config.ts`)
+- [ ] Create `src/manifest.json` (Manifest V3)
+- [ ] `src/` structure (popup, background, lib)
+- [ ] Placeholder icons in `public/`
+- [ ] "Hello TabAla" working in the popup
 
 ---
 
-## Fases de Desenvolvimento
+## MVP — Scope
 
-### Fase 0: Fundação
+### Included Features
 
-**Objetivo:** Estrutura base funcionando
+- Save the current tab with one click
+- Create and name collections
+- View links organized by collection
+- Reopen a saved link
+- Remove a link from the list
+- Default "Inbox" collection for uncategorized links
+- Local persistence in the browser
+- The entire application must be dockerized with make commands for easy interaction
 
-**Tarefas:**
-- [x] Criar repositório no GitHub
-- [x] Configurar licença Apache 2.0
-- [x] Configurar `.gitignore`
-- [ ] Configurar `package.json`:
+### Out of MVP (future)
+
+- Collection sharing
+- Cross-device sync
+- Link search
+- Tag system
+- AI-powered suggestions
+
+---
+
+## Development Phases
+
+### Phase 0: Foundation
+
+**Goal:** Base structure working
+
+**Tasks:**
+- [x] Create GitHub repository
+- [x] Configure Apache 2.0 license
+- [x] Configure `.gitignore`
+- [ ] Configure `package.json`:
   - Svelte, TypeScript, Vite
-  - @crxjs/vite-plugin (para extensões Chrome)
-  - Vitest para testes
-- [ ] Configurar `tsconfig.json`
-- [ ] Configurar `vite.config.ts`
-- [ ] Criar estrutura de pastas:
+  - @crxjs/vite-plugin (for Chrome extensions)
+  - Vitest for testing
+- [ ] Configure `tsconfig.json`
+- [ ] Configure `vite.config.ts`
+- [ ] Create folder structure:
   - `src/popup/`
   - `src/background/`
   - `src/lib/`
   - `public/icons/`
-- [ ] Criar `src/manifest.json` (Manifest V3)
-- [ ] Build pipeline funcionando
-- [ ] Extensão carregando no Chrome (modo dev)
-- [ ] Criar `Dockerfile` (ambiente de desenvolvimento Node.js)
-- [ ] Criar `docker-compose.yml` (orquestração)
-- [ ] Criar `Makefile` com targets: `dev`, `build`, `test`, `lint`, `shell`
-- [ ] Configurar ESLint (`.eslintrc.json`)
-- [ ] Configurar Vitest (`vitest.config.ts`)
-- [ ] Atualizar `.gitignore` para Node.js (node_modules, dist, .env)
+- [ ] Create `src/manifest.json` (Manifest V3)
+- [ ] Build pipeline working
+- [ ] Extension loading in Chrome (dev mode)
+- [ ] Create `Dockerfile` (Node.js development environment)
+- [ ] Create `docker-compose.yml` (orchestration)
+- [ ] Create `Makefile` with targets: `dev`, `build`, `test`, `lint`, `shell`
+- [ ] Configure ESLint (`.eslintrc.json`)
+- [ ] Configure Vitest (`vitest.config.ts`)
+- [ ] Update `.gitignore` for Node.js (node_modules, dist, .env)
 
-**Entregável:** "Hello TabAla" aparecendo no popup
+**Deliverable:** "Hello TabAla" showing in the popup
 
-**Verificação:**
-- [ ] `make build` executa sem erros e gera output em `dist/`
-- [ ] `make dev` inicia watch mode no container
-- [ ] `make lint` passa sem erros
-- [ ] `make test` executa (mesmo sem testes ainda)
-- [ ] Extensão carrega em `chrome://extensions` (modo dev)
-- [ ] Popup exibe "Hello TabAla"
-
----
-
-### Fase 1: Fluxo principal
-
-**Objetivo:** Salvar e recuperar links funciona
-
-- Botão para salvar aba atual
-- Armazenamento local dos links
-- Lista de links salvos no popup
-- Ação de abrir link ✓
-- Ação de remover link
-
-**Entregável:** Ciclo completo salvar → visualizar → abrir → remover
-
-**Verificação:**
-- [ ] Salvar aba atual adiciona link à lista
-- [ ] Lista exibe links salvos com título e favicon
-- [x] Clicar em link abre em nova aba (TAB-26 implementado)
-- [ ] Botão remover deleta link
-- [ ] Dados persistem após fechar/abrir popup
+**Verification:**
+- [ ] `make build` runs without errors and generates output in `dist/`
+- [ ] `make dev` starts watch mode in the container
+- [ ] `make lint` passes without errors
+- [ ] `make test` runs (even without tests yet)
+- [ ] Extension loads in `chrome://extensions` (dev mode)
+- [ ] Popup displays "Hello TabAla"
 
 ---
 
-### Fase 2: Coleções
+### Phase 1: Main Flow
 
-**Objetivo:** Organização por categorias
+**Goal:** Saving and retrieving links works
 
-- Criar nova coleção
-- Salvar link em coleção específica
-- Visualização filtrada por coleção
-- Coleção "Inbox" como padrão
-- Renomear coleção
-- Excluir coleção
+- Button to save the current tab
+- Local storage for links
+- List of saved links in the popup
+- Open link action ✓
+- Remove link action
 
-**Entregável:** Organização básica funcional
+**Deliverable:** Complete cycle: save → view → open → remove
 
----
-
-### Fase 3: Refinamento
-
-**Objetivo:** Experiência polida e minimalista
-
-- Interface visual minimalista
-- Exibição de favicon dos links
-- Contador de links por coleção
-- Estados vazios bem resolvidos
-- Atalho de teclado para salvar
-
-**Entregável:** MVP com UX refinada
+**Verification:**
+- [ ] Saving the current tab adds a link to the list
+- [ ] List displays saved links with title and favicon
+- [x] Clicking a link opens it in a new tab (TAB-26 implemented)
+- [ ] Remove button deletes the link
+- [ ] Data persists after closing/opening the popup
 
 ---
 
-### Fase 4: Lançamento
+### Phase 2: Collections
 
-**Objetivo:** Disponibilizar publicamente
+**Goal:** Organization by categories
 
-- Documentação no README
-- Screenshots para divulgação
-- Publicação na Chrome Web Store
+- Create a new collection
+- Save a link to a specific collection
+- Filtered view by collection
+- "Inbox" as the default collection
+- Rename a collection
+- Delete a collection
 
-**Entregável:** Extensão disponível para instalação
+**Deliverable:** Basic organization functional
 
 ---
 
-## Especificações Técnicas
+### Phase 3: Refinement
 
-- **Plataforma:** Chrome (Manifest V3)
+**Goal:** Polished and minimalist experience
+
+- Minimalist visual interface
+- Link favicon display
+- Link count per collection
+- Well-designed empty states
+- Keyboard shortcut to save
+
+**Deliverable:** MVP with refined UX
+
+---
+
+### Phase 4: Launch
+
+**Goal:** Make it publicly available
+
+- README documentation
+- Screenshots for promotion
+- Publish to the Chrome Web Store
+
+**Deliverable:** Extension available for installation
+
+---
+
+## Technical Specifications
+
+- **Platform:** Chrome (Manifest V3)
 - **Framework:** Svelte
-- **Armazenamento:** Local (chrome.storage)
-- **Licença:** Apache 2.0
-- **Repositório:** GitHub (público)
+- **Storage:** Local (chrome.storage)
+- **License:** Apache 2.0
+- **Repository:** GitHub (public)
 
 ---
 
-## Entidades de Dados
+## Data Entities
 
 ### Link
 ```typescript
 interface Link {
-  id: string;           // UUID único
-  url: string;          // URL completa
-  title: string;        // Título da página
-  favicon?: string;     // URL do favicon (opcional)
-  collectionId: string; // ID da coleção
-  createdAt: number;    // Timestamp de criação
+  id: string;           // Unique UUID
+  url: string;          // Full URL
+  title: string;        // Page title
+  favicon?: string;     // Favicon URL (optional)
+  collectionId: string; // Collection ID
+  createdAt: number;    // Creation timestamp
 }
 ```
 
 ### Collection
 ```typescript
 interface Collection {
-  id: string;      // UUID único
-  name: string;    // Nome da coleção
-  order: number;   // Ordem de exibição
+  id: string;      // Unique UUID
+  name: string;    // Collection name
+  order: number;   // Display order
 }
 ```
 
 ---
 
-## Regras de Negócio
+## Business Rules
 
-- **Inbox obrigatória:** Coleção "Inbox" sempre existe e não pode ser excluída
-- **Links órfãos:** Quando uma coleção é deletada, seus links vão para Inbox
-- **Múltiplas cópias:** Mesmo URL pode existir em coleções diferentes
-- **Ordenação:** Links exibidos por data de criação (mais recentes primeiro)
-- **Armazenamento:** Dados persistidos em `chrome.storage.local` (limite ~5MB)
+- **Mandatory Inbox:** The "Inbox" collection always exists and cannot be deleted
+- **Orphan links:** When a collection is deleted, its links are moved to Inbox
+- **Multiple copies:** The same URL can exist in different collections
+- **Sorting:** Links displayed by creation date (most recent first)
+- **Storage:** Data persisted in `chrome.storage.local` (~5MB limit)
 
 ---
 
-## Estrutura de Arquivos
+## File Structure
 
 ```
 tabAla/
 ├── src/
-│   ├── popup/              # UI do popup (Svelte)
-│   │   ├── App.svelte      # Componente principal
+│   ├── popup/              # Popup UI (Svelte)
+│   │   ├── App.svelte      # Main component
 │   │   ├── main.ts         # Entry point
-│   │   ├── components/     # Componentes reutilizáveis
+│   │   ├── components/     # Reusable components
 │   │   └── stores/         # Svelte stores
 │   ├── background/         # Service worker
 │   │   └── index.ts
-│   ├── lib/                # Lógica compartilhada
-│   │   ├── storage.ts      # Wrapper chrome.storage
-│   │   └── types.ts        # Tipos TypeScript
+│   ├── lib/                # Shared logic
+│   │   ├── storage.ts      # chrome.storage wrapper
+│   │   └── types.ts        # TypeScript types
 │   └── manifest.json       # Manifest V3
-├── public/                 # Assets estáticos
-│   └── icons/              # Ícones (16, 48, 128px)
-├── tests/                  # Testes unitários (Vitest)
+├── public/                 # Static assets
+│   └── icons/              # Icons (16, 48, 128px)
+├── tests/                  # Unit tests (Vitest)
 ├── dist/                   # Build output (gitignore)
-├── Dockerfile              # Imagem de desenvolvimento
-├── docker-compose.yml      # Orquestração dos containers
-├── Makefile                # Comandos de automação
+├── Dockerfile              # Development image
+├── docker-compose.yml      # Container orchestration
+├── Makefile                # Automation commands
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
@@ -253,31 +253,31 @@ tabAla/
 
 ---
 
-## Comandos de Desenvolvimento
+## Development Commands
 
-Todos os comandos são executados via Docker através do Makefile:
+All commands are executed via Docker through the Makefile:
 
 ```bash
-make dev             # Inicia ambiente de desenvolvimento (watch mode)
-make build           # Build de produção
-make test            # Rodar testes
-make lint            # Lint do código
-make shell           # Abre shell no container
+make dev             # Start development environment (watch mode)
+make build           # Production build
+make test            # Run tests
+make lint            # Code linting
+make shell           # Open shell in the container
 
-# Carregar extensão no Chrome
-# 1. Acesse chrome://extensions
-# 2. Ative "Modo desenvolvedor"
-# 3. Clique "Carregar sem compactação"
-# 4. Selecione a pasta dist/
+# Load extension in Chrome
+# 1. Go to chrome://extensions
+# 2. Enable "Developer mode"
+# 3. Click "Load unpacked"
+# 4. Select the dist/ folder
 ```
 
-> **Nota:** Não execute comandos npm diretamente. Use sempre os comandos make.
+> **Note:** Do not run npm commands directly. Always use make commands.
 
 ---
 
-## Público-alvo
+## Target Audience
 
-- Estudantes universitários
-- Profissionais de tecnologia
-- Autodidatas
-- Qualquer pessoa que acumula abas para "ver depois"
+- University students
+- Tech professionals
+- Self-learners
+- Anyone who accumulates tabs to "check later"

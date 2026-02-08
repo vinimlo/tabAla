@@ -3,10 +3,10 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { get } from 'svelte/store';
-import { linksStore } from '@/popup/stores/links';
+import { linksStore } from '@/lib/stores/links';
 import * as storage from '@/lib/storage';
 import { COLLECTION_NAME_ERRORS } from '@/lib/validation';
-import { mockStorage } from '../setup';
+import { clearMockStorage } from '../setup';
 import type { Collection } from '@/lib/types';
 
 vi.mock('@/lib/storage', async () => {
@@ -17,19 +17,25 @@ vi.mock('@/lib/storage', async () => {
   };
 });
 
+const INBOX_COLLECTION = { id: 'inbox', name: 'Inbox', order: 0, isDefault: true } as const;
+
+function resetLinksStore(collections = [INBOX_COLLECTION]): void {
+  linksStore.set({
+    links: [],
+    collections: [...collections],
+    loading: false,
+    error: null,
+    isAdding: false,
+    isRemoving: new Set<string>(),
+    pendingLocalUpdate: false,
+  });
+}
+
 describe('Create Collection Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
-
-    linksStore.set({
-      links: [],
-      collections: [{ id: 'inbox', name: 'Inbox', order: 0, isDefault: true }],
-      loading: false,
-      error: null,
-      isAdding: false,
-      isRemoving: new Set(),
-    });
+    clearMockStorage();
+    resetLinksStore();
   });
 
   afterEach(() => {
@@ -83,7 +89,7 @@ describe('Create Collection Integration', () => {
   describe('validation flow', () => {
     it('should reject empty name', async () => {
       await expect(linksStore.addCollection('')).rejects.toThrow(
-        COLLECTION_NAME_ERRORS.EMPTY
+        COLLECTION_NAME_ERRORS.EMPTY()
       );
 
       const state = get(linksStore);
@@ -94,7 +100,7 @@ describe('Create Collection Integration', () => {
       await linksStore.addCollection('Duplicada');
 
       await expect(linksStore.addCollection('Duplicada')).rejects.toThrow(
-        COLLECTION_NAME_ERRORS.DUPLICATE
+        COLLECTION_NAME_ERRORS.DUPLICATE()
       );
 
       const state = get(linksStore);
@@ -105,22 +111,15 @@ describe('Create Collection Integration', () => {
       await linksStore.addCollection('CaseSensitive');
 
       await expect(linksStore.addCollection('casesensitive')).rejects.toThrow(
-        COLLECTION_NAME_ERRORS.DUPLICATE
+        COLLECTION_NAME_ERRORS.DUPLICATE()
       );
     });
 
     it('should validate using getCollectionNames', () => {
-      linksStore.set({
-        links: [],
-        collections: [
-          { id: 'inbox', name: 'Inbox', order: 0, isDefault: true },
-          { id: 'col-1', name: 'Trabalho', order: 1 },
-        ],
-        loading: false,
-        error: null,
-        isAdding: false,
-        isRemoving: new Set(),
-      });
+      resetLinksStore([
+        INBOX_COLLECTION,
+        { id: 'col-1', name: 'Trabalho', order: 1 },
+      ]);
 
       const names = linksStore.getCollectionNames();
       expect(names).toContain('Inbox');
@@ -128,24 +127,17 @@ describe('Create Collection Integration', () => {
     });
 
     it('should use validateCollection helper', () => {
-      linksStore.set({
-        links: [],
-        collections: [
-          { id: 'inbox', name: 'Inbox', order: 0, isDefault: true },
-          { id: 'col-1', name: 'Existente', order: 1 },
-        ],
-        loading: false,
-        error: null,
-        isAdding: false,
-        isRemoving: new Set(),
-      });
+      resetLinksStore([
+        INBOX_COLLECTION,
+        { id: 'col-1', name: 'Existente', order: 1 },
+      ]);
 
       const validResult = linksStore.validateCollection('Novo');
       expect(validResult.valid).toBe(true);
 
       const invalidResult = linksStore.validateCollection('Existente');
       expect(invalidResult.valid).toBe(false);
-      expect(invalidResult.error).toBe(COLLECTION_NAME_ERRORS.DUPLICATE);
+      expect(invalidResult.error).toBe(COLLECTION_NAME_ERRORS.DUPLICATE());
     });
   });
 
@@ -153,14 +145,8 @@ describe('Create Collection Integration', () => {
     it('should persist collection after store reload', async () => {
       await linksStore.addCollection('Persistente');
 
-      linksStore.set({
-        links: [],
-        collections: [{ id: 'inbox', name: 'Inbox', order: 0, isDefault: true }],
-        loading: true,
-        error: null,
-        isAdding: false,
-        isRemoving: new Set(),
-      });
+      resetLinksStore();
+      linksStore.update((s) => ({ ...s, loading: true }));
 
       await linksStore.load();
 

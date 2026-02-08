@@ -2,11 +2,12 @@
   import { createEventDispatcher } from 'svelte';
   import { flip } from 'svelte/animate';
   import { dndzone } from 'svelte-dnd-action';
+  import { t } from '@lib/i18n';
   import type { Collection, Link, Workspace } from '@/lib/types';
   import { INBOX_COLLECTION_ID } from '@/lib/types';
   import { linksStore } from '@/lib/stores/links';
   import { workspacesStore } from '@/lib/stores/workspaces';
-  import { openLinkInNewTab } from '@/lib/tabs';
+  import { openLinkInNewTab, openLinkInCurrentTab } from '@/lib/tabs';
   import Column from './Column.svelte';
 
   export let collections: Collection[] = [];
@@ -54,14 +55,18 @@
 
   async function handleOpenLink(event: CustomEvent<Link>): Promise<void> {
     const link = event.detail;
-    const result = await openLinkInNewTab(link.url);
+    const result = await openLinkInCurrentTab(link.url);
     if (!result.success) {
-      dispatch('error', result.error ?? 'Erro ao abrir link');
+      dispatch('error', result.error ?? t('error_open_link_failed'));
     }
   }
 
-  function handleRemoveLink(event: CustomEvent<{ id: string; title: string }>): void {
-    dispatch('removeLink', event.detail);
+  async function handleOpenLinkInNewTab(event: CustomEvent<Link>): Promise<void> {
+    const link = event.detail;
+    const result = await openLinkInNewTab(link.url);
+    if (!result.success) {
+      dispatch('error', result.error ?? t('error_open_link_failed'));
+    }
   }
 
   async function handleMoveLink(event: CustomEvent<{ linkId: string; toCollectionId: string }>): Promise<void> {
@@ -69,7 +74,7 @@
     try {
       await linksStore.moveLink(linkId, toCollectionId);
     } catch (err) {
-      dispatch('error', 'Erro ao mover link');
+      dispatch('error', t('error_move_link_failed'));
     }
   }
 
@@ -78,7 +83,7 @@
     try {
       await linksStore.renameCollection(id, newName);
     } catch (err) {
-      dispatch('error', 'Erro ao renomear colecao');
+      dispatch('error', t('error_rename_collection_failed'));
     }
   }
 
@@ -87,17 +92,13 @@
     try {
       await linksStore.removeCollection(id);
       if (linkCount > 0) {
-        dispatch('success', `Colecao "${name}" excluida. ${linkCount} links movidos para Inbox.`);
+        dispatch('success', t('success_collection_deleted_moved_many', name, linkCount));
       } else {
-        dispatch('success', `Colecao "${name}" excluida.`);
+        dispatch('success', t('success_collection_deleted', name));
       }
     } catch (err) {
-      dispatch('error', 'Erro ao excluir colecao');
+      dispatch('error', t('error_delete_collection_failed'));
     }
-  }
-
-  function handleTabDrop(event: CustomEvent<{ url: string; title: string; favicon?: string; collectionId: string }>): void {
-    dispatch('tabDrop', event.detail);
   }
 
   async function handleMoveToWorkspace(event: CustomEvent<{ collectionId: string; workspaceId: string }>): Promise<void> {
@@ -105,9 +106,9 @@
     try {
       await workspacesStore.moveCollectionToWorkspace(collectionId, workspaceId);
       const workspace = workspaces.find((w) => w.id === workspaceId);
-      dispatch('success', `Coleção movida para "${workspace?.name ?? 'workspace'}"`);
+      dispatch('success', t('success_collection_moved', workspace?.name ?? 'workspace'));
     } catch {
-      dispatch('error', 'Erro ao mover coleção');
+      dispatch('error', t('error_move_collection_failed'));
     }
   }
 </script>
@@ -133,11 +134,12 @@
           {workspaces}
           {currentWorkspaceId}
           on:openLink={handleOpenLink}
-          on:removeLink={handleRemoveLink}
+          on:openLinkInNewTab={handleOpenLinkInNewTab}
+          on:removeLink={(e) => dispatch('removeLink', e.detail)}
           on:moveLink={handleMoveLink}
           on:renameCollection={handleRenameCollection}
           on:deleteCollection={handleDeleteCollection}
-          on:tabDrop={handleTabDrop}
+          on:tabDrop={(e) => dispatch('tabDrop', e.detail)}
           on:moveToWorkspace={handleMoveToWorkspace}
         />
       </div>
@@ -151,7 +153,7 @@
         <path d="M21 21l-4.35-4.35"/>
         <path d="M8 8l6 6M14 8l-6 6"/>
       </svg>
-      <p>Nenhum link encontrado para "{searchQuery}"</p>
+      <p>{t('newtab_no_links_found', searchQuery)}</p>
     </div>
   {/if}
 </div>
@@ -179,17 +181,17 @@
   }
 
   .columns-container::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
+    background: var(--surface-elevated);
     border-radius: var(--radius-full);
   }
 
   .columns-container::-webkit-scrollbar-thumb {
-    background-color: var(--border);
+    background-color: var(--border-default);
     border-radius: var(--radius-full);
   }
 
   .columns-container::-webkit-scrollbar-thumb:hover {
-    background-color: var(--border-hover);
+    background-color: var(--border-strong);
   }
 
   .column-wrapper {

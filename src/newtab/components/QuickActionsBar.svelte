@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { t } from '@lib/i18n';
 
   export let searchQuery: string = '';
 
@@ -28,13 +29,13 @@
     <input
       type="text"
       class="search-input"
-      placeholder="Buscar links..."
+      placeholder={t('newtab_search_placeholder')}
       value={searchQuery}
       on:input={handleSearchInput}
       data-search-input
     />
     {#if searchQuery}
-      <button class="clear-search" on:click={clearSearch} type="button" aria-label="Limpar busca">
+      <button class="clear-search" on:click={clearSearch} type="button" aria-label={t('newtab_clear_search')}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <path d="M18 6L6 18M6 6l12 12"/>
         </svg>
@@ -47,20 +48,20 @@
       type="button"
       class="btn-action btn-new-collection"
       on:click={() => dispatch('newCollection')}
-      aria-label="Nova Colecao"
+      aria-label={t('newtab_new_collection')}
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="12" y1="5" x2="12" y2="19"/>
         <line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
-      <span>Nova Colecao</span>
+      <span>{t('newtab_new_collection')}</span>
     </button>
 
     <button
       type="button"
       class="btn-action btn-settings"
       on:click={() => dispatch('openSettings')}
-      aria-label="Configuracoes"
+      aria-label={t('popup_settings')}
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"/>

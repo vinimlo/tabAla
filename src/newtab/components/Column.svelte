@@ -140,7 +140,7 @@
   }
 
   function handleNativeDragOver(event: DragEvent): void {
-    if (event.dataTransfer?.types.includes('application/json')) {
+    if (event.dataTransfer?.types.includes('application/json') === true) {
       event.preventDefault();
       event.dataTransfer.dropEffect = 'copy';
       isTabDragOver = true;

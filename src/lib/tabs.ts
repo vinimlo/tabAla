@@ -136,7 +136,7 @@ export async function getAllTabs(): Promise<BrowserTab[]> {
 
 export async function getTabGroups(): Promise<TabGroup[]> {
   try {
-    if (!chrome.tabGroups) return [];
+    if (chrome.tabGroups === undefined) { return []; }
 
     const groups = await chrome.tabGroups.query({ windowId: chrome.windows.WINDOW_ID_CURRENT });
     return groups.map((group) => ({

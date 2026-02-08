@@ -3,6 +3,7 @@
  * Used by tests that test store/component behavior rather than storage itself.
  */
 import { vi } from 'vitest';
+import { DEFAULT_SETTINGS } from '@/lib/types';
 
 export function createStorageMock(): Record<string, unknown> {
   return {
@@ -20,6 +21,10 @@ export function createStorageMock(): Record<string, unknown> {
     saveWorkspaces: vi.fn(() => Promise.resolve()),
     migrateToWorkspaces: vi.fn(() => Promise.resolve()),
     initializeDefaultWorkspace: vi.fn(() => Promise.resolve()),
+    getSettings: vi.fn(() => Promise.resolve({ ...DEFAULT_SETTINGS })),
+    updateSettings: vi.fn((updates: Partial<typeof DEFAULT_SETTINGS>) =>
+      Promise.resolve({ ...DEFAULT_SETTINGS, ...updates })
+    ),
     getErrorMessage: vi.fn((error: unknown, fallback: string) =>
       error instanceof Error ? error.message : fallback
     ),

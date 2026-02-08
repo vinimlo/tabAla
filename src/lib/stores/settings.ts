@@ -14,7 +14,7 @@ function resolveTheme(pref: ThemePreference): 'light' | 'dark' {
   if (pref !== 'system') {
     return pref;
   }
-  if (typeof window !== 'undefined' && window.matchMedia) {
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
   return 'dark';
@@ -41,7 +41,7 @@ function createSettingsStore(): Writable<SettingsState> & {
   });
 
   // Listen for OS theme changes when preference is 'system'
-  if (typeof window !== 'undefined' && window.matchMedia) {
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
     const mql = window.matchMedia('(prefers-color-scheme: dark)');
     mql.addEventListener('change', () => {
       let currentTheme: ThemePreference = 'system';
@@ -54,7 +54,7 @@ function createSettingsStore(): Writable<SettingsState> & {
 
   // Watch for storage changes from other contexts (popup <-> newtab)
   storage.watch((changes) => {
-    if (changes.settings?.newValue) {
+    if (changes.settings?.newValue !== undefined) {
       storeUpdate((state) => {
         if (state.pendingLocalUpdate) {
           return state;

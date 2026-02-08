@@ -133,7 +133,7 @@
   }
 
   function handleKeydown(event: KeyboardEvent): void {
-    if (showOnboarding) return;
+    if (showOnboarding) { return; }
 
     if (event.key === '/' || (event.ctrlKey && event.key === 'k')) {
       event.preventDefault();

@@ -15,7 +15,7 @@ import {
   StorageError,
 } from '@/lib/storage';
 import { INBOX_COLLECTION_ID } from '@/lib/types';
-import type { Collection } from '@/lib/types';
+import type { Collection, Link } from '@/lib/types';
 import { createMockCollection, createMockLink } from '../factories';
 
 /** Appends collections to storage alongside existing ones. */

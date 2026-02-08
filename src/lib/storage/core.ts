@@ -74,13 +74,13 @@ function validateKeys(keys: string[]): void {
 }
 
 function validateItems(items: Record<string, unknown>): void {
-  if (!items || typeof items !== 'object' || Object.keys(items).length === 0) {
+  if (typeof items !== 'object' || items === null || Object.keys(items).length === 0) {
     throw new StorageError('Items object must not be empty', 'INVALID_VALUE');
   }
 }
 
 function isQuotaExceededError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
+  if (!(error instanceof Error)) { return false; }
   const message = error.message.toLowerCase();
   return message.includes('quota') || message.includes('exceeded');
 }
@@ -161,6 +161,7 @@ async function getAll(): Promise<Record<string, unknown>> {
 async function getBatch<T>(keys: string[]): Promise<Record<string, T>> {
   validateKeys(keys);
   try {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
     return await chrome.storage.local.get(keys) as Record<string, T>;
   } catch (error) {
     throw wrapError(error, 'get batch values');

@@ -18,7 +18,7 @@
     cancel: void;
   }>();
 
-  let name = workspace ? getWorkspaceDisplayName(workspace) : '';
+  let name = workspace !== null ? getWorkspaceDisplayName(workspace) : '';
   let description = workspace?.description ?? '';
   let color = workspace?.color ?? WORKSPACE_COLORS[0];
   let inputElement: HTMLInputElement;

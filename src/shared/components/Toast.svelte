@@ -45,7 +45,7 @@
   onMount(startTimer);
 
   onDestroy(() => {
-    if (timeoutId) clearTimeout(timeoutId);
+    if (timeoutId) { clearTimeout(timeoutId); }
   });
 </script>
 

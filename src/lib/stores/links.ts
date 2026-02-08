@@ -34,7 +34,7 @@ interface LinksState {
 function deduplicateLinks(links: Link[]): Link[] {
   const seen = new Set<string>();
   return links.filter((link) => {
-    if (seen.has(link.id)) return false;
+    if (seen.has(link.id)) { return false; }
     seen.add(link.id);
     return true;
   });
@@ -65,7 +65,7 @@ function createLinksStore(): Writable<LinksState> & {
 
   // Watch for storage changes from other contexts (popup <-> newtab)
   storage.watch((changes) => {
-    if (changes.links?.newValue || changes.collections?.newValue) {
+    if (changes.links?.newValue !== undefined || changes.collections?.newValue !== undefined) {
       update((state) => {
         // Ignore storage updates triggered by our own local operations
         if (state.pendingLocalUpdate) {

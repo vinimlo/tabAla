@@ -15,8 +15,8 @@ export async function saveLinks(links: Link[]): Promise<void> {
 export async function getCollections(): Promise<Collection[]> {
   const collections = await storage.get<Collection[]>('collections');
   return (collections ?? []).sort((a, b) => {
-    if (a.id === INBOX_COLLECTION_ID) return -1;
-    if (b.id === INBOX_COLLECTION_ID) return 1;
+    if (a.id === INBOX_COLLECTION_ID) { return -1; }
+    if (b.id === INBOX_COLLECTION_ID) { return 1; }
     return a.order - b.order;
   });
 }

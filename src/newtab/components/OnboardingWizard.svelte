@@ -46,7 +46,7 @@
   }
 
   async function goBack(): Promise<void> {
-    if (currentStep <= 1) return;
+    if (currentStep <= 1) { return; }
     direction = -1;
     currentStep -= 1;
     await tick();

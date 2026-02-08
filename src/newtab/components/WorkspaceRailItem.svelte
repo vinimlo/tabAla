@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { getWorkspaceDisplayName } from '@lib/i18n';
   import type { Workspace } from '@/lib/types';
   import { DEFAULT_WORKSPACE_ID } from '@/lib/types';
 
@@ -59,7 +60,7 @@
   class:is-default={isDefault}
   role="button"
   tabindex="0"
-  aria-label={workspace.name}
+  aria-label={getWorkspaceDisplayName(workspace)}
   aria-pressed={isActive}
   on:click={handleClick}
   on:contextmenu={handleContextMenu}
@@ -77,12 +78,12 @@
     class="workspace-circle"
     style="--workspace-color: {workspace.color}"
   >
-    <span class="workspace-initial">{workspace.name.charAt(0).toUpperCase()}</span>
+    <span class="workspace-initial">{getWorkspaceDisplayName(workspace).charAt(0).toUpperCase()}</span>
   </div>
 
   {#if tooltipVisible}
     <div class="tooltip" role="tooltip">
-      <span class="tooltip-name">{workspace.name}</span>
+      <span class="tooltip-name">{getWorkspaceDisplayName(workspace)}</span>
       {#if workspace.description}
         <span class="tooltip-description">{workspace.description}</span>
       {/if}

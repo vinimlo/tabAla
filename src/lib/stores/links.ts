@@ -1,13 +1,5 @@
-/**
- * Svelte store for managing links state.
- * Provides reactive state management with persistence to chrome.storage.local.
- *
- * This is a shared store used by both popup and newtab interfaces.
- */
-
-import { writable, derived, type Writable } from 'svelte/store';
-import type { Link, Collection } from '@/lib/types';
-import { INBOX_COLLECTION_ID } from '@/lib/types';
+import { writable, derived, get, type Writable } from 'svelte/store';
+import { type Link, type Collection, INBOX_COLLECTION_ID } from '@/lib/types';
 import {
   getLinks,
   saveLinks,
@@ -18,9 +10,12 @@ import {
   renameCollection as storageRenameCollection,
   moveLink as storageMoveLink,
   updateCollectionOrder as storageUpdateCollectionOrder,
+  getErrorMessage,
   storage,
 } from '@/lib/storage';
 import { validateCollectionName, type ValidationResult } from '@/lib/validation';
+import { t } from '@/lib/i18n';
+import { optimisticUpdate } from './helpers';
 
 interface LinksState {
   links: Link[];
@@ -32,13 +27,6 @@ interface LinksState {
   pendingLocalUpdate: boolean; // Flag to ignore storage.watch() during local operations
 }
 
-const INBOX_COLLECTION: Collection = {
-  id: INBOX_COLLECTION_ID,
-  name: 'Inbox',
-  order: 0,
-  isDefault: true,
-};
-
 /**
  * Remove duplicate links by ID, keeping the first occurrence.
  * This prevents race conditions from creating duplicate entries.
@@ -46,9 +34,7 @@ const INBOX_COLLECTION: Collection = {
 function deduplicateLinks(links: Link[]): Link[] {
   const seen = new Set<string>();
   return links.filter((link) => {
-    if (seen.has(link.id)) {
-      return false;
-    }
+    if (seen.has(link.id)) return false;
     seen.add(link.id);
     return true;
   });
@@ -66,15 +52,16 @@ function createLinksStore(): Writable<LinksState> & {
   getCollectionNames: () => string[];
   validateCollection: (name: string) => ValidationResult;
 } {
-  const { subscribe, set, update } = writable<LinksState>({
+  const store = writable<LinksState>({
     links: [],
-    collections: [INBOX_COLLECTION],
+    collections: [],
     loading: true,
     error: null,
     isAdding: false,
     isRemoving: new Set(),
     pendingLocalUpdate: false,
   });
+  const { subscribe, set, update } = store;
 
   // Watch for storage changes from other contexts (popup <-> newtab)
   storage.watch((changes) => {
@@ -110,160 +97,100 @@ function createLinksStore(): Writable<LinksState> & {
         error: null,
       }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load data';
+      const message = getErrorMessage(error, 'Failed to load data');
       update((state) => ({ ...state, loading: false, error: message }));
     }
   }
 
   async function addLink(linkData: Omit<Link, 'id' | 'createdAt'>): Promise<void> {
-    let currentState: LinksState | null = null;
-    update((state) => {
-      currentState = state;
-      return state;
-    });
-
-    if (currentState!.isAdding) {
-      return;
-    }
-
     const newLink: Link = {
       ...linkData,
       id: crypto.randomUUID(),
       createdAt: Date.now(),
     };
-
     let linksToSave: Link[] = [];
-    update((state) => {
-      linksToSave = [newLink, ...state.links];
-      return {
-        ...state,
-        links: linksToSave,
-        isAdding: true,
-        pendingLocalUpdate: true, // Prevent storage.watch from duplicating
-      };
-    });
 
-    try {
-      await saveLinks(linksToSave);
-    } catch (error) {
-      update((state) => ({
-        ...state,
-        links: state.links.filter((l) => l.id !== newLink.id),
-        error: 'Failed to save link',
-      }));
-    } finally {
-      update((state) => ({
-        ...state,
-        isAdding: false,
-        pendingLocalUpdate: false, // Allow storage.watch again
-      }));
-    }
+    await optimisticUpdate(
+      store,
+      (state) => {
+        if (state.isAdding) {
+          return null;
+        }
+        linksToSave = [newLink, ...state.links];
+        return {
+          updated: { ...state, links: linksToSave, isAdding: true },
+          rollback: { links: state.links } as Partial<LinksState>,
+        };
+      },
+      async () => {
+        await saveLinks(linksToSave);
+        return null;
+      },
+      'Failed to save link',
+      { isAdding: false } as Partial<LinksState>
+    );
   }
 
   async function removeLink(id: string): Promise<void> {
-    let currentState: LinksState | null = null;
-    update((state) => {
-      currentState = state;
-      return state;
-    });
-
-    if (currentState!.isRemoving.has(id)) {
-      return;
-    }
-
-    let removedLink: Link | undefined;
     let linksToSave: Link[] = [];
 
-    update((state) => {
-      removedLink = state.links.find((l) => l.id === id);
-      linksToSave = state.links.filter((l) => l.id !== id);
-      const newIsRemoving = new Set(state.isRemoving);
-      newIsRemoving.add(id);
-      return {
-        ...state,
-        links: linksToSave,
-        isRemoving: newIsRemoving,
-        pendingLocalUpdate: true, // Prevent storage.watch from duplicating
-      };
-    });
-
-    try {
-      await saveLinks(linksToSave);
-    } catch (error) {
-      if (removedLink) {
-        update((state) => ({
-          ...state,
-          links: [...state.links, removedLink!].sort((a, b) => b.createdAt - a.createdAt),
-          error: 'Failed to remove link',
-        }));
-      }
-    } finally {
-      update((state) => {
+    await optimisticUpdate(
+      store,
+      (state) => {
+        // Per-link guard prevents duplicate removal from rapid clicks
+        if (state.isRemoving.has(id)) {
+          return null;
+        }
+        const removedLink = state.links.find((l) => l.id === id);
+        linksToSave = state.links.filter((l) => l.id !== id);
+        const newIsRemoving = new Set(state.isRemoving);
+        newIsRemoving.add(id);
+        return {
+          updated: { ...state, links: linksToSave, isRemoving: newIsRemoving },
+          rollback: removedLink
+            ? { links: [...linksToSave, removedLink].sort((a, b) => b.createdAt - a.createdAt) } as Partial<LinksState>
+            : {},
+        };
+      },
+      async () => {
+        await saveLinks(linksToSave);
+        return null;
+      },
+      'Failed to remove link',
+      (state) => {
         const newIsRemoving = new Set(state.isRemoving);
         newIsRemoving.delete(id);
-        return {
-          ...state,
-          isRemoving: newIsRemoving,
-          pendingLocalUpdate: false, // Allow storage.watch again
-        };
-      });
-    }
+        return { isRemoving: newIsRemoving } as Partial<LinksState>;
+      }
+    );
   }
 
   async function moveLink(linkId: string, toCollectionId: string): Promise<void> {
-    let previousLinks: Link[] = [];
-
-    update((state) => {
-      previousLinks = state.links;
-      const updatedLinks = state.links.map((link) =>
-        link.id === linkId ? { ...link, collectionId: toCollectionId } : link
-      );
-      return {
-        ...state,
-        links: updatedLinks,
-        pendingLocalUpdate: true, // Prevent storage.watch from duplicating
-      };
-    });
-
-    try {
-      const result = await storageMoveLink(linkId, toCollectionId);
-      if (!result.success) {
-        update((state) => ({
+    await optimisticUpdate(
+      store,
+      (state) => ({
+        updated: {
           ...state,
-          links: previousLinks,
-          error: result.error ?? 'Erro ao mover link',
-        }));
-      }
-    } catch (error) {
-      update((state) => ({
-        ...state,
-        links: previousLinks,
-        error: 'Erro ao mover link',
-      }));
-    } finally {
-      update((state) => ({
-        ...state,
-        pendingLocalUpdate: false, // Allow storage.watch again
-      }));
-    }
+          links: state.links.map((link) =>
+            link.id === linkId ? { ...link, collectionId: toCollectionId } : link
+          ),
+        },
+        rollback: { links: state.links } as Partial<LinksState>,
+      }),
+      async () => {
+        const result = await storageMoveLink(linkId, toCollectionId);
+        return result.success ? null : (result.error ?? t('error_move_link_failed'));
+      },
+      t('error_move_link_failed')
+    );
   }
 
   function getCollectionNames(): string[] {
-    let names: string[] = [];
-    update((state) => {
-      names = state.collections.map((c) => c.name);
-      return state;
-    });
-    return names;
+    return get(store).collections.map((c) => c.name);
   }
 
   function validateCollection(name: string): ValidationResult {
-    let currentCollections: Collection[] = [];
-    update((state) => {
-      currentCollections = state.collections;
-      return state;
-    });
-    return validateCollectionName(name, '', currentCollections);
+    return validateCollectionName(name, '', get(store).collections);
   }
 
   async function addCollection(name: string, workspaceId?: string): Promise<Collection> {
@@ -282,7 +209,7 @@ function createLinksStore(): Writable<LinksState> & {
 
       return newCollection;
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to save collection';
+      const message = getErrorMessage(error, 'Failed to save collection');
       update((state) => ({ ...state, error: message }));
       throw error;
     } finally {
@@ -298,110 +225,59 @@ function createLinksStore(): Writable<LinksState> & {
       return;
     }
 
-    let previousLinks: Link[] = [];
-    let previousCollections: Collection[] = [];
-
-    update((state) => {
-      previousLinks = state.links;
-      previousCollections = state.collections;
-      return {
-        ...state,
-        collections: state.collections.filter((c) => c.id !== id),
-        links: state.links.map((l) =>
-          l.collectionId === id ? { ...l, collectionId: INBOX_COLLECTION_ID } : l
-        ),
-        pendingLocalUpdate: true, // Prevent storage.watch from duplicating
-      };
-    });
-
-    try {
-      await storageRemoveCollection(id);
-    } catch (error) {
-      update((state) => ({
-        ...state,
-        links: previousLinks,
-        collections: previousCollections,
-        error: 'Failed to remove collection',
-      }));
-    } finally {
-      update((state) => ({
-        ...state,
-        pendingLocalUpdate: false, // Allow storage.watch again
-      }));
-    }
+    await optimisticUpdate(
+      store,
+      (state) => ({
+        updated: {
+          ...state,
+          collections: state.collections.filter((c) => c.id !== id),
+          links: state.links.map((l) =>
+            l.collectionId === id ? { ...l, collectionId: INBOX_COLLECTION_ID } : l
+          ),
+        },
+        rollback: { links: state.links, collections: state.collections } as Partial<LinksState>,
+      }),
+      async () => {
+        await storageRemoveCollection(id);
+        return null;
+      },
+      'Failed to remove collection'
+    );
   }
 
   async function renameCollection(id: string, newName: string): Promise<void> {
-    let previousCollections: Collection[] = [];
-
-    update((state) => {
-      previousCollections = state.collections;
-      const updatedCollections = state.collections.map((c) =>
-        c.id === id ? { ...c, name: newName } : c
-      );
-      return {
-        ...state,
-        collections: updatedCollections,
-        pendingLocalUpdate: true,
-      };
-    });
-
-    try {
-      const result = await storageRenameCollection(id, newName);
-      if (!result.success) {
-        update((state) => ({
+    await optimisticUpdate(
+      store,
+      (state) => ({
+        updated: {
           ...state,
-          collections: previousCollections,
-          error: result.error ?? 'Erro ao renomear coleção',
-        }));
-      }
-    } catch (error) {
-      update((state) => ({
-        ...state,
-        collections: previousCollections,
-        error: 'Erro ao renomear coleção',
-      }));
-    } finally {
-      update((state) => ({
-        ...state,
-        pendingLocalUpdate: false,
-      }));
-    }
+          collections: state.collections.map((c) =>
+            c.id === id ? { ...c, name: newName } : c
+          ),
+        },
+        rollback: { collections: state.collections } as Partial<LinksState>,
+      }),
+      async () => {
+        const result = await storageRenameCollection(id, newName);
+        return result.success ? null : (result.error ?? t('error_rename_collection_storage'));
+      },
+      t('error_rename_collection_storage')
+    );
   }
 
   async function reorderCollections(orderedCollections: Collection[]): Promise<void> {
-    let previousCollections: Collection[] = [];
-
-    update((state) => {
-      previousCollections = state.collections;
-      return {
-        ...state,
-        collections: orderedCollections,
-        pendingLocalUpdate: true,
-      };
-    });
-
-    try {
-      const result = await storageUpdateCollectionOrder(orderedCollections);
-      if (!result.success) {
-        update((state) => ({
-          ...state,
-          collections: previousCollections,
-          error: result.error ?? 'Erro ao reordenar coleções',
-        }));
-      }
-    } catch (error) {
-      update((state) => ({
-        ...state,
-        collections: previousCollections,
-        error: 'Erro ao reordenar coleções',
-      }));
-    } finally {
-      update((state) => ({
-        ...state,
-        pendingLocalUpdate: false,
-      }));
-    }
+    await optimisticUpdate(
+      store,
+      (state) => ({
+        updated: { ...state, collections: orderedCollections },
+        rollback: { collections: state.collections } as Partial<LinksState>,
+      }),
+      async () => {
+        const result = await storageUpdateCollectionOrder(orderedCollections);
+        return result.success ? null : (result.error ?? t('error_reorder_collections_failed'));
+      },
+      t('error_reorder_collections_failed')
+    );
   }
 
   return {
@@ -425,19 +301,12 @@ export const linksStore = createLinksStore();
 
 export const linksByCollection = derived(linksStore, ($store) => {
   const grouped = new Map<string, Link[]>();
-  const seenIds = new Set<string>();
 
   for (const collection of $store.collections) {
     grouped.set(collection.id, []);
   }
 
   for (const link of $store.links) {
-    // Skip duplicate links (same ID already processed)
-    if (seenIds.has(link.id)) {
-      continue;
-    }
-    seenIds.add(link.id);
-
     let links = grouped.get(link.collectionId);
     if (!links) {
       links = grouped.get(INBOX_COLLECTION_ID);
@@ -452,12 +321,3 @@ export const linksByCollection = derived(linksStore, ($store) => {
   return grouped;
 });
 
-// Stats derived store for status bar
-export const linksStats = derived(linksStore, ($store) => {
-  const lastLink = $store.links[0];
-  return {
-    totalLinks: $store.links.length,
-    totalCollections: $store.collections.length,
-    lastSavedAt: lastLink?.createdAt ?? null,
-  };
-});

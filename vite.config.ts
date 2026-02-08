@@ -10,7 +10,6 @@ import pkg from './package.json';
 const manifestWithVersion = {
   ...manifest,
   version: pkg.version,
-  description: pkg.description,
 };
 
 export default defineConfig(({ mode }) => ({
@@ -40,8 +39,6 @@ export default defineConfig(({ mode }) => ({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       '@lib': fileURLToPath(new URL('./src/lib', import.meta.url)),
-      '@components': fileURLToPath(new URL('./src/popup/components', import.meta.url)),
-      '@stores': fileURLToPath(new URL('./src/popup/stores', import.meta.url)),
       '@shared': fileURLToPath(new URL('./src/shared', import.meta.url)),
     },
     extensions: ['.ts', '.svelte', '.js', '.json'],

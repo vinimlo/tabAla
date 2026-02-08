@@ -2,6 +2,7 @@
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { flip } from 'svelte/animate';
   import { fade } from 'svelte/transition';
+  import { t } from '@lib/i18n';
   import type { Workspace, CreateWorkspaceInput } from '@/lib/types';
   import { DEFAULT_WORKSPACE_ID } from '@/lib/types';
   import { workspacesStore } from '@/lib/stores/workspaces';
@@ -51,28 +52,24 @@
     closeContextMenu();
 
     if (workspace.id === DEFAULT_WORKSPACE_ID || workspace.isDefault === true) {
-      dispatch('error', 'O workspace padrão não pode ser excluído');
+      dispatch('error', t('validation_workspace_default_delete'));
       return;
     }
 
     try {
       await workspacesStore.removeWorkspace(workspace.id);
-      dispatch('success', `Workspace "${workspace.name}" excluído`);
+      dispatch('success', t('success_workspace_deleted', workspace.name));
     } catch {
-      dispatch('error', 'Erro ao excluir workspace');
+      dispatch('error', t('error_delete_workspace_failed'));
     }
   }
 
   function handleOpenCreateModal(): void {
     if (isLimitReached) {
-      dispatch('error', 'Limite máximo de 12 workspaces atingido');
+      dispatch('error', t('workspace_limit_reached'));
       return;
     }
     showCreateModal = true;
-  }
-
-  function handleDragEnter(_event: DragEvent): void {
-    // Handled by dragover
   }
 
   function handleCloseModal(): void {
@@ -86,18 +83,17 @@
     try {
       if (editingWorkspace) {
         await workspacesStore.updateWorkspace(editingWorkspace.id, input);
-        dispatch('success', `Workspace "${input.name}" atualizado`);
+        dispatch('success', t('success_workspace_updated', input.name));
       } else {
         await workspacesStore.addWorkspace(input);
-        dispatch('success', `Workspace "${input.name}" criado`);
+        dispatch('success', t('success_workspace_created', input.name));
       }
       handleCloseModal();
     } catch (error) {
-      dispatch('error', error instanceof Error ? error.message : 'Erro ao salvar workspace');
+      dispatch('error', error instanceof Error ? error.message : t('error_update_workspace_failed'));
     }
   }
 
-  // Drag and drop handlers
   function handleDragStart(event: DragEvent, workspace: Workspace): void {
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
@@ -113,7 +109,7 @@
 
   function handleDragOver(event: DragEvent, index: number): void {
     event.preventDefault();
-    if (event.dataTransfer !== null) {
+    if (event.dataTransfer) {
       event.dataTransfer.dropEffect = 'move';
     }
     dragOverIndex = index;
@@ -144,23 +140,17 @@
     handleDragEnd();
   }
 
-  // Close context menu on click outside
-  function handleWindowClick(_event: MouseEvent): void {
+  function handleWindowClick(): void {
     if (contextMenu !== null) {
       closeContextMenu();
     }
   }
 
-  onMount(() => {
-    window.addEventListener('click', handleWindowClick);
-  });
-
-  onDestroy(() => {
-    window.removeEventListener('click', handleWindowClick);
-  });
+  onMount(() => window.addEventListener('click', handleWindowClick));
+  onDestroy(() => window.removeEventListener('click', handleWindowClick));
 </script>
 
-<nav class="workspace-rail" aria-label="Workspaces">
+<nav class="workspace-rail" aria-label={t('workspace_title')}>
   <div class="workspace-list">
     {#each workspaces as workspace, index (workspace.id)}
       <!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -173,7 +163,6 @@
         on:drop={(e) => handleDrop(e, index)}
         on:dragstart={(e) => handleDragStart(e, workspace)}
         on:dragend={handleDragEnd}
-        on:dragenter={handleDragEnter}
       >
         <WorkspaceRailItem
           {workspace}
@@ -191,9 +180,9 @@
     type="button"
     class="add-workspace-btn"
     on:click={handleOpenCreateModal}
-    aria-label="Criar novo workspace"
+    aria-label={t('workspace_create_new')}
     disabled={isLimitReached}
-    title={isLimitReached ? 'Limite máximo de 12 workspaces atingido' : 'Criar novo workspace'}
+    title={isLimitReached ? t('workspace_limit_reached') : t('workspace_create_new')}
   >
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 5v14M5 12h14"/>
@@ -213,7 +202,7 @@
         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
       </svg>
-      Editar
+      {t('common_edit')}
     </button>
     {#if contextMenu.workspace.id !== DEFAULT_WORKSPACE_ID && !contextMenu.workspace.isDefault}
       <button type="button" class="context-menu-item danger" on:click={handleDeleteWorkspace} role="menuitem">
@@ -221,7 +210,7 @@
           <polyline points="3 6 5 6 21 6"/>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
         </svg>
-        Excluir
+        {t('common_delete')}
       </button>
     {/if}
   </div>

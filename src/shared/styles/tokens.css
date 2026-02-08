@@ -1,0 +1,104 @@
+/* =================================================================
+   TABALA - Shared Design Tokens
+   Common CSS custom properties used by both popup and newtab.
+   Each UI imports this file and adds its own overrides.
+   ================================================================= */
+
+/* Dark theme (default) */
+:root,
+[data-theme="dark"] {
+  /* Surfaces */
+  --surface-base: #0F0E11;
+  --surface-elevated: #17161A;
+  --surface-overlay: #1E1D22;
+  --surface-subtle: #26252B;
+
+  /* Text */
+  --text-primary: #F5F3F0;
+  --text-secondary: #A8A5A0;
+  --text-tertiary: #6B6865;
+
+  /* Accent */
+  --accent-primary: #E85D42;
+  --accent-secondary: #F07A62;
+  --accent-soft: rgba(232, 93, 66, 0.12);
+  --accent-glow: rgba(232, 93, 66, 0.24);
+
+  /* Semantic */
+  --semantic-success: #7CB890;
+  --semantic-error: #D4726A;
+  --semantic-error-soft: rgba(212, 114, 106, 0.15);
+  --semantic-error-glow: rgba(212, 114, 106, 0.20);
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.12);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+
+  color-scheme: dark;
+}
+
+/* Light theme */
+[data-theme="light"] {
+  /* Surfaces - warm parchment-inspired palette */
+  --surface-base: #F8F6F3;
+  --surface-elevated: #FFFFFF;
+  --surface-overlay: #F0EDE8;
+  --surface-subtle: #E8E4DE;
+
+  /* Text */
+  --text-primary: #1A1816;
+  --text-secondary: #6B665E;
+  --text-tertiary: #8A857C;
+
+  /* Accent - deeper coral for light backgrounds */
+  --accent-primary: #D14E35;
+  --accent-secondary: #C4442D;
+  --accent-soft: rgba(209, 78, 53, 0.08);
+  --accent-glow: rgba(209, 78, 53, 0.16);
+
+  /* Semantic */
+  --semantic-success: #3D8A5A;
+  --semantic-error: #C4442D;
+  --semantic-error-soft: rgba(196, 68, 45, 0.08);
+  --semantic-error-glow: rgba(196, 68, 45, 0.12);
+
+  /* Borders */
+  --border-subtle: rgba(0, 0, 0, 0.07);
+  --border-default: rgba(0, 0, 0, 0.12);
+  --border-strong: rgba(0, 0, 0, 0.18);
+
+  /* Shadows - softer for light backgrounds */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.10);
+
+  color-scheme: light;
+}
+
+:root {
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Typography */
+  --font-body: "Inter", "SF Pro Text", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", monospace;
+
+  /* Motion */
+  --duration-fast: 150ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}

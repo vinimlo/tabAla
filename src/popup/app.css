@@ -1,0 +1,44 @@
+@import '../shared/styles/tokens.css';
+
+:root,
+[data-theme="dark"] {
+  /* Popup-specific overrides: smaller fonts, tighter shadows */
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] {
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.1);
+}
+
+:root {
+  --radius-xl: 20px;
+  --text-xs: 0.6875rem;
+  --text-sm: 0.75rem;
+  --text-base: 0.8125rem;
+  --text-md: 0.875rem;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  background-color: var(--surface-base);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}

@@ -1,13 +1,16 @@
 <script lang="ts">
+  import './app.css';
   import { onMount } from 'svelte';
   import { slide } from 'svelte/transition';
+  import { t, getCollectionDisplayName } from '@lib/i18n';
   import type { Link } from '@/lib/types';
   import { INBOX_COLLECTION_ID } from '@/lib/types';
   import { getCurrentTab, isSaveableUrl, openLinkInNewTab } from '@/lib/tabs';
   import { linksStore, linksByCollection } from '@/lib/stores/links';
+  import { settingsStore } from '@/lib/stores/settings';
   import { workspacesStore, collectionsByActiveWorkspace } from '@/lib/stores/workspaces';
-  import Toast from './components/Toast.svelte';
-  import ConfirmDialog from './components/ConfirmDialog.svelte';
+  import Toast from '@/shared/components/Toast.svelte';
+  import ConfirmDialog from '@/shared/components/ConfirmDialog.svelte';
   import WorkspaceSelect from './components/WorkspaceSelect.svelte';
 
   let mounted = false;
@@ -22,8 +25,7 @@
   $: workspaces = $workspacesStore.workspaces;
   $: selectedWorkspaceId = $workspacesStore.activeWorkspaceId;
   $: collections = $collectionsByActiveWorkspace;
-  $: allLinks = $linksStore.links;
-  $: totalLinks = allLinks.length;
+  $: totalLinks = $linksStore.links.length;
 
   function handleWorkspaceChange(event: CustomEvent<string>): void {
     workspacesStore.setActiveWorkspace(event.detail);
@@ -31,20 +33,16 @@
     selectedCollectionId = INBOX_COLLECTION_ID;
   }
 
-  $: linkCounts = new Map<string, number>();
-  $: {
-    const counts = new Map<string, number>();
-    for (const collection of collections) {
-      const collectionLinks = $linksByCollection.get(collection.id) ?? [];
-      counts.set(collection.id, collectionLinks.length);
-    }
-    linkCounts = counts;
-  }
+  $: linkCounts = collections.reduce((counts, collection) => {
+    counts.set(collection.id, ($linksByCollection.get(collection.id) ?? []).length);
+    return counts;
+  }, new Map<string, number>());
 
   onMount(async () => {
     await Promise.all([
       workspacesStore.load(),
       linksStore.load(),
+      settingsStore.load(),
     ]);
     setTimeout(() => { mounted = true; }, 50);
   });
@@ -63,12 +61,12 @@
       const tabInfo = await getCurrentTab();
 
       if (!tabInfo) {
-        errorMessage = 'Não foi possível obter informações da aba';
+        errorMessage = t('error_get_tab_failed');
         return;
       }
 
       if (!isSaveableUrl(tabInfo.url)) {
-        errorMessage = 'Esta página não pode ser salva';
+        errorMessage = t('error_page_not_saveable');
         return;
       }
 
@@ -79,9 +77,9 @@
         collectionId: selectedCollectionId,
       });
 
-      successMessage = 'Link salvo';
+      successMessage = t('success_link_saved');
     } catch {
-      errorMessage = 'Erro ao salvar link';
+      errorMessage = t('error_save_link_failed');
     } finally {
       isSaving = false;
     }
@@ -98,7 +96,7 @@
   async function handleOpenLink(link: Link): Promise<void> {
     const result = await openLinkInNewTab(link.url);
     if (!result.success) {
-      errorMessage = result.error ?? 'Erro ao abrir link';
+      errorMessage = result.error ?? t('error_open_link_failed');
     }
   }
 
@@ -110,13 +108,14 @@
     if (!linkToRemove) {
       return;
     }
-    const id = linkToRemove.id;
+
+    const { id } = linkToRemove;
     linkToRemove = null;
 
     try {
       await linksStore.removeLink(id);
     } catch {
-      errorMessage = 'Erro ao remover link';
+      errorMessage = t('error_remove_link_failed');
     }
   }
 
@@ -133,7 +132,7 @@
   {#if loading}
     <div class="loading-state">
       <div class="spinner"></div>
-      <span>carregando...</span>
+      <span>{t('common_loading')}</span>
     </div>
   {:else}
     <!-- Header -->
@@ -142,7 +141,7 @@
         <span class="logo">TabAla</span>
         <span class="badge">{totalLinks}</span>
       </div>
-      <button type="button" class="btn-dashboard" on:click={openDashboard} title="Abrir Dashboard">
+      <button type="button" class="btn-dashboard" on:click={openDashboard} title={t('popup_open_dashboard')}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="7" height="7"/>
           <rect x="14" y="3" width="7" height="7"/>
@@ -170,10 +169,10 @@
             />
           {/if}
           <div class="collection-row">
-            <span class="save-label">Coleção</span>
+            <span class="save-label">{t('popup_collection')}</span>
             <select class="collection-select" bind:value={selectedCollectionId} disabled={isSaving}>
               {#each collections as col}
-                <option value={col.id}>{col.name}</option>
+                <option value={col.id}>{getCollectionDisplayName(col)}</option>
               {/each}
             </select>
           </div>
@@ -187,7 +186,7 @@
           {#if isSaving}
             <span class="mini-spinner"></span>
           {:else}
-            Salvar
+            {t('common_save')}
           {/if}
         </button>
       </div>
@@ -209,7 +208,7 @@
             <svg class="folder-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>
-            <span class="collection-name">{collection.name}</span>
+            <span class="collection-name">{getCollectionDisplayName(collection)}</span>
             <span class="collection-count">{count}</span>
             <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="6 9 12 15 18 9"/>
@@ -238,7 +237,7 @@
                       type="button"
                       class="link-remove"
                       on:click|stopPropagation={() => handleRemoveLink(link)}
-                      title="Remover"
+                      title={t('common_remove')}
                     >
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                         <path d="M18 6L6 18M6 6l12 12"/>
@@ -248,11 +247,11 @@
                 {/each}
                 {#if count > 4}
                   <button type="button" class="view-more" on:click={openDashboard}>
-                    Ver todos ({count})
+                    {t('popup_view_all', count)}
                   </button>
                 {/if}
               {:else}
-                <span class="empty-hint">Nenhum link</span>
+                <span class="empty-hint">{t('popup_no_links')}</span>
               {/if}
             </div>
           {/if}
@@ -268,7 +267,7 @@
           <polyline points="15 3 21 3 21 9"/>
           <line x1="10" y1="14" x2="21" y2="3"/>
         </svg>
-        Abrir Dashboard Completo
+        {t('popup_open_full_dashboard')}
       </button>
     </footer>
   {/if}
@@ -284,80 +283,15 @@
 
 {#if linkToRemove}
   <ConfirmDialog
-    message="Remover este link?"
-    confirmText="Remover"
-    cancelText="Cancelar"
+    message={t('popup_remove_this_link')}
+    confirmText={t('common_remove')}
+    cancelText={t('common_cancel')}
     on:confirm={confirmRemoveLink}
     on:cancel={() => linkToRemove = null}
   />
 {/if}
 
 <style>
-  :global(:root) {
-    --surface-base: #0F0E11;
-    --surface-elevated: #17161A;
-    --surface-overlay: #1E1D22;
-    --surface-subtle: #26252B;
-    --text-primary: #F5F3F0;
-    --text-secondary: #A8A5A0;
-    --text-tertiary: #6B6865;
-    --accent-primary: #E85D42;
-    --accent-secondary: #F07A62;
-    --accent-soft: rgba(232, 93, 66, 0.12);
-    --accent-glow: rgba(232, 93, 66, 0.24);
-    --semantic-success: #7CB890;
-    --semantic-error: #D4726A;
-    --border-subtle: rgba(255, 255, 255, 0.04);
-    --border-default: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.12);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
-    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.5);
-    --space-1: 0.25rem;
-    --space-2: 0.5rem;
-    --space-3: 0.75rem;
-    --space-4: 1rem;
-    --space-5: 1.5rem;
-    --space-6: 2rem;
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 16px;
-    --radius-xl: 20px;
-    --radius-full: 9999px;
-    --font-body: "Inter", system-ui, sans-serif;
-    --font-mono: "JetBrains Mono", monospace;
-    --text-xs: 0.6875rem;
-    --text-sm: 0.75rem;
-    --text-base: 0.8125rem;
-    --text-md: 0.875rem;
-    --duration-fast: 150ms;
-    --duration-normal: 200ms;
-    --duration-slow: 300ms;
-    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  :global(*) {
-    box-sizing: border-box;
-  }
-
-  :global(body) {
-    margin: 0;
-    padding: 0;
-    font-family: var(--font-body);
-    font-size: 13px;
-    line-height: 1.4;
-    color: var(--text-primary);
-    background-color: var(--surface-base);
-    -webkit-font-smoothing: antialiased;
-  }
-
-  :global(::selection) {
-    background: var(--accent-soft);
-    color: var(--text-primary);
-  }
-
   .popup {
     display: flex;
     flex-direction: column;
@@ -688,6 +622,7 @@
     height: 14px;
     border-radius: 2px;
     flex-shrink: 0;
+    box-shadow: 0 0 0 1px var(--border-subtle);
   }
 
   .link-favicon-placeholder {
@@ -696,6 +631,7 @@
     background: var(--surface-subtle);
     border-radius: 2px;
     flex-shrink: 0;
+    box-shadow: 0 0 0 1px var(--border-subtle);
   }
 
   .link-title {
@@ -725,7 +661,7 @@
   }
 
   .link-remove:hover {
-    background: rgba(212, 114, 106, 0.15);
+    background: var(--semantic-error-soft);
     color: var(--semantic-error);
   }
 

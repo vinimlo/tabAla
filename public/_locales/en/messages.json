@@ -1,0 +1,637 @@
+{
+  "app_name": {
+    "message": "TabAla"
+  },
+  "app_description": {
+    "message": "Save tabs. Organize in collections. Process when you want."
+  },
+  "app_default_title": {
+    "message": "TabAla"
+  },
+
+  "common_save": {
+    "message": "Save"
+  },
+  "common_cancel": {
+    "message": "Cancel"
+  },
+  "common_delete": {
+    "message": "Delete"
+  },
+  "common_remove": {
+    "message": "Remove"
+  },
+  "common_create": {
+    "message": "Create"
+  },
+  "common_creating": {
+    "message": "Creating..."
+  },
+  "common_edit": {
+    "message": "Edit"
+  },
+  "common_close": {
+    "message": "Close"
+  },
+  "common_saving": {
+    "message": "Saving..."
+  },
+  "common_loading": {
+    "message": "loading..."
+  },
+  "common_name": {
+    "message": "Name"
+  },
+  "common_description": {
+    "message": "Description"
+  },
+  "common_color": {
+    "message": "Color"
+  },
+  "common_all": {
+    "message": "All"
+  },
+  "common_try_again": {
+    "message": "Try again"
+  },
+  "common_inbox": {
+    "message": "Inbox"
+  },
+  "default_workspace_name": {
+    "message": "General"
+  },
+
+  "popup_save_current_tab": {
+    "message": "Save current tab"
+  },
+  "popup_collection": {
+    "message": "Collection"
+  },
+  "popup_view_all": {
+    "message": "View all ($1)",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "popup_no_links": {
+    "message": "No links"
+  },
+  "popup_open_dashboard": {
+    "message": "Open Dashboard"
+  },
+  "popup_open_full_dashboard": {
+    "message": "Open Full Dashboard"
+  },
+  "popup_remove_this_link": {
+    "message": "Remove this link?"
+  },
+  "popup_filter_by_collection": {
+    "message": "Filter by collection"
+  },
+  "popup_click_to_edit": {
+    "message": "Click to edit"
+  },
+  "popup_delete_collection": {
+    "message": "Delete collection"
+  },
+  "popup_delete_collection_name": {
+    "message": "Delete collection $1",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "popup_workspace": {
+    "message": "Workspace"
+  },
+  "popup_settings": {
+    "message": "Settings"
+  },
+
+  "empty_state_message": {
+    "message": "Your waiting room is empty"
+  },
+  "empty_state_hint": {
+    "message": "Save your first tab to start"
+  },
+
+  "link_untitled": {
+    "message": "Untitled"
+  },
+  "link_remove": {
+    "message": "Remove link"
+  },
+
+  "toast_close": {
+    "message": "Close notification"
+  },
+
+  "confirm_default_message": {
+    "message": "Are you sure?"
+  },
+
+  "confirm_delete_title": {
+    "message": "Delete $1?",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "confirm_delete_one_link": {
+    "message": "Delete $1? The link will be moved to Inbox",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "confirm_delete_many_links": {
+    "message": "Delete $1? The $2 links will be moved to Inbox",
+    "placeholders": {
+      "name": { "content": "$1" },
+      "count": { "content": "$2" }
+    }
+  },
+
+  "create_collection_title": {
+    "message": "New Collection"
+  },
+  "create_collection_placeholder": {
+    "message": "Collection name"
+  },
+
+  "onboarding_welcome": {
+    "message": "Welcome to TabAla!"
+  },
+  "onboarding_description": {
+    "message": "Would you like to use TabAla as your new tab? You'll see a visual dashboard to organize your saved links."
+  },
+  "onboarding_feature_kanban": {
+    "message": "Kanban-style visual dashboard"
+  },
+  "onboarding_feature_drag": {
+    "message": "Drag and drop to organize"
+  },
+  "onboarding_feature_search": {
+    "message": "Quick search for links"
+  },
+  "onboarding_no_popup": {
+    "message": "No, just the popup"
+  },
+  "onboarding_yes_replace": {
+    "message": "Yes, replace"
+  },
+  "onboarding_change_later": {
+    "message": "You can change this later in Settings"
+  },
+  "onboarding_theme_title": {
+    "message": "Choose your look"
+  },
+  "onboarding_theme_description": {
+    "message": "Pick a theme that feels right. You can always change it later."
+  },
+  "onboarding_newtab_title": {
+    "message": "Replace your new tab?"
+  },
+  "onboarding_done_title": {
+    "message": "You're all set!"
+  },
+  "onboarding_done_description": {
+    "message": "Start saving tabs and organizing your links."
+  },
+  "onboarding_next": {
+    "message": "Next"
+  },
+  "onboarding_back": {
+    "message": "Back"
+  },
+  "onboarding_get_started": {
+    "message": "Get Started"
+  },
+  "onboarding_step_of": {
+    "message": "Step $1 of $2",
+    "placeholders": {
+      "current": { "content": "$1" },
+      "total": { "content": "$2" }
+    }
+  },
+
+  "settings_title": {
+    "message": "Settings"
+  },
+  "settings_theme_title": {
+    "message": "Appearance"
+  },
+  "settings_theme_system": {
+    "message": "System"
+  },
+  "settings_theme_light": {
+    "message": "Light"
+  },
+  "settings_theme_dark": {
+    "message": "Dark"
+  },
+  "settings_use_as_newtab": {
+    "message": "Use as new tab"
+  },
+  "settings_newtab_description": {
+    "message": "Replaces Chrome's new tab page with TabAla dashboard"
+  },
+  "settings_enable_newtab": {
+    "message": "Enable as new tab"
+  },
+  "settings_keyboard_shortcuts": {
+    "message": "Keyboard shortcuts"
+  },
+  "settings_shortcut_search": {
+    "message": "Search"
+  },
+  "settings_shortcut_new_collection": {
+    "message": "New collection"
+  },
+  "settings_shortcut_close_modal": {
+    "message": "Close modal"
+  },
+
+  "newtab_error_loading": {
+    "message": "Error loading data"
+  },
+  "newtab_search_placeholder": {
+    "message": "Search links..."
+  },
+  "newtab_clear_search": {
+    "message": "Clear search"
+  },
+  "newtab_new_collection": {
+    "message": "New Collection"
+  },
+  "newtab_no_results": {
+    "message": "No results"
+  },
+  "newtab_drag_links_here": {
+    "message": "Drag links here"
+  },
+  "newtab_no_links_found": {
+    "message": "No links found for \"$1\"",
+    "placeholders": {
+      "query": { "content": "$1" }
+    }
+  },
+
+  "column_double_click_rename": {
+    "message": "Double click to rename"
+  },
+  "column_menu": {
+    "message": "Column menu"
+  },
+  "column_open_all": {
+    "message": "Open all"
+  },
+  "column_move_to": {
+    "message": "Move to..."
+  },
+  "column_delete_collection": {
+    "message": "Delete collection"
+  },
+
+  "linkcard_open": {
+    "message": "Open link"
+  },
+  "linkcard_open_new_tab": {
+    "message": "Open in new tab"
+  },
+  "linkcard_remove": {
+    "message": "Remove link"
+  },
+  "linkcard_remove_title": {
+    "message": "Remove"
+  },
+
+  "tabs_sidebar_title": {
+    "message": "Open Tabs"
+  },
+  "tabs_sidebar_close": {
+    "message": "Close sidebar"
+  },
+  "tabs_sidebar_loading": {
+    "message": "Loading..."
+  },
+  "tabs_sidebar_pinned": {
+    "message": "Pinned"
+  },
+  "tabs_sidebar_unnamed_group": {
+    "message": "Unnamed group"
+  },
+  "tabs_sidebar_other_tabs": {
+    "message": "Other tabs"
+  },
+  "tabs_sidebar_no_tabs": {
+    "message": "No open tabs"
+  },
+  "tabs_sidebar_open": {
+    "message": "Open tabs sidebar"
+  },
+  "tabs_sidebar_create_collection": {
+    "message": "Create collection"
+  },
+
+  "tab_close": {
+    "message": "Close tab"
+  },
+
+  "statusbar_links_one": {
+    "message": "$1 link",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "statusbar_links_many": {
+    "message": "$1 links",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "statusbar_collections_one": {
+    "message": "$1 collection",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "statusbar_collections_many": {
+    "message": "$1 collections",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "statusbar_last_saved": {
+    "message": "Last saved: $1",
+    "placeholders": {
+      "time": { "content": "$1" }
+    }
+  },
+
+  "time_now": {
+    "message": "now"
+  },
+  "time_minutes_ago": {
+    "message": "$1 min ago",
+    "placeholders": {
+      "minutes": { "content": "$1" }
+    }
+  },
+  "time_hour_ago": {
+    "message": "$1 hour ago",
+    "placeholders": {
+      "hours": { "content": "$1" }
+    }
+  },
+  "time_hours_ago": {
+    "message": "$1 hours ago",
+    "placeholders": {
+      "hours": { "content": "$1" }
+    }
+  },
+  "time_day_ago": {
+    "message": "$1 day ago",
+    "placeholders": {
+      "days": { "content": "$1" }
+    }
+  },
+  "time_days_ago": {
+    "message": "$1 days ago",
+    "placeholders": {
+      "days": { "content": "$1" }
+    }
+  },
+
+  "workspace_title": {
+    "message": "Workspaces"
+  },
+  "workspace_create_new": {
+    "message": "Create new workspace"
+  },
+  "workspace_limit_reached": {
+    "message": "Maximum limit of 12 workspaces reached"
+  },
+  "workspace_select_color": {
+    "message": "Select color $1",
+    "placeholders": {
+      "color": { "content": "$1" }
+    }
+  },
+
+  "workspace_modal_edit_title": {
+    "message": "Edit Workspace"
+  },
+  "workspace_modal_new_title": {
+    "message": "New Workspace"
+  },
+  "workspace_modal_name_required": {
+    "message": "Required"
+  },
+  "workspace_modal_default_hint": {
+    "message": "The default workspace name cannot be changed"
+  },
+  "workspace_modal_description_placeholder": {
+    "message": "Describe the purpose of this workspace..."
+  },
+  "workspace_modal_example": {
+    "message": "E.g.: Work, Personal, Project X"
+  },
+
+  "error_save_link_failed": {
+    "message": "Error saving link. Try again."
+  },
+  "error_open_link_failed": {
+    "message": "Error opening link. Try again."
+  },
+  "error_remove_link_failed": {
+    "message": "Error removing link. Try again."
+  },
+  "error_get_tab_failed": {
+    "message": "Could not get current tab."
+  },
+  "error_page_not_saveable": {
+    "message": "This page cannot be saved."
+  },
+  "error_create_collection_failed": {
+    "message": "Error creating collection. Try again."
+  },
+  "error_delete_collection_failed": {
+    "message": "Error deleting collection. Try again."
+  },
+  "error_rename_collection_failed": {
+    "message": "Error renaming. Try again."
+  },
+  "error_move_links_failed": {
+    "message": "Error moving links"
+  },
+  "error_move_link_failed": {
+    "message": "Error moving link"
+  },
+  "error_reorder_collections_failed": {
+    "message": "Error reordering collections"
+  },
+  "error_move_links_to_inbox_failed": {
+    "message": "Error moving links to Inbox"
+  },
+  "error_delete_collection_rollback": {
+    "message": "Could not delete collection. Try again"
+  },
+  "error_update_workspace_failed": {
+    "message": "Error updating workspace"
+  },
+  "error_delete_workspace_failed": {
+    "message": "Error deleting workspace"
+  },
+  "error_reorder_workspaces_failed": {
+    "message": "Error reordering workspaces"
+  },
+  "error_move_collection_failed": {
+    "message": "Error moving collection"
+  },
+  "error_rename_collection_storage": {
+    "message": "Error renaming collection"
+  },
+
+  "storage_quota_exceeded": {
+    "message": "Storage quota exceeded. Please remove some collections or links to continue."
+  },
+  "storage_link_not_found": {
+    "message": "Link not found"
+  },
+  "storage_collection_not_found": {
+    "message": "Collection not found"
+  },
+  "storage_inbox_delete_forbidden": {
+    "message": "The Inbox collection cannot be deleted"
+  },
+  "storage_target_collection_not_found": {
+    "message": "Target collection not found"
+  },
+  "storage_inbox_cannot_move": {
+    "message": "Inbox cannot be moved"
+  },
+  "storage_workspace_not_found": {
+    "message": "Workspace not found"
+  },
+  "storage_target_workspace_not_found": {
+    "message": "Target workspace not found"
+  },
+
+  "success_link_saved": {
+    "message": "Link saved!"
+  },
+  "success_link_saved_to": {
+    "message": "Link saved to $1!",
+    "placeholders": {
+      "collection": { "content": "$1" }
+    }
+  },
+  "success_collection_created": {
+    "message": "Collection \"$1\" created!",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "success_collection_deleted": {
+    "message": "Collection $1 deleted",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "success_collection_deleted_moved_one": {
+    "message": "Collection $1 deleted. $2 link moved to Inbox",
+    "placeholders": {
+      "name": { "content": "$1" },
+      "count": { "content": "$2" }
+    }
+  },
+  "success_collection_deleted_moved_many": {
+    "message": "Collection $1 deleted. $2 links moved to Inbox",
+    "placeholders": {
+      "name": { "content": "$1" },
+      "count": { "content": "$2" }
+    }
+  },
+  "success_collection_moved": {
+    "message": "Collection moved to \"$1\"",
+    "placeholders": {
+      "workspace": { "content": "$1" }
+    }
+  },
+  "success_workspace_created": {
+    "message": "Workspace \"$1\" created",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "success_workspace_updated": {
+    "message": "Workspace \"$1\" updated",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "success_workspace_deleted": {
+    "message": "Workspace \"$1\" deleted",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "success_link_removed": {
+    "message": "Link removed"
+  },
+
+  "validation_collection_name_empty": {
+    "message": "Collection name cannot be empty"
+  },
+  "validation_collection_name_too_long": {
+    "message": "Collection name must be at most $1 characters",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "validation_collection_name_duplicate": {
+    "message": "A collection with this name already exists"
+  },
+  "validation_workspace_name_empty": {
+    "message": "Workspace name cannot be empty"
+  },
+  "validation_workspace_name_too_long": {
+    "message": "Workspace name must be at most $1 characters",
+    "placeholders": {
+      "max": { "content": "$1" }
+    }
+  },
+  "validation_workspace_name_duplicate": {
+    "message": "A workspace with this name already exists"
+  },
+  "validation_workspace_description_too_long": {
+    "message": "Description must be at most $1 characters",
+    "placeholders": {
+      "max": { "content": "$1" }
+    }
+  },
+  "validation_workspace_limit_reached": {
+    "message": "Maximum limit of $1 workspaces reached",
+    "placeholders": {
+      "limit": { "content": "$1" }
+    }
+  },
+  "validation_workspace_invalid_color": {
+    "message": "Invalid color. Use format #RRGGBB"
+  },
+  "validation_workspace_default_delete": {
+    "message": "The default workspace cannot be deleted"
+  },
+  "validation_workspace_default_rename": {
+    "message": "The default workspace cannot be renamed"
+  },
+  "validation_workspace_not_found": {
+    "message": "Workspace not found"
+  },
+
+  "error_tab_invalid_url": {
+    "message": "Invalid URL. Could not open the link."
+  },
+
+  "newtab_confirm_remove_link": {
+    "message": "Remove this link?"
+  }
+}

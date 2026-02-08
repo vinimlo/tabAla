@@ -2,7 +2,7 @@
  * Unit tests for workspace functionality.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mockStorage } from '../setup';
+import { clearMockStorage } from '../setup';
 import {
   getWorkspaces,
   saveWorkspaces,
@@ -26,29 +26,13 @@ import {
   validateWorkspaceDeletion,
   WORKSPACE_ERRORS,
 } from '@/lib/validation';
-import type { Workspace, Collection } from '@/lib/types';
 import { DEFAULT_WORKSPACE_ID, WORKSPACE_LIMIT, WORKSPACE_COLORS, INBOX_COLLECTION_ID } from '@/lib/types';
-
-const createMockWorkspace = (overrides: Partial<Workspace> = {}): Workspace => ({
-  id: 'ws-1',
-  name: 'Test Workspace',
-  color: WORKSPACE_COLORS[0],
-  order: 0,
-  createdAt: Date.now(),
-  ...overrides,
-});
-
-const createMockCollection = (overrides: Partial<Collection> = {}): Collection => ({
-  id: 'col-1',
-  name: 'Test Collection',
-  order: 0,
-  ...overrides,
-});
+import { createMockWorkspace, createMockCollection } from '../factories';
 
 describe('Workspace Storage Functions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
+    clearMockStorage();
   });
 
   describe('getWorkspaces', () => {
@@ -170,7 +154,7 @@ describe('Workspace Storage Functions', () => {
       const result = await updateWorkspace(DEFAULT_WORKSPACE_ID, { name: 'New Name' });
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('padrão');
+      expect(result.error).toBe('validation_workspace_default_rename');
     });
 
     it('should allow updating default workspace color', async () => {
@@ -208,7 +192,7 @@ describe('Workspace Storage Functions', () => {
       const result = await deleteWorkspace(DEFAULT_WORKSPACE_ID);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('padrão');
+      expect(result.error).toBe('validation_workspace_default_delete');
     });
   });
 
@@ -270,7 +254,7 @@ describe('Workspace Storage Functions', () => {
       const result = await moveCollectionToWorkspace(INBOX_COLLECTION_ID, 'ws-2');
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Inbox');
+      expect(result.error).toBe('storage_inbox_cannot_move');
     });
 
     it('should fail if workspace does not exist', async () => {
@@ -326,26 +310,26 @@ describe('Workspace Validation', () => {
     it('should reject empty name', () => {
       const result = validateWorkspaceName('', '', []);
       expect(result.valid).toBe(false);
-      expect(result.error).toBe(WORKSPACE_ERRORS.NAME_EMPTY);
+      expect(result.error).toBe(WORKSPACE_ERRORS.NAME_EMPTY());
     });
 
     it('should reject name too long', () => {
       const longName = 'a'.repeat(51);
       const result = validateWorkspaceName(longName, '', []);
       expect(result.valid).toBe(false);
-      expect(result.error).toBe(WORKSPACE_ERRORS.NAME_TOO_LONG);
+      expect(result.error).toBe(WORKSPACE_ERRORS.NAME_TOO_LONG());
     });
 
     it('should reject duplicate name', () => {
       const result = validateWorkspaceName('Trabalho', '', existingWorkspaces);
       expect(result.valid).toBe(false);
-      expect(result.error).toBe(WORKSPACE_ERRORS.NAME_DUPLICATE);
+      expect(result.error).toBe(WORKSPACE_ERRORS.NAME_DUPLICATE());
     });
 
     it('should reject case-insensitive duplicate', () => {
       const result = validateWorkspaceName('trabalho', '', existingWorkspaces);
       expect(result.valid).toBe(false);
-      expect(result.error).toBe(WORKSPACE_ERRORS.NAME_DUPLICATE);
+      expect(result.error).toBe(WORKSPACE_ERRORS.NAME_DUPLICATE());
     });
 
     it('should accept valid unique name', () => {
@@ -374,7 +358,7 @@ describe('Workspace Validation', () => {
       const longDesc = 'a'.repeat(201);
       const result = validateWorkspaceDescription(longDesc);
       expect(result.valid).toBe(false);
-      expect(result.error).toBe(WORKSPACE_ERRORS.DESCRIPTION_TOO_LONG);
+      expect(result.error).toBe(WORKSPACE_ERRORS.DESCRIPTION_TOO_LONG());
     });
   });
 
@@ -392,7 +376,7 @@ describe('Workspace Validation', () => {
     it('should reject invalid color', () => {
       const result = validateWorkspaceColor('not-a-color');
       expect(result.valid).toBe(false);
-      expect(result.error).toBe(WORKSPACE_ERRORS.INVALID_COLOR);
+      expect(result.error).toBe(WORKSPACE_ERRORS.INVALID_COLOR());
     });
   });
 
@@ -408,7 +392,7 @@ describe('Workspace Validation', () => {
       );
       const result = validateWorkspaceLimit(workspaces);
       expect(result.valid).toBe(false);
-      expect(result.error).toBe(WORKSPACE_ERRORS.LIMIT_REACHED);
+      expect(result.error).toBe(WORKSPACE_ERRORS.LIMIT_REACHED());
     });
   });
 
@@ -419,14 +403,14 @@ describe('Workspace Validation', () => {
       ];
       const result = validateWorkspaceDeletion(DEFAULT_WORKSPACE_ID, workspaces);
       expect(result.valid).toBe(false);
-      expect(result.error).toBe(WORKSPACE_ERRORS.DEFAULT_DELETE);
+      expect(result.error).toBe(WORKSPACE_ERRORS.DEFAULT_DELETE());
     });
 
     it('should reject deleting non-existent workspace', () => {
       const workspaces = [createMockWorkspace({ id: 'ws-1' })];
       const result = validateWorkspaceDeletion('non-existent', workspaces);
       expect(result.valid).toBe(false);
-      expect(result.error).toBe(WORKSPACE_ERRORS.NOT_FOUND);
+      expect(result.error).toBe(WORKSPACE_ERRORS.NOT_FOUND());
     });
 
     it('should accept deleting regular workspace', () => {

@@ -1,28 +1,28 @@
-# TabAla - Guia de Desenvolvimento
+# TabAla - Development Guide
 
-Este documento descreve o processo completo de build e carregamento da extensão TabAla no Chrome.
+This document describes the complete build and loading process for the TabAla extension in Chrome.
 
-## Requisitos
+## Requirements
 
 - Docker 20.10+
 - Docker Compose v2+
 - Make
 - Google Chrome 88+
 
-## Build da Extensão
+## Building the Extension
 
-### Comando de Build
+### Build Command
 
 ```bash
 make build
 ```
 
-Este comando executa o build via Docker, garantindo consistência de ambiente. O Vite processa os arquivos TypeScript/Svelte e gera a extensão na pasta `dist/`.
+This command runs the build via Docker, ensuring environment consistency. Vite processes the TypeScript/Svelte files and generates the extension in the `dist/` folder.
 
-### Saída Esperada
+### Expected Output
 
 ```
->>> Compilando extensão para produção...
+>>> Building extension for production...
 vite v5.x.x building for production...
 ✓ 31 modules transformed.
 dist/icons/icon-16.png                     0.08 kB
@@ -35,213 +35,213 @@ dist/assets/index-xxxxx.css                0.17 kB
 dist/assets/service-worker.ts-xxxxx.js     0.15 kB
 dist/assets/index.html-xxxxx.js            5.80 kB
 ✓ built in xxxms
->>> Build concluído! Artefatos em dist/
+>>> Build complete! Artifacts in dist/
 ```
 
-### Estrutura do `dist/`
+### `dist/` Structure
 
-Após o build, a pasta `dist/` deve conter:
+After building, the `dist/` folder should contain:
 
 ```
 dist/
-├── manifest.json              # Manifest V3 da extensão
-├── service-worker-loader.js   # Loader do service worker
+├── manifest.json              # Extension Manifest V3
+├── service-worker-loader.js   # Service worker loader
 ├── assets/
-│   ├── index-xxxxx.css        # Estilos compilados
-│   ├── index.html-xxxxx.js    # JavaScript do popup
+│   ├── index-xxxxx.css        # Compiled styles
+│   ├── index.html-xxxxx.js    # Popup JavaScript
 │   └── service-worker.ts-xxxxx.js
 ├── icons/
-│   ├── icon-16.png            # Ícone 16x16
-│   ├── icon-48.png            # Ícone 48x48
-│   └── icon-128.png           # Ícone 128x128
+│   ├── icon-16.png            # 16x16 icon
+│   ├── icon-48.png            # 48x48 icon
+│   └── icon-128.png           # 128x128 icon
 ├── src/
 │   └── popup/
-│       └── index.html         # HTML do popup
+│       └── index.html         # Popup HTML
 └── .vite/
-    └── manifest.json          # Manifest do Vite (interno)
+    └── manifest.json          # Vite manifest (internal)
 ```
 
-## Carregando a Extensão no Chrome
+## Loading the Extension in Chrome
 
-### Passo a Passo
+### Step by Step
 
-1. **Execute o build**
+1. **Run the build**
    ```bash
    make build
    ```
 
-2. **Abra o Chrome e acesse a página de extensões**
-   - Digite `chrome://extensions` na barra de endereços
-   - Ou vá em Menu (⋮) → Mais ferramentas → Extensões
+2. **Open Chrome and go to the extensions page**
+   - Type `chrome://extensions` in the address bar
+   - Or go to Menu (⋮) → More tools → Extensions
 
-3. **Ative o Modo Desenvolvedor**
-   - Toggle no canto superior direito da página
+3. **Enable Developer mode**
+   - Toggle in the top right corner of the page
 
-4. **Carregue a extensão**
-   - Clique em "Carregar sem compactação" (ou "Load unpacked")
-   - Navegue até a pasta `dist/` do projeto
-   - Selecione a pasta e confirme
+4. **Load the extension**
+   - Click "Load unpacked"
+   - Navigate to the project's `dist/` folder
+   - Select the folder and confirm
 
-5. **Verifique o carregamento**
-   - A extensão "TabAla" deve aparecer na lista
-   - Status deve mostrar "Ativada"
-   - Não deve haver erros vermelhos ou avisos críticos
+5. **Verify it loaded**
+   - The "TabAla" extension should appear in the list
+   - Status should show "Enabled"
+   - There should be no red errors or critical warnings
 
-6. **Teste o ícone**
-   - O ícone TabAla deve aparecer na barra de ferramentas
-   - Passe o mouse para ver o tooltip "TabAla"
+6. **Test the icon**
+   - The TabAla icon should appear in the toolbar
+   - Hover to see the tooltip "TabAla"
 
-7. **Teste o popup**
-   - Clique no ícone da extensão
-   - O popup deve abrir mostrando "Hello TabAla"
+7. **Test the popup**
+   - Click the extension icon
+   - The popup should open showing "Hello TabAla"
 
-### Atualizando a Extensão
+### Updating the Extension
 
-Após modificar o código:
+After modifying the code:
 
 ```bash
 # Rebuild
 make build
 
-# No Chrome:
-# 1. Vá para chrome://extensions
-# 2. Clique no botão de refresh (↻) no card da extensão TabAla
-# 3. Ou clique em "Atualizar" no topo da página
+# In Chrome:
+# 1. Go to chrome://extensions
+# 2. Click the refresh button (↻) on the TabAla extension card
+# 3. Or click "Update" at the top of the page
 ```
 
-Para desenvolvimento com hot-reload, use `make dev` ao invés de `make build`.
+For development with hot-reload, use `make dev` instead of `make build`.
 
-## Inspecionando a Extensão
+## Inspecting the Extension
 
-### DevTools do Popup
+### Popup DevTools
 
-1. Clique com o botão direito no popup aberto
-2. Selecione "Inspecionar" (ou "Inspect")
-3. O DevTools abrirá para o contexto do popup
-4. Verifique a aba "Console" para erros
+1. Right-click on the open popup
+2. Select "Inspect"
+3. DevTools will open for the popup context
+4. Check the "Console" tab for errors
 
-### DevTools do Service Worker
+### Service Worker DevTools
 
-1. Em `chrome://extensions`, localize TabAla
-2. Clique em "Service Worker" (link azul)
-3. O DevTools do background script abrirá
+1. In `chrome://extensions`, locate TabAla
+2. Click "Service Worker" (blue link)
+3. The background script DevTools will open
 
 ## Troubleshooting
 
-### 1. Build falha com erro de Docker
+### 1. Build fails with Docker error
 
-**Sintoma:** Erro ao executar `make build`
+**Symptom:** Error when running `make build`
 ```
 Cannot connect to the Docker daemon
 ```
 
-**Solução:**
-- Verifique se o Docker está rodando: `docker info`
-- Inicie o Docker Desktop (macOS/Windows)
+**Solution:**
+- Check if Docker is running: `docker info`
+- Start Docker Desktop (macOS/Windows)
 - Linux: `sudo systemctl start docker`
 
-### 2. Extensão não carrega - Erro de Manifest
+### 2. Extension does not load — Manifest error
 
-**Sintoma:** Erro vermelho ao carregar: "Manifest file is invalid"
+**Symptom:** Red error when loading: "Manifest file is invalid"
 
-**Soluções:**
-- Verifique se o build foi executado: `ls dist/manifest.json`
-- Confirme que o `manifest.json` é JSON válido
-- Certifique-se de selecionar a pasta `dist/`, não a raiz do projeto
+**Solutions:**
+- Check if the build was run: `ls dist/manifest.json`
+- Confirm that `manifest.json` is valid JSON
+- Make sure to select the `dist/` folder, not the project root
 
-### 3. Ícones não aparecem ou mostram placeholder genérico
+### 3. Icons do not appear or show generic placeholder
 
-**Sintoma:** Ícone padrão do Chrome ao invés do ícone TabAla
+**Symptom:** Default Chrome icon instead of the TabAla icon
 
-**Soluções:**
-- Verifique se os ícones existem: `ls -la dist/icons/`
-- Confirme que os arquivos não estão vazios (devem ter > 0 bytes)
-- Recarregue a extensão em chrome://extensions
+**Solutions:**
+- Check if the icons exist: `ls -la dist/icons/`
+- Confirm the files are not empty (should be > 0 bytes)
+- Reload the extension in chrome://extensions
 
-### 4. Popup não abre ou mostra página em branco
+### 4. Popup does not open or shows a blank page
 
-**Sintoma:** Clicar no ícone não faz nada ou mostra popup vazio
+**Symptom:** Clicking the icon does nothing or shows an empty popup
 
-**Soluções:**
-1. Abra o DevTools do popup (botão direito → Inspecionar)
-2. Verifique erros no Console
-3. Erros comuns:
-   - `net::ERR_FILE_NOT_FOUND` → Caminhos incorretos no HTML
-   - `Refused to load script` → Problemas de CSP (verifique manifest.json)
-4. Confirme que `dist/src/popup/index.html` existe e referencia os assets corretamente
+**Solutions:**
+1. Open the popup DevTools (right-click → Inspect)
+2. Check for errors in the Console
+3. Common errors:
+   - `net::ERR_FILE_NOT_FOUND` → Incorrect paths in HTML
+   - `Refused to load script` → CSP issues (check manifest.json)
+4. Confirm that `dist/src/popup/index.html` exists and correctly references the assets
 
-### 5. Hot-reload não funciona no modo dev
+### 5. Hot-reload does not work in dev mode
 
-**Sintoma:** Alterações no código não refletem na extensão
+**Symptom:** Code changes are not reflected in the extension
 
-**Soluções:**
-- Verifique se `make dev` está rodando
-- Confirme que o container está ativo: `docker ps`
-- macOS/Windows: Habilite file sharing no Docker Desktop
-- Recarregue manualmente a extensão
+**Solutions:**
+- Check that `make dev` is running
+- Confirm the container is active: `docker ps`
+- macOS/Windows: Enable file sharing in Docker Desktop
+- Manually reload the extension
 
-### 6. Porta 5173 ocupada
+### 6. Port 5173 is busy
 
-**Sintoma:** Erro ao iniciar dev server
+**Symptom:** Error when starting the dev server
 ```
 Port 5173 is already in use
 ```
 
-**Soluções:**
-- Identifique o processo: `lsof -i :5173`
-- Mate o processo: `kill -9 <PID>`
-- Ou pare o container antigo: `make stop`
+**Solutions:**
+- Identify the process: `lsof -i :5173`
+- Kill the process: `kill -9 <PID>`
+- Or stop the old container: `make stop`
 
-### 7. Erros de permissão no volume Docker
+### 7. Permission errors on Docker volume
 
-**Sintoma:** `EACCES: permission denied`
+**Symptom:** `EACCES: permission denied`
 
-**Soluções:**
-- Linux: Ajuste permissões: `chmod -R 755 .`
-- Container roda como user `node` (uid 1000)
-- Verifique ownership: `ls -la package.json`
+**Solutions:**
+- Linux: Adjust permissions: `chmod -R 755 .`
+- The container runs as user `node` (uid 1000)
+- Check ownership: `ls -la package.json`
 
-### 8. Service Worker não registra
+### 8. Service Worker does not register
 
-**Sintoma:** Console do background mostra erro de registro
+**Symptom:** Background console shows registration error
 
-**Soluções:**
-- Verifique se `dist/service-worker-loader.js` existe
-- Confirme a configuração em `manifest.json`:
+**Solutions:**
+- Check if `dist/service-worker-loader.js` exists
+- Confirm the configuration in `manifest.json`:
   ```json
   "background": {
     "service_worker": "service-worker-loader.js",
     "type": "module"
   }
   ```
-- Recarregue completamente a extensão (remova e adicione novamente)
+- Fully reload the extension (remove and add again)
 
-## Comandos Úteis
+## Useful Commands
 
 ```bash
-# Build de produção
+# Production build
 make build
 
-# Desenvolvimento com hot-reload
+# Development with hot-reload
 make dev
 
-# Executar testes
+# Run tests
 make test
 
 # Linting
 make lint
 
-# Limpar dist/
+# Clean dist/
 make clean
 
-# Shell no container
+# Shell in the container
 make shell
 
-# Parar containers
+# Stop containers
 make stop
 ```
 
-## Referências
+## References
 
 - [Chrome Extensions Documentation](https://developer.chrome.com/docs/extensions/)
 - [Manifest V3 Overview](https://developer.chrome.com/docs/extensions/mv3/intro/)

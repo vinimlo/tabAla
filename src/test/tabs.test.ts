@@ -2,57 +2,20 @@
  * Unit tests for tabs.ts utility functions.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { isValidUrl, openLinkInNewTab, getCurrentTab, isSaveableUrl } from '@/lib/tabs';
+import { openLinkInNewTab, openLinkInCurrentTab, getCurrentTab, isSaveableUrl } from '@/lib/tabs';
 
-describe('isValidUrl', () => {
-  it('should return true for valid http URL', () => {
-    expect(isValidUrl('http://example.com')).toBe(true);
-  });
-
-  it('should return true for valid https URL', () => {
-    expect(isValidUrl('https://example.com')).toBe(true);
-  });
-
-  it('should return true for https URL with path and query', () => {
-    expect(isValidUrl('https://example.com/path?query=value')).toBe(true);
-  });
-
-  it('should return true for file protocol URL', () => {
-    expect(isValidUrl('file:///path/to/file.html')).toBe(true);
-  });
-
-  it('should return false for empty string', () => {
-    expect(isValidUrl('')).toBe(false);
-  });
-
-  it('should return false for null', () => {
-    expect(isValidUrl(null as unknown as string)).toBe(false);
-  });
-
-  it('should return false for undefined', () => {
-    expect(isValidUrl(undefined as unknown as string)).toBe(false);
-  });
-
-  it('should return false for malformed URL', () => {
-    expect(isValidUrl('htp://invalid')).toBe(false);
-  });
-
-  it('should return false for javascript protocol', () => {
-    expect(isValidUrl('javascript:alert(1)')).toBe(false);
-  });
-
-  it('should return false for data protocol', () => {
-    expect(isValidUrl('data:text/html,<h1>Hello</h1>')).toBe(false);
-  });
-
-  it('should return false for plain text', () => {
-    expect(isValidUrl('just some text')).toBe(false);
-  });
-
-  it('should return false for number', () => {
-    expect(isValidUrl(12345 as unknown as string)).toBe(false);
-  });
-});
+function createMockTab(overrides: Partial<chrome.tabs.Tab> = {}): chrome.tabs.Tab {
+  return {
+    id: 1,
+    index: 0,
+    windowId: 1,
+    highlighted: true,
+    active: true,
+    pinned: false,
+    incognito: false,
+    ...overrides,
+  };
+}
 
 describe('openLinkInNewTab', () => {
   beforeEach(() => {
@@ -73,7 +36,7 @@ describe('openLinkInNewTab', () => {
 
     expect(chrome.tabs.create).not.toHaveBeenCalled();
     expect(result.success).toBe(false);
-    expect(result.error).toBe('URL inválido. Não foi possível abrir o link.');
+    expect(result.error).toBe('error_tab_invalid_url');
   });
 
   it('should return error for empty URL', async () => {
@@ -81,7 +44,7 @@ describe('openLinkInNewTab', () => {
 
     expect(chrome.tabs.create).not.toHaveBeenCalled();
     expect(result.success).toBe(false);
-    expect(result.error).toBe('URL inválido. Não foi possível abrir o link.');
+    expect(result.error).toBe('error_tab_invalid_url');
   });
 
   it('should return error when chrome.tabs.create fails', async () => {
@@ -92,7 +55,7 @@ describe('openLinkInNewTab', () => {
 
     expect(chrome.tabs.create).toHaveBeenCalled();
     expect(result.success).toBe(false);
-    expect(result.error).toBe('Erro ao abrir link. Tente novamente.');
+    expect(result.error).toBe('error_open_link_failed');
   });
 
   it('should handle multiple concurrent calls', async () => {
@@ -131,6 +94,99 @@ describe('openLinkInNewTab', () => {
   });
 });
 
+describe('openLinkInCurrentTab', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should navigate current tab to valid URL', async () => {
+    vi.mocked(chrome.tabs.query).mockResolvedValueOnce([
+      createMockTab({ id: 42, url: 'chrome://newtab', title: 'New Tab' }),
+    ]);
+
+    const result = await openLinkInCurrentTab('https://example.com');
+
+    expect(chrome.tabs.query).toHaveBeenCalledWith({ active: true, currentWindow: true });
+    expect(chrome.tabs.update).toHaveBeenCalledWith(42, { url: 'https://example.com' });
+    expect(result).toEqual({ success: true });
+  });
+
+  it('should return error for invalid URL without calling chrome.tabs', async () => {
+    const result = await openLinkInCurrentTab('invalid-url');
+
+    expect(chrome.tabs.query).not.toHaveBeenCalled();
+    expect(chrome.tabs.update).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('error_tab_invalid_url');
+  });
+
+  it('should return error for empty URL', async () => {
+    const result = await openLinkInCurrentTab('');
+
+    expect(chrome.tabs.query).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('error_tab_invalid_url');
+  });
+
+  it('should fallback to create when no current tab found', async () => {
+    vi.mocked(chrome.tabs.query).mockResolvedValueOnce([]);
+
+    const result = await openLinkInCurrentTab('https://example.com');
+
+    expect(chrome.tabs.update).not.toHaveBeenCalled();
+    expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'https://example.com', active: true });
+    expect(result).toEqual({ success: true });
+  });
+
+  it('should fallback to create when current tab has no id', async () => {
+    vi.mocked(chrome.tabs.query).mockResolvedValueOnce([
+      createMockTab({ id: undefined }),
+    ]);
+
+    const result = await openLinkInCurrentTab('https://example.com');
+
+    expect(chrome.tabs.update).not.toHaveBeenCalled();
+    expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'https://example.com', active: true });
+    expect(result).toEqual({ success: true });
+  });
+
+  it('should return error when chrome.tabs.update fails', async () => {
+    const error = new Error('Update failed');
+    vi.mocked(chrome.tabs.query).mockResolvedValueOnce([
+      createMockTab({ id: 42 }),
+    ]);
+    vi.mocked(chrome.tabs.update).mockRejectedValueOnce(error);
+
+    const result = await openLinkInCurrentTab('https://example.com');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('error_open_link_failed');
+  });
+
+  it('should log error to console for invalid URL', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await openLinkInCurrentTab('invalid-url');
+
+    expect(consoleSpy).toHaveBeenCalledWith('Invalid URL:', 'invalid-url');
+    consoleSpy.mockRestore();
+  });
+
+  it('should log error to console when chrome.tabs.update fails', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const error = new Error('Update failed');
+    vi.mocked(chrome.tabs.query).mockResolvedValueOnce([
+      createMockTab({ id: 42 }),
+    ]);
+    vi.mocked(chrome.tabs.update).mockRejectedValueOnce(error);
+
+    await openLinkInCurrentTab('https://example.com');
+
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to open link in current tab:', error);
+    consoleSpy.mockRestore();
+  });
+});
+
 describe('getCurrentTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -138,18 +194,11 @@ describe('getCurrentTab', () => {
 
   it('should return current tab info with url, title, and favicon', async () => {
     vi.mocked(chrome.tabs.query).mockResolvedValueOnce([
-      {
-        id: 1,
-        index: 0,
-        windowId: 1,
-        highlighted: true,
-        active: true,
-        pinned: false,
-        incognito: false,
+      createMockTab({
         url: 'https://example.com',
         title: 'Example Page',
         favIconUrl: 'https://example.com/favicon.ico',
-      },
+      }),
     ]);
 
     const result = await getCurrentTab();
@@ -172,16 +221,7 @@ describe('getCurrentTab', () => {
 
   it('should return null if tab has no url', async () => {
     vi.mocked(chrome.tabs.query).mockResolvedValueOnce([
-      {
-        id: 1,
-        index: 0,
-        windowId: 1,
-        highlighted: true,
-        active: true,
-        pinned: false,
-        incognito: false,
-        title: 'Tab without URL',
-      },
+      createMockTab({ title: 'Tab without URL' }),
     ]);
 
     const result = await getCurrentTab();
@@ -191,16 +231,7 @@ describe('getCurrentTab', () => {
 
   it('should return null if tab has no title', async () => {
     vi.mocked(chrome.tabs.query).mockResolvedValueOnce([
-      {
-        id: 1,
-        index: 0,
-        windowId: 1,
-        highlighted: true,
-        active: true,
-        pinned: false,
-        incognito: false,
-        url: 'https://example.com',
-      },
+      createMockTab({ url: 'https://example.com' }),
     ]);
 
     const result = await getCurrentTab();
@@ -210,17 +241,7 @@ describe('getCurrentTab', () => {
 
   it('should handle favicon being undefined', async () => {
     vi.mocked(chrome.tabs.query).mockResolvedValueOnce([
-      {
-        id: 1,
-        index: 0,
-        windowId: 1,
-        highlighted: true,
-        active: true,
-        pinned: false,
-        incognito: false,
-        url: 'https://example.com',
-        title: 'Example Page',
-      },
+      createMockTab({ url: 'https://example.com', title: 'Example Page' }),
     ]);
 
     const result = await getCurrentTab();

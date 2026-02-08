@@ -1,10 +1,11 @@
 <script lang="ts">
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { fade, scale } from 'svelte/transition';
+  import { t } from '@lib/i18n';
 
-  export let message: string = 'Are you sure?';
-  export let confirmText: string = 'Remover';
-  export let cancelText: string = 'Cancelar';
+  export let message: string = t('confirm_default_message');
+  export let confirmText: string = t('common_remove');
+  export let cancelText: string = t('common_cancel');
 
   const dispatch = createEventDispatcher<{
     confirm: void;
@@ -13,25 +14,17 @@
 
   let dialogElement: HTMLDivElement;
 
-  function handleConfirm() {
-    dispatch('confirm');
-  }
-
-  function handleCancel() {
-    dispatch('cancel');
-  }
-
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
-      handleCancel();
+      dispatch('cancel');
     } else if (event.key === 'Enter') {
-      handleConfirm();
+      dispatch('confirm');
     }
   }
 
   function handleBackdropClick(event: MouseEvent) {
     if (event.target === event.currentTarget) {
-      handleCancel();
+      dispatch('cancel');
     }
   }
 
@@ -65,14 +58,14 @@
     <div class="actions">
       <button
         class="btn btn-cancel"
-        on:click={handleCancel}
+        on:click={() => dispatch('cancel')}
         type="button"
       >
         {cancelText}
       </button>
       <button
         class="btn btn-confirm"
-        on:click={handleConfirm}
+        on:click={() => dispatch('confirm')}
         type="button"
       >
         {confirmText}
@@ -169,7 +162,8 @@
   }
 
   .btn-confirm:hover {
-    background: #c45f58;
+    background: var(--semantic-error);
+    filter: brightness(0.85);
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(212, 114, 106, 0.35);
   }

@@ -1,0 +1,637 @@
+{
+  "app_name": {
+    "message": "TabAla"
+  },
+  "app_description": {
+    "message": "Salve abas. Organize em coleções. Processe quando quiser."
+  },
+  "app_default_title": {
+    "message": "TabAla"
+  },
+
+  "common_save": {
+    "message": "Salvar"
+  },
+  "common_cancel": {
+    "message": "Cancelar"
+  },
+  "common_delete": {
+    "message": "Excluir"
+  },
+  "common_remove": {
+    "message": "Remover"
+  },
+  "common_create": {
+    "message": "Criar"
+  },
+  "common_creating": {
+    "message": "Criando..."
+  },
+  "common_edit": {
+    "message": "Editar"
+  },
+  "common_close": {
+    "message": "Fechar"
+  },
+  "common_saving": {
+    "message": "Salvando..."
+  },
+  "common_loading": {
+    "message": "carregando..."
+  },
+  "common_name": {
+    "message": "Nome"
+  },
+  "common_description": {
+    "message": "Descrição"
+  },
+  "common_color": {
+    "message": "Cor"
+  },
+  "common_all": {
+    "message": "Todas"
+  },
+  "common_try_again": {
+    "message": "Tentar novamente"
+  },
+  "common_inbox": {
+    "message": "Inbox"
+  },
+  "default_workspace_name": {
+    "message": "Geral"
+  },
+
+  "popup_save_current_tab": {
+    "message": "Salvar aba atual"
+  },
+  "popup_collection": {
+    "message": "Coleção"
+  },
+  "popup_view_all": {
+    "message": "Ver todos ($1)",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "popup_no_links": {
+    "message": "Nenhum link"
+  },
+  "popup_open_dashboard": {
+    "message": "Abrir Dashboard"
+  },
+  "popup_open_full_dashboard": {
+    "message": "Abrir Dashboard Completo"
+  },
+  "popup_remove_this_link": {
+    "message": "Remover este link?"
+  },
+  "popup_filter_by_collection": {
+    "message": "Filtrar por coleção"
+  },
+  "popup_click_to_edit": {
+    "message": "Clique para editar"
+  },
+  "popup_delete_collection": {
+    "message": "Excluir coleção"
+  },
+  "popup_delete_collection_name": {
+    "message": "Excluir coleção $1",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "popup_workspace": {
+    "message": "Workspace"
+  },
+  "popup_settings": {
+    "message": "Configurações"
+  },
+
+  "empty_state_message": {
+    "message": "Sua sala de espera está vazia"
+  },
+  "empty_state_hint": {
+    "message": "Salve sua primeira aba para começar"
+  },
+
+  "link_untitled": {
+    "message": "Sem título"
+  },
+  "link_remove": {
+    "message": "Remover link"
+  },
+
+  "toast_close": {
+    "message": "Fechar notificação"
+  },
+
+  "confirm_default_message": {
+    "message": "Tem certeza?"
+  },
+
+  "confirm_delete_title": {
+    "message": "Excluir $1?",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "confirm_delete_one_link": {
+    "message": "Excluir $1? O link será movido para Inbox",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "confirm_delete_many_links": {
+    "message": "Excluir $1? Os $2 links serão movidos para Inbox",
+    "placeholders": {
+      "name": { "content": "$1" },
+      "count": { "content": "$2" }
+    }
+  },
+
+  "create_collection_title": {
+    "message": "Nova Coleção"
+  },
+  "create_collection_placeholder": {
+    "message": "Nome da coleção"
+  },
+
+  "onboarding_welcome": {
+    "message": "Bem-vindo ao TabAla!"
+  },
+  "onboarding_description": {
+    "message": "Gostaria de usar o TabAla como sua nova aba? Você verá um dashboard visual para organizar seus links salvos."
+  },
+  "onboarding_feature_kanban": {
+    "message": "Dashboard visual estilo Kanban"
+  },
+  "onboarding_feature_drag": {
+    "message": "Arraste e solte para organizar"
+  },
+  "onboarding_feature_search": {
+    "message": "Busca rápida por links"
+  },
+  "onboarding_no_popup": {
+    "message": "Não, só o popup"
+  },
+  "onboarding_yes_replace": {
+    "message": "Sim, substituir"
+  },
+  "onboarding_change_later": {
+    "message": "Você pode alterar isso depois em Configurações"
+  },
+  "onboarding_theme_title": {
+    "message": "Escolha sua aparência"
+  },
+  "onboarding_theme_description": {
+    "message": "Escolha um tema que combina com você. Pode alterar depois."
+  },
+  "onboarding_newtab_title": {
+    "message": "Substituir sua nova aba?"
+  },
+  "onboarding_done_title": {
+    "message": "Tudo pronto!"
+  },
+  "onboarding_done_description": {
+    "message": "Comece a salvar abas e organizar seus links."
+  },
+  "onboarding_next": {
+    "message": "Próximo"
+  },
+  "onboarding_back": {
+    "message": "Voltar"
+  },
+  "onboarding_get_started": {
+    "message": "Começar"
+  },
+  "onboarding_step_of": {
+    "message": "Passo $1 de $2",
+    "placeholders": {
+      "current": { "content": "$1" },
+      "total": { "content": "$2" }
+    }
+  },
+
+  "settings_title": {
+    "message": "Configurações"
+  },
+  "settings_theme_title": {
+    "message": "Aparência"
+  },
+  "settings_theme_system": {
+    "message": "Sistema"
+  },
+  "settings_theme_light": {
+    "message": "Claro"
+  },
+  "settings_theme_dark": {
+    "message": "Escuro"
+  },
+  "settings_use_as_newtab": {
+    "message": "Usar como nova aba"
+  },
+  "settings_newtab_description": {
+    "message": "Substitui a página de nova aba do Chrome pelo dashboard do TabAla"
+  },
+  "settings_enable_newtab": {
+    "message": "Ativar como nova aba"
+  },
+  "settings_keyboard_shortcuts": {
+    "message": "Atalhos de teclado"
+  },
+  "settings_shortcut_search": {
+    "message": "Buscar"
+  },
+  "settings_shortcut_new_collection": {
+    "message": "Nova coleção"
+  },
+  "settings_shortcut_close_modal": {
+    "message": "Fechar modal"
+  },
+
+  "newtab_error_loading": {
+    "message": "Erro ao carregar dados"
+  },
+  "newtab_search_placeholder": {
+    "message": "Buscar links..."
+  },
+  "newtab_clear_search": {
+    "message": "Limpar busca"
+  },
+  "newtab_new_collection": {
+    "message": "Nova Coleção"
+  },
+  "newtab_no_results": {
+    "message": "Nenhum resultado"
+  },
+  "newtab_drag_links_here": {
+    "message": "Arraste links aqui"
+  },
+  "newtab_no_links_found": {
+    "message": "Nenhum link encontrado para \"$1\"",
+    "placeholders": {
+      "query": { "content": "$1" }
+    }
+  },
+
+  "column_double_click_rename": {
+    "message": "Clique duplo para renomear"
+  },
+  "column_menu": {
+    "message": "Menu da coleção"
+  },
+  "column_open_all": {
+    "message": "Abrir todos"
+  },
+  "column_move_to": {
+    "message": "Mover para..."
+  },
+  "column_delete_collection": {
+    "message": "Excluir coleção"
+  },
+
+  "linkcard_open": {
+    "message": "Abrir link"
+  },
+  "linkcard_open_new_tab": {
+    "message": "Abrir em nova aba"
+  },
+  "linkcard_remove": {
+    "message": "Remover link"
+  },
+  "linkcard_remove_title": {
+    "message": "Remover"
+  },
+
+  "tabs_sidebar_title": {
+    "message": "Abas Abertas"
+  },
+  "tabs_sidebar_close": {
+    "message": "Fechar sidebar"
+  },
+  "tabs_sidebar_loading": {
+    "message": "Carregando..."
+  },
+  "tabs_sidebar_pinned": {
+    "message": "Pinadas"
+  },
+  "tabs_sidebar_unnamed_group": {
+    "message": "Grupo sem nome"
+  },
+  "tabs_sidebar_other_tabs": {
+    "message": "Outras abas"
+  },
+  "tabs_sidebar_no_tabs": {
+    "message": "Nenhuma aba aberta"
+  },
+  "tabs_sidebar_open": {
+    "message": "Abrir sidebar de abas"
+  },
+  "tabs_sidebar_create_collection": {
+    "message": "Criar coleção"
+  },
+
+  "tab_close": {
+    "message": "Fechar aba"
+  },
+
+  "statusbar_links_one": {
+    "message": "$1 link",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "statusbar_links_many": {
+    "message": "$1 links",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "statusbar_collections_one": {
+    "message": "$1 coleção",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "statusbar_collections_many": {
+    "message": "$1 coleções",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "statusbar_last_saved": {
+    "message": "Último salvo: $1",
+    "placeholders": {
+      "time": { "content": "$1" }
+    }
+  },
+
+  "time_now": {
+    "message": "agora"
+  },
+  "time_minutes_ago": {
+    "message": "há $1 min",
+    "placeholders": {
+      "minutes": { "content": "$1" }
+    }
+  },
+  "time_hour_ago": {
+    "message": "há $1 hora",
+    "placeholders": {
+      "hours": { "content": "$1" }
+    }
+  },
+  "time_hours_ago": {
+    "message": "há $1 horas",
+    "placeholders": {
+      "hours": { "content": "$1" }
+    }
+  },
+  "time_day_ago": {
+    "message": "há $1 dia",
+    "placeholders": {
+      "days": { "content": "$1" }
+    }
+  },
+  "time_days_ago": {
+    "message": "há $1 dias",
+    "placeholders": {
+      "days": { "content": "$1" }
+    }
+  },
+
+  "workspace_title": {
+    "message": "Workspaces"
+  },
+  "workspace_create_new": {
+    "message": "Criar novo workspace"
+  },
+  "workspace_limit_reached": {
+    "message": "Limite máximo de 12 workspaces atingido"
+  },
+  "workspace_select_color": {
+    "message": "Selecionar cor $1",
+    "placeholders": {
+      "color": { "content": "$1" }
+    }
+  },
+
+  "workspace_modal_edit_title": {
+    "message": "Editar Workspace"
+  },
+  "workspace_modal_new_title": {
+    "message": "Novo Workspace"
+  },
+  "workspace_modal_name_required": {
+    "message": "*"
+  },
+  "workspace_modal_default_hint": {
+    "message": "O nome do workspace padrão não pode ser alterado"
+  },
+  "workspace_modal_description_placeholder": {
+    "message": "Descreva o propósito deste workspace..."
+  },
+  "workspace_modal_example": {
+    "message": "Ex: Trabalho, Pessoal, Projeto X"
+  },
+
+  "error_save_link_failed": {
+    "message": "Erro ao salvar link. Tente novamente."
+  },
+  "error_open_link_failed": {
+    "message": "Erro ao abrir link. Tente novamente."
+  },
+  "error_remove_link_failed": {
+    "message": "Erro ao remover link. Tente novamente."
+  },
+  "error_get_tab_failed": {
+    "message": "Não foi possível obter a aba atual."
+  },
+  "error_page_not_saveable": {
+    "message": "Esta página não pode ser salva."
+  },
+  "error_create_collection_failed": {
+    "message": "Erro ao criar coleção. Tente novamente."
+  },
+  "error_delete_collection_failed": {
+    "message": "Erro ao excluir coleção. Tente novamente."
+  },
+  "error_rename_collection_failed": {
+    "message": "Erro ao renomear. Tente novamente."
+  },
+  "error_move_links_failed": {
+    "message": "Erro ao mover links"
+  },
+  "error_move_link_failed": {
+    "message": "Erro ao mover link"
+  },
+  "error_reorder_collections_failed": {
+    "message": "Erro ao reordenar coleções"
+  },
+  "error_move_links_to_inbox_failed": {
+    "message": "Erro ao mover links para Inbox"
+  },
+  "error_delete_collection_rollback": {
+    "message": "Não foi possível excluir a coleção. Tente novamente"
+  },
+  "error_update_workspace_failed": {
+    "message": "Erro ao atualizar workspace"
+  },
+  "error_delete_workspace_failed": {
+    "message": "Erro ao excluir workspace"
+  },
+  "error_reorder_workspaces_failed": {
+    "message": "Erro ao reordenar workspaces"
+  },
+  "error_move_collection_failed": {
+    "message": "Erro ao mover coleção"
+  },
+  "error_rename_collection_storage": {
+    "message": "Erro ao renomear coleção"
+  },
+
+  "storage_quota_exceeded": {
+    "message": "Cota de armazenamento excedida. Remova algumas coleções ou links para continuar."
+  },
+  "storage_link_not_found": {
+    "message": "Link não encontrado"
+  },
+  "storage_collection_not_found": {
+    "message": "Coleção não encontrada"
+  },
+  "storage_inbox_delete_forbidden": {
+    "message": "A coleção Inbox não pode ser excluída"
+  },
+  "storage_target_collection_not_found": {
+    "message": "Coleção de destino não encontrada"
+  },
+  "storage_inbox_cannot_move": {
+    "message": "O Inbox não pode ser movido"
+  },
+  "storage_workspace_not_found": {
+    "message": "Workspace não encontrado"
+  },
+  "storage_target_workspace_not_found": {
+    "message": "Workspace de destino não encontrado"
+  },
+
+  "success_link_saved": {
+    "message": "Link salvo!"
+  },
+  "success_link_saved_to": {
+    "message": "Link salvo em $1!",
+    "placeholders": {
+      "collection": { "content": "$1" }
+    }
+  },
+  "success_collection_created": {
+    "message": "Coleção \"$1\" criada!",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "success_collection_deleted": {
+    "message": "Coleção $1 excluída",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "success_collection_deleted_moved_one": {
+    "message": "Coleção $1 excluída. $2 link movido para Inbox",
+    "placeholders": {
+      "name": { "content": "$1" },
+      "count": { "content": "$2" }
+    }
+  },
+  "success_collection_deleted_moved_many": {
+    "message": "Coleção $1 excluída. $2 links movidos para Inbox",
+    "placeholders": {
+      "name": { "content": "$1" },
+      "count": { "content": "$2" }
+    }
+  },
+  "success_collection_moved": {
+    "message": "Coleção movida para \"$1\"",
+    "placeholders": {
+      "workspace": { "content": "$1" }
+    }
+  },
+  "success_workspace_created": {
+    "message": "Workspace \"$1\" criado",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "success_workspace_updated": {
+    "message": "Workspace \"$1\" atualizado",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "success_workspace_deleted": {
+    "message": "Workspace \"$1\" excluído",
+    "placeholders": {
+      "name": { "content": "$1" }
+    }
+  },
+  "success_link_removed": {
+    "message": "Link removido"
+  },
+
+  "validation_collection_name_empty": {
+    "message": "O nome da coleção não pode estar vazio"
+  },
+  "validation_collection_name_too_long": {
+    "message": "O nome da coleção deve ter no máximo $1 caracteres",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "validation_collection_name_duplicate": {
+    "message": "Já existe uma coleção com este nome"
+  },
+  "validation_workspace_name_empty": {
+    "message": "O nome do workspace não pode estar vazio"
+  },
+  "validation_workspace_name_too_long": {
+    "message": "O nome do workspace deve ter no máximo $1 caracteres",
+    "placeholders": {
+      "max": { "content": "$1" }
+    }
+  },
+  "validation_workspace_name_duplicate": {
+    "message": "Já existe um workspace com este nome"
+  },
+  "validation_workspace_description_too_long": {
+    "message": "A descrição deve ter no máximo $1 caracteres",
+    "placeholders": {
+      "max": { "content": "$1" }
+    }
+  },
+  "validation_workspace_limit_reached": {
+    "message": "Limite máximo de $1 workspaces atingido",
+    "placeholders": {
+      "limit": { "content": "$1" }
+    }
+  },
+  "validation_workspace_invalid_color": {
+    "message": "Cor inválida. Use o formato #RRGGBB"
+  },
+  "validation_workspace_default_delete": {
+    "message": "O workspace padrão não pode ser excluído"
+  },
+  "validation_workspace_default_rename": {
+    "message": "O workspace padrão não pode ser renomeado"
+  },
+  "validation_workspace_not_found": {
+    "message": "Workspace não encontrado"
+  },
+
+  "error_tab_invalid_url": {
+    "message": "URL inválido. Não foi possível abrir o link."
+  },
+
+  "newtab_confirm_remove_link": {
+    "message": "Remover este link?"
+  }
+}

@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
+  import { t } from '@lib/i18n';
 
   export let message: string;
   export let duration: number = 3000;
@@ -41,14 +42,10 @@
     startTimer();
   }
 
-  onMount(() => {
-    startTimer();
-  });
+  onMount(startTimer);
 
   onDestroy(() => {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
+    if (timeoutId) clearTimeout(timeoutId);
   });
 </script>
 
@@ -73,7 +70,7 @@
       <button
         class="toast-close"
         on:click={dismiss}
-        aria-label="Fechar notificacao"
+        aria-label={t('toast_close')}
         type="button"
       >
         <svg
@@ -110,13 +107,13 @@
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-3) var(--space-4);
-    background-color: rgba(30, 29, 34, 0.9);
+    background-color: var(--surface-elevated);
     border: 1px solid var(--border-default);
     color: var(--text-primary);
     border-radius: var(--radius-full);
     box-shadow:
       var(--shadow-lg),
-      0 0 0 1px rgba(255, 255, 255, 0.05);
+      0 0 0 1px var(--border-subtle);
     backdrop-filter: blur(12px);
     max-width: 400px;
     width: auto;
@@ -142,21 +139,21 @@
   }
 
   .toast.error {
-    border-color: rgba(212, 114, 106, 0.25);
+    border-color: var(--semantic-error-soft);
   }
 
   .toast.error .toast-indicator {
     background-color: var(--semantic-error);
-    box-shadow: 0 0 12px rgba(212, 114, 106, 0.5);
+    box-shadow: 0 0 12px var(--semantic-error-glow);
   }
 
   .toast.success {
-    border-color: rgba(124, 184, 144, 0.25);
+    border-color: var(--semantic-success);
   }
 
   .toast.success .toast-indicator {
     background-color: var(--semantic-success);
-    box-shadow: 0 0 12px rgba(124, 184, 144, 0.5);
+    box-shadow: 0 0 12px var(--accent-glow);
   }
 
   .toast-message {

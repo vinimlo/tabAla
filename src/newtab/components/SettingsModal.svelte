@@ -1,7 +1,9 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { fade, scale } from 'svelte/transition';
+  import { t } from '@lib/i18n';
   import { settingsStore } from '@/lib/stores/settings';
+  import type { ThemePreference } from '@/lib/types';
 
   const dispatch = createEventDispatcher<{
     close: void;
@@ -28,6 +30,10 @@
   async function toggleNewtab(): Promise<void> {
     await settingsStore.setNewtabEnabled(!settings.newtabEnabled);
   }
+
+  async function handleThemeChange(theme: ThemePreference): Promise<void> {
+    await settingsStore.setTheme(theme);
+  }
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -47,12 +53,12 @@
     transition:scale={{ duration: 200, start: 0.95, opacity: 0 }}
   >
     <header class="modal-header">
-      <h2 id="settings-title">Configurações</h2>
+      <h2 id="settings-title">{t('settings_title')}</h2>
       <button
         type="button"
         class="btn-close"
         on:click={handleClose}
-        aria-label="Fechar"
+        aria-label={t('common_close')}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <path d="M18 6L6 18M6 6l12 12"/>
@@ -61,11 +67,76 @@
     </header>
 
     <div class="modal-content">
+      <!-- Theme selector -->
+      <div class="setting-section">
+        <h3>{t('settings_theme_title')}</h3>
+        <div class="theme-selector" role="radiogroup" aria-label={t('settings_theme_title')}>
+          <button
+            type="button"
+            class="theme-option"
+            class:active={settings.theme === 'system'}
+            on:click={() => handleThemeChange('system')}
+            role="radio"
+            aria-checked={settings.theme === 'system'}
+          >
+            <div class="theme-preview theme-preview-system">
+              <div class="preview-half preview-light">
+                <div class="preview-bar"></div>
+                <div class="preview-line"></div>
+                <div class="preview-line short"></div>
+              </div>
+              <div class="preview-half preview-dark">
+                <div class="preview-bar"></div>
+                <div class="preview-line"></div>
+                <div class="preview-line short"></div>
+              </div>
+            </div>
+            <span class="theme-label">{t('settings_theme_system')}</span>
+          </button>
+
+          <button
+            type="button"
+            class="theme-option"
+            class:active={settings.theme === 'light'}
+            on:click={() => handleThemeChange('light')}
+            role="radio"
+            aria-checked={settings.theme === 'light'}
+          >
+            <div class="theme-preview theme-preview-light">
+              <div class="preview-bar"></div>
+              <div class="preview-line"></div>
+              <div class="preview-line short"></div>
+              <div class="preview-dot"></div>
+            </div>
+            <span class="theme-label">{t('settings_theme_light')}</span>
+          </button>
+
+          <button
+            type="button"
+            class="theme-option"
+            class:active={settings.theme === 'dark'}
+            on:click={() => handleThemeChange('dark')}
+            role="radio"
+            aria-checked={settings.theme === 'dark'}
+          >
+            <div class="theme-preview theme-preview-dark">
+              <div class="preview-bar"></div>
+              <div class="preview-line"></div>
+              <div class="preview-line short"></div>
+              <div class="preview-dot"></div>
+            </div>
+            <span class="theme-label">{t('settings_theme_dark')}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="setting-divider"></div>
+
       <div class="setting-item">
         <div class="setting-info">
-          <span class="setting-label">Usar como nova aba</span>
+          <span class="setting-label">{t('settings_use_as_newtab')}</span>
           <span class="setting-description">
-            Substitui a página de nova aba do Chrome pelo dashboard do TabAla
+            {t('settings_newtab_description')}
           </span>
         </div>
         <button
@@ -74,7 +145,7 @@
           class:active={settings.newtabEnabled}
           on:click={toggleNewtab}
           aria-pressed={settings.newtabEnabled}
-          aria-label="Ativar como nova aba"
+          aria-label={t('settings_enable_newtab')}
         >
           <span class="toggle-track">
             <span class="toggle-thumb"></span>
@@ -85,19 +156,19 @@
       <div class="setting-divider"></div>
 
       <div class="setting-info-section">
-        <h3>Atalhos de teclado</h3>
+        <h3>{t('settings_keyboard_shortcuts')}</h3>
         <div class="shortcuts-list">
           <div class="shortcut">
             <kbd>/</kbd> ou <kbd>Ctrl+K</kbd>
-            <span>Buscar</span>
+            <span>{t('settings_shortcut_search')}</span>
           </div>
           <div class="shortcut">
             <kbd>N</kbd>
-            <span>Nova coleção</span>
+            <span>{t('settings_shortcut_new_collection')}</span>
           </div>
           <div class="shortcut">
             <kbd>Esc</kbd>
-            <span>Fechar modal</span>
+            <span>{t('settings_shortcut_close_modal')}</span>
           </div>
         </div>
       </div>
@@ -178,6 +249,166 @@
     padding: var(--space-5);
   }
 
+  /* Theme selector */
+  .setting-section h3 {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .theme-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+  }
+
+  .theme-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background: transparent;
+    border: 2px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+
+  .theme-option:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-overlay);
+  }
+
+  .theme-option.active {
+    border-color: var(--accent-primary);
+    background: var(--accent-soft);
+  }
+
+  .theme-option:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+
+  .theme-label {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .theme-option.active .theme-label {
+    color: var(--accent-primary);
+  }
+
+  /* Theme preview cards */
+  .theme-preview {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    gap: 4px;
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+
+  .theme-option:hover .theme-preview {
+    transform: scale(1.03);
+  }
+
+  .theme-preview-light {
+    background: #F8F6F3;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .theme-preview-dark {
+    background: #0F0E11;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .theme-preview-system {
+    flex-direction: row;
+    padding: 0;
+    gap: 0;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .preview-half {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    gap: 4px;
+  }
+
+  .preview-light {
+    background: #F8F6F3;
+  }
+
+  .preview-dark {
+    background: #0F0E11;
+  }
+
+  .preview-bar {
+    height: 4px;
+    border-radius: 2px;
+    width: 60%;
+  }
+
+  .theme-preview-light .preview-bar,
+  .preview-light .preview-bar {
+    background: #D14E35;
+  }
+
+  .theme-preview-dark .preview-bar,
+  .preview-dark .preview-bar {
+    background: #E85D42;
+  }
+
+  .preview-line {
+    height: 3px;
+    border-radius: 1.5px;
+    width: 80%;
+  }
+
+  .preview-line.short {
+    width: 50%;
+  }
+
+  .theme-preview-light .preview-line,
+  .preview-light .preview-line {
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  .theme-preview-dark .preview-line,
+  .preview-dark .preview-line {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .preview-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: auto;
+    align-self: flex-end;
+  }
+
+  .theme-preview-light .preview-dot {
+    background: rgba(0, 0, 0, 0.12);
+  }
+
+  .theme-preview-dark .preview-dot {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Settings items */
   .setting-item {
     display: flex;
     align-items: center;
@@ -317,6 +548,9 @@
   @media (prefers-reduced-motion: reduce) {
     .toggle-thumb {
       transition: transform var(--duration-fast) var(--ease-out);
+    }
+    .theme-option:hover .theme-preview {
+      transform: none;
     }
   }
 </style>

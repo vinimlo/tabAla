@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "TabAla",
-  "version": "1.0.0",
-  "description": "Sala de espera para links - organize abas temporariamente sem poluir seus bookmarks",
+  "name": "__MSG_app_name__",
+  "version": "1.0.2",
+  "description": "__MSG_app_description__",
+  "default_locale": "en",
   "author": "Vinícius Melo",
   "homepage_url": "https://github.com/vinimlo/tabAla",
   "icons": {
@@ -12,7 +13,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "TabAla",
+    "default_title": "__MSG_app_default_title__",
     "default_popup": "src/popup/index.html",
     "default_icon": {
       "16": "icons/icon16.png",

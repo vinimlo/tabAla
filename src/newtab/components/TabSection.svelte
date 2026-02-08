@@ -1,6 +1,8 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { slide } from 'svelte/transition';
+  import { t } from '@lib/i18n';
+  import { GROUP_COLORS } from '@/lib/tabs';
 
   export let title: string;
   export let count: number;
@@ -15,27 +17,10 @@
 
   let expanded = defaultExpanded;
 
-  // Chrome tab group colors to hex
-  const groupColors: Record<string, string> = {
-    grey: '#5F6368',
-    blue: '#1A73E8',
-    red: '#D93025',
-    yellow: '#F9AB00',
-    green: '#188038',
-    pink: '#D01884',
-    purple: '#9334E6',
-    cyan: '#007B83',
-    orange: '#E8710A',
-  };
-
-  $: colorHex = color ? groupColors[color] || color : undefined;
+  $: colorHex = color ? GROUP_COLORS[color] ?? color : undefined;
 
   function toggleExpanded(): void {
     expanded = !expanded;
-  }
-
-  function handleCreateCollection(): void {
-    dispatch('createCollection');
   }
 </script>
 
@@ -92,12 +77,12 @@
         <button
           type="button"
           class="btn-create-collection"
-          on:click|stopPropagation={handleCreateCollection}
+          on:click|stopPropagation={() => dispatch('createCollection')}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 5v14M5 12h14"/>
           </svg>
-          Criar colecao
+          {t('tabs_sidebar_create_collection')}
         </button>
       {/if}
     </div>
@@ -129,7 +114,7 @@
   }
 
   .section-header:hover {
-    background: var(--bg-tertiary);
+    background: var(--surface-overlay);
     color: var(--text-primary);
   }
 
@@ -162,7 +147,7 @@
     font-size: 0.625rem;
     font-weight: 500;
     color: var(--text-tertiary);
-    background: var(--bg-tertiary);
+    background: var(--surface-overlay);
     padding: 1px 5px;
     border-radius: var(--radius-full);
     flex-shrink: 0;
@@ -183,7 +168,7 @@
     padding: var(--space-2);
     margin-top: var(--space-1);
     background: transparent;
-    border: 1px dashed var(--border);
+    border: 1px dashed var(--border-default);
     border-radius: var(--radius-sm);
     color: var(--text-tertiary);
     font-family: inherit;
@@ -194,7 +179,7 @@
 
   .btn-create-collection:hover {
     background: var(--accent-soft);
-    border-color: var(--accent);
-    color: var(--accent);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
   }
 </style>

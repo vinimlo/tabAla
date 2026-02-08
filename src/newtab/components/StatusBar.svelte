@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, plural, formatRelativeTime, getWorkspaceDisplayName } from '@lib/i18n';
   import type { Link, Collection, Workspace } from '@/lib/types';
 
   export let links: Link[] = [];
@@ -8,20 +9,6 @@
   $: totalLinks = links.length;
   $: totalCollections = collections.length;
   $: lastSavedAt = links[0]?.createdAt ?? null;
-
-  function formatRelativeTime(timestamp: number): string {
-    const now = Date.now();
-    const diff = now - timestamp;
-
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 1) { return 'agora'; }
-    if (minutes < 60) { return `ha ${minutes} min`; }
-    if (hours < 24) { return `ha ${hours} hora${hours > 1 ? 's' : ''}`; }
-    return `ha ${days} dia${days > 1 ? 's' : ''}`;
-  }
 </script>
 
 <footer class="status-bar">
@@ -29,7 +16,7 @@
     {#if workspace}
       <span class="stat workspace">
         <span class="workspace-dot" style="--color: {workspace.color}"></span>
-        {workspace.name}
+        {getWorkspaceDisplayName(workspace)}
       </span>
       <span class="divider">•</span>
     {/if}
@@ -38,7 +25,7 @@
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
         <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
       </svg>
-      {totalLinks} link{totalLinks !== 1 ? 's' : ''}
+      {plural(totalLinks, 'statusbar_links_one', 'statusbar_links_many')}
     </span>
 
     <span class="divider">•</span>
@@ -47,7 +34,7 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
       </svg>
-      {totalCollections} colecao{totalCollections !== 1 ? 'es' : ''}
+      {plural(totalCollections, 'statusbar_collections_one', 'statusbar_collections_many')}
     </span>
 
     {#if lastSavedAt}
@@ -57,7 +44,7 @@
           <circle cx="12" cy="12" r="10"/>
           <polyline points="12 6 12 12 16 14"/>
         </svg>
-        Ultimo salvo: {formatRelativeTime(lastSavedAt)}
+        {t('statusbar_last_saved', formatRelativeTime(lastSavedAt))}
       </span>
     {/if}
   </div>

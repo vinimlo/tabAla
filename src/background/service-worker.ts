@@ -11,15 +11,16 @@ chrome.runtime.onInstalled.addListener((details) => {
 
   const reason = details.reason as string;
   if (reason === 'install' || reason === 'update') {
-    initializeInbox()
-      .then(() => {
+    void (async () => {
+      try {
+        await initializeInbox();
         // eslint-disable-next-line no-console
         console.log('[TabAla] Inbox collection initialized');
-      })
-      .catch((error) => {
+      } catch (error) {
         // eslint-disable-next-line no-console
         console.error('[TabAla] Failed to initialize Inbox:', error);
-      });
+      }
+    })();
   }
 });
 

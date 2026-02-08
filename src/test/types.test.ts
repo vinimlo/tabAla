@@ -4,23 +4,21 @@
 import { describe, it, expect } from 'vitest';
 import type { Link, Collection, InboxCollection } from '@/lib/types';
 import {
-  generateId,
   isValidHexColor,
   isValidUrl,
-  isInboxCollection,
   INBOX_COLLECTION_ID,
   INBOX_COLLECTION_NAME,
 } from '@/lib/types';
+import { createMockLink, createMockCollection } from './factories';
 
 describe('Link interface', () => {
   it('should accept a valid Link with all required fields', () => {
-    const link: Link = {
+    const link = createMockLink({
       id: '550e8400-e29b-41d4-a716-446655440000',
       url: 'https://example.com',
       title: 'Example Page',
       collectionId: 'inbox',
-      createdAt: Date.now(),
-    };
+    });
 
     expect(link.id).toBe('550e8400-e29b-41d4-a716-446655440000');
     expect(link.url).toBe('https://example.com');
@@ -31,35 +29,17 @@ describe('Link interface', () => {
   });
 
   it('should accept a valid Link with optional favicon', () => {
-    const link: Link = {
-      id: '550e8400-e29b-41d4-a716-446655440000',
-      url: 'https://example.com',
-      title: 'Example Page',
-      collectionId: 'inbox',
-      createdAt: Date.now(),
+    const link = createMockLink({
       favicon: 'https://example.com/favicon.ico',
-    };
+    });
 
     expect(link.favicon).toBe('https://example.com/favicon.ico');
   });
 
   it('should work with arrays of Links', () => {
     const links: Link[] = [
-      {
-        id: '1',
-        url: 'https://example1.com',
-        title: 'Example 1',
-        collectionId: 'inbox',
-        createdAt: Date.now(),
-      },
-      {
-        id: '2',
-        url: 'https://example2.com',
-        title: 'Example 2',
-        collectionId: 'reading',
-        createdAt: Date.now(),
-        favicon: 'https://example2.com/icon.png',
-      },
+      createMockLink({ id: '1', url: 'https://example1.com', title: 'Example 1' }),
+      createMockLink({ id: '2', url: 'https://example2.com', title: 'Example 2', collectionId: 'reading', favicon: 'https://example2.com/icon.png' }),
     ];
 
     expect(links).toHaveLength(2);
@@ -70,11 +50,10 @@ describe('Link interface', () => {
 
 describe('Collection interface', () => {
   it('should accept a valid Collection with all required fields', () => {
-    const collection: Collection = {
+    const collection = createMockCollection({
       id: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
       name: 'Reading List',
-      createdAt: Date.now(),
-    };
+    });
 
     expect(collection.id).toBe('7c9e6679-7425-40de-944b-e07fc1f90ae7');
     expect(collection.name).toBe('Reading List');
@@ -83,53 +62,23 @@ describe('Collection interface', () => {
   });
 
   it('should accept a valid Collection with optional color', () => {
-    const collection: Collection = {
-      id: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+    const collection = createMockCollection({
       name: 'Work',
-      createdAt: Date.now(),
       color: '#FF5733',
-    };
+    });
 
     expect(collection.color).toBe('#FF5733');
   });
 
   it('should work with arrays of Collections', () => {
     const collections: Collection[] = [
-      {
-        id: 'inbox',
-        name: 'Inbox',
-        createdAt: Date.now(),
-      },
-      {
-        id: 'work',
-        name: 'Work',
-        createdAt: Date.now(),
-        color: '#3498DB',
-      },
+      createMockCollection({ id: 'inbox', name: 'Inbox' }),
+      createMockCollection({ id: 'work', name: 'Work', color: '#3498DB' }),
     ];
 
     expect(collections).toHaveLength(2);
     expect(collections[0].color).toBeUndefined();
     expect(collections[1].color).toBe('#3498DB');
-  });
-});
-
-describe('generateId()', () => {
-  it('should return a string in UUID v4 format', () => {
-    const id = generateId();
-    const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-    expect(typeof id).toBe('string');
-    expect(id).toMatch(uuidV4Regex);
-  });
-
-  it('should generate unique IDs on each call', () => {
-    const ids = new Set<string>();
-    for (let i = 0; i < 100; i++) {
-      ids.add(generateId());
-    }
-
-    expect(ids.size).toBe(100);
   });
 });
 
@@ -298,69 +247,17 @@ describe('InboxCollection interface', () => {
   });
 });
 
-describe('isInboxCollection', () => {
-  it('should return true for collection with inbox id', () => {
-    const inbox: Collection = {
-      id: INBOX_COLLECTION_ID,
-      name: 'Inbox',
-      order: 0,
-    };
-    expect(isInboxCollection(inbox)).toBe(true);
-  });
-
-  it('should return false for collection with different id', () => {
-    const collection: Collection = {
-      id: 'other',
-      name: 'Other',
-      order: 1,
-    };
-    expect(isInboxCollection(collection)).toBe(false);
-  });
-
-  it('should return false for collection with similar id', () => {
-    const collection: Collection = {
-      id: 'inbox2',
-      name: 'Inbox 2',
-      order: 1,
-    };
-    expect(isInboxCollection(collection)).toBe(false);
-  });
-});
-
 describe('Type integration', () => {
   it('should allow Link.collectionId to reference Collection.id', () => {
-    const collection: Collection = {
-      id: 'reading-list',
-      name: 'Reading List',
-      createdAt: Date.now(),
-      color: '#3498DB',
-    };
-
-    const link: Link = {
-      id: generateId(),
-      url: 'https://example.com/article',
-      title: 'Interesting Article',
-      collectionId: collection.id,
-      createdAt: Date.now(),
-    };
+    const collection = createMockCollection({ id: 'reading-list', name: 'Reading List', color: '#3498DB' });
+    const link = createMockLink({ collectionId: collection.id, title: 'Interesting Article' });
 
     expect(link.collectionId).toBe(collection.id);
   });
 
-  it('should work with generateId() for creating new entities', () => {
-    const collection: Collection = {
-      id: generateId(),
-      name: 'New Collection',
-      createdAt: Date.now(),
-    };
-
-    const link: Link = {
-      id: generateId(),
-      url: 'https://example.com',
-      title: 'New Link',
-      collectionId: collection.id,
-      createdAt: Date.now(),
-    };
+  it('should work with crypto.randomUUID() for creating new entities', () => {
+    const collection = createMockCollection({ id: crypto.randomUUID(), name: 'New Collection' });
+    const link = createMockLink({ id: crypto.randomUUID(), collectionId: collection.id });
 
     expect(collection.id).not.toBe(link.id);
     expect(link.collectionId).toBe(collection.id);

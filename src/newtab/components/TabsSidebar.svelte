@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+  import { t } from '@lib/i18n';
   import type { OrganizedTabs, BrowserTab, TabGroup } from '@/lib/tabs';
   import { getOrganizedTabs, focusTab, closeTab } from '@/lib/tabs';
   import TabSection from './TabSection.svelte';
@@ -28,14 +29,10 @@
 
   onMount(async () => {
     await loadTabs();
-    setupTabListeners();
+    cleanupListeners = setupTabListeners();
   });
 
-  onDestroy(() => {
-    if (cleanupListeners) {
-      cleanupListeners();
-    }
-  });
+  onDestroy(() => cleanupListeners?.());
 
   async function loadTabs(): Promise<void> {
     loading = true;
@@ -48,33 +45,29 @@
     }
   }
 
-  function setupTabListeners(): void {
-    const handleTabChange = (): void => {
-      void loadTabs();
-    };
+  function setupTabListeners(): () => void {
+    const handleTabChange = (): void => { void loadTabs(); };
 
-    chrome.tabs.onCreated.addListener(handleTabChange);
-    chrome.tabs.onRemoved.addListener(handleTabChange);
-    chrome.tabs.onUpdated.addListener(handleTabChange);
-    chrome.tabs.onActivated.addListener(handleTabChange);
+    const tabEvents = [
+      chrome.tabs.onCreated,
+      chrome.tabs.onRemoved,
+      chrome.tabs.onUpdated,
+      chrome.tabs.onActivated,
+    ];
 
-    // Tab groups events if available
-    if (chrome.tabGroups !== undefined) {
-      chrome.tabGroups.onUpdated.addListener(handleTabChange);
-      chrome.tabGroups.onCreated.addListener(handleTabChange);
-      chrome.tabGroups.onRemoved.addListener(handleTabChange);
+    const groupEvents = chrome.tabGroups !== undefined
+      ? [chrome.tabGroups.onUpdated, chrome.tabGroups.onCreated, chrome.tabGroups.onRemoved]
+      : [];
+
+    const allEvents = [...tabEvents, ...groupEvents];
+
+    for (const event of allEvents) {
+      event.addListener(handleTabChange);
     }
 
-    cleanupListeners = () => {
-      chrome.tabs.onCreated.removeListener(handleTabChange);
-      chrome.tabs.onRemoved.removeListener(handleTabChange);
-      chrome.tabs.onUpdated.removeListener(handleTabChange);
-      chrome.tabs.onActivated.removeListener(handleTabChange);
-
-      if (chrome.tabGroups !== undefined) {
-        chrome.tabGroups.onUpdated.removeListener(handleTabChange);
-        chrome.tabGroups.onCreated.removeListener(handleTabChange);
-        chrome.tabGroups.onRemoved.removeListener(handleTabChange);
+    return () => {
+      for (const event of allEvents) {
+        event.removeListener(handleTabChange);
       }
     };
   }
@@ -117,14 +110,14 @@
   {#if expanded}
     <header class="sidebar-header">
       <h2 class="sidebar-title">
-        Abas Abertas
+        {t('tabs_sidebar_title')}
         <span class="tab-count">{totalTabs}</span>
       </h2>
       <button
         type="button"
         class="btn-toggle"
         on:click={toggleSidebar}
-        aria-label="Fechar sidebar"
+        aria-label={t('tabs_sidebar_close')}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M15 18l-6-6 6-6"/>
@@ -132,19 +125,20 @@
       </button>
     </header>
 
-    <div class="sidebar-content">
+    <div class="sidebar-content scrollbar-thin">
       {#if loading}
         <div class="loading-state">
-          <span>Carregando...</span>
+          <span>{t('tabs_sidebar_loading')}</span>
         </div>
       {:else}
         {#if organizedTabs.pinned.length > 0}
-          <TabSection title="Pinadas" count={organizedTabs.pinned.length} icon="pin" defaultExpanded>
+          <TabSection title={t('tabs_sidebar_pinned')} count={organizedTabs.pinned.length} icon="pin" defaultExpanded>
             {#each organizedTabs.pinned as tab (tab.id)}
               <TabItem
                 {tab}
                 isActive={tab.id === organizedTabs.activeTabId}
                 isPinned
+                groupColor={undefined}
                 on:click={() => handleTabClick(tab)}
                 on:close={() => handleTabClose(tab)}
                 on:dragstart={(e) => handleTabDragStart(e.detail, tab)}
@@ -156,7 +150,7 @@
         {#each Array.from(organizedTabs.groups.entries()) as [groupId, { group, tabs }] (groupId)}
           {#if tabs.length > 0}
             <TabSection
-              title={group.title || 'Grupo sem nome'}
+              title={group.title || t('tabs_sidebar_unnamed_group')}
               count={tabs.length}
               icon="group"
               color={group.color}
@@ -178,11 +172,12 @@
         {/each}
 
         {#if organizedTabs.ungrouped.length > 0}
-          <TabSection title="Outras abas" count={organizedTabs.ungrouped.length} icon="tabs" defaultExpanded>
+          <TabSection title={t('tabs_sidebar_other_tabs')} count={organizedTabs.ungrouped.length} icon="tabs" defaultExpanded>
             {#each organizedTabs.ungrouped as tab (tab.id)}
               <TabItem
                 {tab}
                 isActive={tab.id === organizedTabs.activeTabId}
+                groupColor={undefined}
                 on:click={() => handleTabClick(tab)}
                 on:close={() => handleTabClose(tab)}
                 on:dragstart={(e) => handleTabDragStart(e.detail, tab)}
@@ -193,7 +188,7 @@
 
         {#if totalTabs === 0}
           <div class="empty-state">
-            <span>Nenhuma aba aberta</span>
+            <span>{t('tabs_sidebar_no_tabs')}</span>
           </div>
         {/if}
       {/if}
@@ -203,7 +198,7 @@
       type="button"
       class="sidebar-collapsed"
       on:click={toggleSidebar}
-      aria-label="Abrir sidebar de abas"
+      aria-label={t('tabs_sidebar_open')}
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -294,23 +289,6 @@
     flex: 1;
     overflow-y: auto;
     padding: var(--space-2);
-  }
-
-  .sidebar-content::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .sidebar-content::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .sidebar-content::-webkit-scrollbar-thumb {
-    background-color: var(--border-default);
-    border-radius: var(--radius-full);
-  }
-
-  .sidebar-content::-webkit-scrollbar-thumb:hover {
-    background-color: var(--border-strong);
   }
 
   .sidebar-collapsed {

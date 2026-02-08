@@ -1,113 +1,113 @@
-# Contribuindo para o TabAla
+# Contributing to TabAla
 
-Obrigado pelo interesse em contribuir! Este guia contém tudo que você precisa para começar.
+Thank you for your interest in contributing! This guide contains everything you need to get started.
 
-## Pré-requisitos
+## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) 20.10+
 - [Docker Compose](https://docs.docker.com/compose/install/)
 - [Make](https://www.gnu.org/software/make/)
-- Google Chrome ou Chromium
+- Google Chrome or Chromium
 
-## Setup de Desenvolvimento
+## Development Setup
 
 ```bash
-# Clone o repositório
+# Clone the repository
 git clone https://github.com/vinimlo/tabAla.git
 cd tabAla
 
-# Inicie o ambiente de desenvolvimento
+# Start the development environment
 make dev
 ```
 
-### Comandos Disponíveis
+### Available Commands
 
-Todos os comandos são executados via Docker através do Makefile:
+All commands are executed via Docker through the Makefile:
 
-| Comando | Descrição |
-|---------|-----------|
-| `make help` | Lista todos os comandos disponíveis |
-| `make dev` | Inicia servidor de desenvolvimento (modo interativo) |
-| `make dev-detached` | Inicia servidor de desenvolvimento (background) |
-| `make build` | Compila a extensão para produção |
-| `make test` | Executa suite de testes com Vitest |
-| `make test-watch` | Executa testes em modo watch |
-| `make test-ui` | Abre interface visual do Vitest |
-| `make test-coverage` | Gera relatório de cobertura de testes |
-| `make lint` | Executa ESLint para validação de código |
-| `make lint-fix` | Executa ESLint com auto-correção |
-| `make shell` | Abre shell interativo no container |
-| `make lockfile` | Regenera package-lock.json |
-| `make clean` | Remove artefatos de build (dist/) |
-| `make stop` | Para todos os containers em execução |
+| Command | Description |
+|---------|-------------|
+| `make help` | List all available commands |
+| `make dev` | Start development server (interactive mode) |
+| `make dev-detached` | Start development server (background) |
+| `make build` | Build the extension for production |
+| `make test` | Run test suite with Vitest |
+| `make test-watch` | Run tests in watch mode |
+| `make test-ui` | Open Vitest visual interface |
+| `make test-coverage` | Generate test coverage report |
+| `make lint` | Run ESLint for code validation |
+| `make lint-fix` | Run ESLint with auto-fix |
+| `make shell` | Open interactive shell in the container |
+| `make lockfile` | Regenerate package-lock.json |
+| `make clean` | Remove build artifacts (dist/) |
+| `make stop` | Stop all running containers |
 
-> **Nota:** Não execute comandos npm diretamente. Use sempre os comandos make para garantir consistência de ambiente.
+> **Note:** Do not run npm commands directly. Always use make commands to ensure environment consistency.
 
-### Carregando a Extensão no Chrome
+### Loading the Extension in Chrome
 
-1. Execute `make build`
-2. Acesse `chrome://extensions`
-3. Ative "Modo desenvolvedor" no canto superior direito
-4. Clique em "Carregar sem compactação"
-5. Selecione a pasta `dist/`
+1. Run `make build`
+2. Go to `chrome://extensions`
+3. Enable "Developer mode" in the top right corner
+4. Click "Load unpacked"
+5. Select the `dist/` folder
 
-Para recarregar após mudanças: clique no ícone de reload (🔄) no card da extensão.
+To reload after changes: click the reload icon (🔄) on the extension card.
 
-## Arquitetura
+## Architecture
 
-### Stack Tecnológica
+### Tech Stack
 
-| Tecnologia | Uso |
-|------------|-----|
-| [Svelte](https://svelte.dev/) | UI reativa e leve |
-| [TypeScript](https://www.typescriptlang.org/) | Tipagem estática |
-| [Vite](https://vitejs.dev/) | Build rápido |
-| [Vitest](https://vitest.dev/) | Testes unitários |
-| [Docker](https://www.docker.com/) | Ambiente de desenvolvimento |
-| [Chrome Extension Manifest V3](https://developer.chrome.com/docs/extensions/mv3/) | Plataforma |
+| Technology | Usage |
+|------------|-------|
+| [Svelte](https://svelte.dev/) | Lightweight reactive UI |
+| [TypeScript](https://www.typescriptlang.org/) | Static typing |
+| [Vite](https://vitejs.dev/) | Fast builds |
+| [Vitest](https://vitest.dev/) | Unit testing |
+| [Docker](https://www.docker.com/) | Development environment |
+| [Chrome Extension Manifest V3](https://developer.chrome.com/docs/extensions/mv3/) | Platform |
 
-### Estrutura de Pastas
+### Folder Structure
 
 ```
 tabAla/
 ├── src/
-│   ├── popup/           # UI do popup (Svelte)
+│   ├── popup/           # Popup UI (Svelte)
 │   │   ├── App.svelte
 │   │   ├── components/
 │   │   └── stores/
 │   ├── background/      # Service worker
 │   │   └── index.ts
-│   ├── lib/             # Lógica compartilhada
-│   │   ├── storage.ts   # Wrapper chrome.storage
-│   │   └── types.ts     # Tipos TypeScript
+│   ├── lib/             # Shared logic
+│   │   ├── storage.ts   # chrome.storage wrapper
+│   │   └── types.ts     # TypeScript types
 │   └── manifest.json    # Manifest V3
-├── public/              # Assets estáticos (icons)
-├── tests/               # Testes unitários
-├── docs/                # Documentação
+├── public/              # Static assets (icons)
+├── tests/               # Unit tests
+├── docs/                # Documentation
 │   └── mvp.md
 ├── dist/                # Build output (gitignore)
-├── Dockerfile           # Imagem de desenvolvimento
-├── docker-compose.yml   # Orquestração dos containers
-└── Makefile             # Comandos de automação
+├── Dockerfile           # Development image
+├── docker-compose.yml   # Container orchestration
+└── Makefile             # Automation commands
 ```
 
-### Componentes Principais
+### Main Components
 
-- **Popup**: Interface Svelte renderizada ao clicar no ícone da extensão
-- **Service Worker**: Background script para comandos e atalhos
-- **Storage Layer**: Abstração sobre chrome.storage.local
+- **Popup**: Svelte interface rendered when clicking the extension icon
+- **Service Worker**: Background script for commands and shortcuts
+- **Storage Layer**: Abstraction over chrome.storage.local
 
-### Fluxo de Dados
+### Data Flow
 
 ```
-[Usuário] → [Popup/Atalho] → [Storage Layer] → [chrome.storage.local]
+[User] → [Popup/Shortcut] → [Storage Layer] → [chrome.storage.local]
                                     ↓
                               [State Store (Svelte)]
                                     ↓
-                              [UI atualizada]
+                              [Updated UI]
 ```
 
-### Entidades
+### Entities
 
 ```typescript
 interface Link {
@@ -126,90 +126,90 @@ interface Collection {
 }
 ```
 
-### Regras de Negócio
+### Business Rules
 
-- **Inbox**: Coleção padrão que sempre existe e não pode ser excluída
-- **Links órfãos**: Links de coleções excluídas vão para Inbox
-- **Unicidade**: Mesmo URL pode existir em múltiplas coleções
-- **Ordenação**: Links ordenados por data (mais recente primeiro)
+- **Inbox**: Default collection that always exists and cannot be deleted
+- **Orphan links**: Links from deleted collections are moved to Inbox
+- **Uniqueness**: The same URL can exist in multiple collections
+- **Sorting**: Links sorted by date (most recent first)
 
-## Convenções de Código
+## Code Conventions
 
-- Componentes Svelte: PascalCase (`LinkItem.svelte`)
-- Funções/variáveis: camelCase
-- Constantes: UPPER_SNAKE_CASE
-- Tipos/Interfaces: PascalCase
-- Preferir `const` sobre `let`
-- Usar async/await (nunca callbacks para storage)
+- Svelte components: PascalCase (`LinkItem.svelte`)
+- Functions/variables: camelCase
+- Constants: UPPER_SNAKE_CASE
+- Types/Interfaces: PascalCase
+- Prefer `const` over `let`
+- Use async/await (never callbacks for storage)
 
 ### Anti-Patterns
 
-- **Não usar** APIs síncronas do chrome.storage (deprecated)
-- **Não armazenar** dados sensíveis (senhas, tokens)
-- **Não usar** Manifest V2 - sempre V3
-- **Evitar** bundle grande - manter extensão leve (<500KB)
-- **Não bloquear** UI durante operações de storage
-- **Nunca** hardcodar credenciais ou API keys
+- **Do not use** synchronous chrome.storage APIs (deprecated)
+- **Do not store** sensitive data (passwords, tokens)
+- **Do not use** Manifest V2 — always V3
+- **Avoid** large bundles — keep the extension lightweight (<500KB)
+- **Do not block** UI during storage operations
+- **Never** hardcode credentials or API keys
 
-## Testes
+## Tests
 
 ```bash
-# Executar todos os testes
+# Run all tests
 make test
 
-# Executar em modo watch (rerun ao salvar)
+# Run in watch mode (rerun on save)
 make test-watch
 
-# Abrir interface visual do Vitest
+# Open Vitest visual interface
 make test-ui
 
-# Gerar relatório de cobertura
+# Generate coverage report
 make test-coverage
 ```
 
 ## Troubleshooting
 
-### Container não inicia
+### Container does not start
 
-- Verifique se a porta 5173 não está em uso: `lsof -i :5173`
-- Confirme que o Docker está rodando: `docker info`
+- Check if port 5173 is in use: `lsof -i :5173`
+- Confirm Docker is running: `docker info`
 
-### Hot-reload não funciona
+### Hot-reload is not working
 
-- Certifique-se de que o volume está montado corretamente
-- Em macOS/Windows, habilite file sharing para o diretório do projeto
-- Verifique os logs: `docker-compose logs -f`
+- Make sure the volume is mounted correctly
+- On macOS/Windows, enable file sharing for the project directory
+- Check the logs: `docker-compose logs -f`
 
-### Erros de permissão
+### Permission errors
 
-- O container executa como usuário `node` (uid 1000)
-- Se necessário, ajuste permissões: `chmod -R 755 .`
+- The container runs as user `node` (uid 1000)
+- If needed, adjust permissions: `chmod -R 755 .`
 
-### Extensão não aparece no Chrome
+### Extension does not appear in Chrome
 
-- Verifique se o `make build` executou sem erros
-- Confirme que a pasta `dist/` existe e contém o `manifest.json`
-- Tente remover a extensão e carregar novamente
+- Verify that `make build` ran without errors
+- Confirm the `dist/` folder exists and contains `manifest.json`
+- Try removing the extension and loading it again
 
-### Mudanças não aparecem na extensão
+### Changes do not appear in the extension
 
-- Rode `make build` para gerar o novo bundle
-- Em `chrome://extensions`, clique no ícone de reload (🔄) da extensão
-- Se persistir, remova a extensão e carregue novamente
+- Run `make build` to generate the new bundle
+- In `chrome://extensions`, click the reload icon (🔄) on the extension
+- If it persists, remove the extension and load it again
 
-## Fluxo de Contribuição
+## Contribution Workflow
 
-1. Fork o projeto
-2. Crie uma branch (`git checkout -b feature/nova-feature`)
-3. Faça suas alterações
-4. Execute os testes (`make test`)
-5. Valide o código (`make lint`)
-6. Commit suas mudanças (`git commit -m 'Adiciona nova feature'`)
-7. Push para a branch (`git push origin feature/nova-feature`)
-8. Abra um Pull Request
+1. Fork the project
+2. Create a branch (`git checkout -b feature/new-feature`)
+3. Make your changes
+4. Run the tests (`make test`)
+5. Validate the code (`make lint`)
+6. Commit your changes (`git commit -m 'Add new feature'`)
+7. Push to the branch (`git push origin feature/new-feature`)
+8. Open a Pull Request
 
-## Links Úteis
+## Useful Links
 
 - [Chrome Extensions Docs](https://developer.chrome.com/docs/extensions/)
 - [Svelte Docs](https://svelte.dev/docs)
-- [docs/mvp.md](./docs/mvp.md) - Especificação completa do MVP
+- [docs/mvp.md](./docs/mvp.md) — Full MVP specification

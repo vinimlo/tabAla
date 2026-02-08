@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { flip } from 'svelte/animate';
   import { dndzone, SOURCES, TRIGGERS } from 'svelte-dnd-action';
+  import { t, getCollectionDisplayName, getWorkspaceDisplayName } from '@lib/i18n';
   import type { Collection, Link, Workspace } from '@/lib/types';
   import { INBOX_COLLECTION_ID } from '@/lib/types';
   import LinkCard from './LinkCard.svelte';
@@ -9,12 +10,12 @@
   export let collection: Collection;
   export let links: Link[] = [];
   export let searchQuery: string = '';
-  export let dragDisabled: boolean = false;
   export let workspaces: Workspace[] = [];
   export let currentWorkspaceId: string = '';
 
   const dispatch = createEventDispatcher<{
     openLink: Link;
+    openLinkInNewTab: Link;
     removeLink: { id: string; title: string };
     moveLink: { linkId: string; toCollectionId: string };
     renameCollection: { id: string; newName: string };
@@ -104,14 +105,6 @@
     showMoveSubmenu = false;
   }
 
-  function openMoveSubmenu(): void {
-    showMoveSubmenu = true;
-  }
-
-  function closeMoveSubmenu(): void {
-    showMoveSubmenu = false;
-  }
-
   function handleMoveToWorkspace(workspaceId: string): void {
     closeMenu();
     dispatch('moveToWorkspace', {
@@ -124,7 +117,7 @@
     closeMenu();
     dispatch('deleteCollection', {
       id: collection.id,
-      name: collection.name,
+      name: getCollectionDisplayName(collection),
       linkCount: links.length,
     });
   }
@@ -132,16 +125,8 @@
   function handleOpenAll(): void {
     closeMenu();
     for (const link of filteredLinks) {
-      dispatch('openLink', link);
+      dispatch('openLinkInNewTab', link);
     }
-  }
-
-  function handleOpenLink(event: CustomEvent<Link>): void {
-    dispatch('openLink', event.detail);
-  }
-
-  function handleRemoveLink(event: CustomEvent<{ id: string; title: string }>): void {
-    dispatch('removeLink', event.detail);
   }
 
   function handleClickOutside(event: MouseEvent): void {
@@ -155,8 +140,7 @@
   }
 
   function handleNativeDragOver(event: DragEvent): void {
-    // Check if this is a tab drag (from sidebar)
-    if (event.dataTransfer !== null && event.dataTransfer.types.includes('application/json')) {
+    if (event.dataTransfer?.types.includes('application/json')) {
       event.preventDefault();
       event.dataTransfer.dropEffect = 'copy';
       isTabDragOver = true;
@@ -226,9 +210,9 @@
           class="column-title"
           class:editable={!isInbox}
           on:dblclick={startEditing}
-          title={isInbox ? 'Inbox' : 'Clique duplo para renomear'}
+          title={isInbox ? t('common_inbox') : t('column_double_click_rename')}
         >
-          {collection.name}
+          {getCollectionDisplayName(collection)}
           <span class="link-count">{filteredLinks.length}</span>
         </button>
       {/if}
@@ -239,7 +223,7 @@
             type="button"
             class="btn-menu"
             on:click|stopPropagation={toggleMenu}
-            aria-label="Menu da colecao"
+            aria-label={t('column_menu')}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <circle cx="12" cy="12" r="1"/>
@@ -256,17 +240,17 @@
                   <polyline points="15 3 21 3 21 9"/>
                   <line x1="10" y1="14" x2="21" y2="3"/>
                 </svg>
-                Abrir todos
+                {t('column_open_all')}
               </button>
               {#if otherWorkspaces.length > 0}
                 <!-- svelte-ignore a11y-no-static-element-interactions -->
-                <div class="menu-item-with-submenu" on:mouseenter={openMoveSubmenu} on:mouseleave={closeMoveSubmenu}>
-                  <button type="button" class="menu-item" on:click|stopPropagation={openMoveSubmenu}>
+                <div class="menu-item-with-submenu" on:mouseenter={() => showMoveSubmenu = true} on:mouseleave={() => showMoveSubmenu = false}>
+                  <button type="button" class="menu-item" on:click|stopPropagation={() => showMoveSubmenu = true}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                       <path d="M12 11v6M9 14l3-3 3 3"/>
                     </svg>
-                    Mover para...
+                    {t('column_move_to')}
                     <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <polyline points="9 18 15 12 9 6"/>
                     </svg>
@@ -284,7 +268,7 @@
                             class:is-default={ws.isDefault === true}
                             style="--color: {ws.color}"
                           ></span>
-                          {ws.name}
+                          {getWorkspaceDisplayName(ws)}
                         </button>
                       {/each}
                     </div>
@@ -296,7 +280,7 @@
                   <polyline points="3 6 5 6 21 6"/>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                 </svg>
-                Excluir colecao
+                {t('column_delete_collection')}
               </button>
             </div>
           {/if}
@@ -305,13 +289,13 @@
     </header>
 
     <div
-      class="column-content"
+      class="column-content scrollbar-thin"
       use:dndzone={{
         items: filteredLinks,
         flipDurationMs,
         dropTargetStyle: {},
         dropTargetClasses: ['drop-target'],
-        dragDisabled: dragDisabled,
+        dragDisabled: false,
         type: 'links',
       }}
       on:consider={handleDndConsider}
@@ -321,16 +305,17 @@
         <div animate:flip={{ duration: flipDurationMs }}>
           <LinkCard
             {link}
-            on:open={handleOpenLink}
-            on:remove={handleRemoveLink}
+            on:open={(e) => dispatch('openLink', e.detail)}
+            on:openInNewTab={(e) => dispatch('openLinkInNewTab', e.detail)}
+            on:remove={(e) => dispatch('removeLink', e.detail)}
           />
         </div>
       {:else}
         <div class="empty-column">
           {#if searchQuery}
-            <span>Nenhum resultado</span>
+            <span>{t('newtab_no_results')}</span>
           {:else}
-            <span>Arraste links aqui</span>
+            <span>{t('newtab_drag_links_here')}</span>
           {/if}
         </div>
       {/each}
@@ -511,7 +496,7 @@
   }
 
   .menu-item-danger:hover {
-    background: rgba(212, 114, 106, 0.12);
+    background: var(--semantic-error-soft);
     color: var(--semantic-error);
   }
 
@@ -544,8 +529,8 @@
     background-color: var(--color);
     flex-shrink: 0;
     box-shadow:
-      0 0 0 1.5px rgba(255, 255, 255, 0.1),
-      0 1px 3px rgba(0, 0, 0, 0.3);
+      0 0 0 1.5px var(--border-default),
+      0 1px 3px var(--shadow-sm);
   }
 
   .workspace-dot.is-default {
@@ -560,23 +545,6 @@
     gap: var(--space-2);
     overflow-y: auto;
     min-height: 100px;
-  }
-
-  .column-content::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .column-content::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .column-content::-webkit-scrollbar-thumb {
-    background-color: var(--border-default);
-    border-radius: var(--radius-full);
-  }
-
-  .column-content::-webkit-scrollbar-thumb:hover {
-    background-color: var(--border-strong);
   }
 
   :global(.column-content.drop-target) {

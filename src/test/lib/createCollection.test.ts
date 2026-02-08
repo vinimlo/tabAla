@@ -2,7 +2,7 @@
  * Unit tests for createCollection storage function.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mockStorage } from '../setup';
+import { clearMockStorage } from '../setup';
 import {
   createCollection,
   getCollections,
@@ -10,20 +10,12 @@ import {
   StorageError,
 } from '@/lib/storage';
 import { COLLECTION_NAME_ERRORS } from '@/lib/validation';
-import type { Collection } from '@/lib/types';
-
-const createMockCollection = (overrides: Partial<Collection> = {}): Collection => ({
-  id: 'col-1',
-  name: 'Test Collection',
-  order: 0,
-  createdAt: Date.now(),
-  ...overrides,
-});
+import { createMockCollection } from '../factories';
 
 describe('createCollection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
+    clearMockStorage();
   });
 
   describe('successful creation', () => {
@@ -93,7 +85,7 @@ describe('createCollection', () => {
     it('should throw StorageError for empty name', async () => {
       await expect(createCollection({ name: '' })).rejects.toThrow(StorageError);
       await expect(createCollection({ name: '' })).rejects.toThrow(
-        COLLECTION_NAME_ERRORS.EMPTY
+        COLLECTION_NAME_ERRORS.EMPTY()
       );
     });
 
@@ -106,7 +98,7 @@ describe('createCollection', () => {
 
       await expect(createCollection({ name: 'Duplicada' })).rejects.toThrow(StorageError);
       await expect(createCollection({ name: 'Duplicada' })).rejects.toThrow(
-        COLLECTION_NAME_ERRORS.DUPLICATE
+        COLLECTION_NAME_ERRORS.DUPLICATE()
       );
     });
 

@@ -1,12 +1,14 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import type { Workspace, CreateWorkspaceInput } from '@/lib/types';
   import { WORKSPACE_COLORS, DEFAULT_WORKSPACE_ID } from '@/lib/types';
   import {
     WORKSPACE_NAME_MAX_LENGTH,
     WORKSPACE_DESCRIPTION_MAX_LENGTH,
+    validateWorkspaceName,
   } from '@/lib/validation';
+  import { t, getWorkspaceDisplayName } from '@lib/i18n';
 
   export let workspace: Workspace | null = null;
   export let existingNames: string[] = [];
@@ -16,7 +18,7 @@
     cancel: void;
   }>();
 
-  let name = workspace?.name ?? '';
+  let name = workspace ? getWorkspaceDisplayName(workspace) : '';
   let description = workspace?.description ?? '';
   let color = workspace?.color ?? WORKSPACE_COLORS[0];
   let inputElement: HTMLInputElement;
@@ -27,35 +29,16 @@
   $: isDefault = workspace?.id === DEFAULT_WORKSPACE_ID || workspace?.isDefault === true;
   $: trimmedName = name.trim();
   $: trimmedDescription = description.trim();
-  $: {
-    if (trimmedName === '') {
-      validationError = null;
-    } else {
-      validationError = validateName(trimmedName);
-    }
-  }
+  $: validationError = trimmedName === '' ? null : validateName(trimmedName);
   $: canSubmit = trimmedName.length > 0 && validationError === null && !isSubmitting;
 
   function validateName(value: string): string | null {
-    if (value.length === 0) {
-      return 'Nome do workspace não pode estar vazio';
-    }
-
-    if (value.length > WORKSPACE_NAME_MAX_LENGTH) {
-      return `O nome deve ter no máximo ${WORKSPACE_NAME_MAX_LENGTH} caracteres`;
-    }
-
-    const nameLower = value.toLowerCase();
-    const currentName = workspace?.name?.toLowerCase();
-    const isDuplicate = existingNames.some(
-      (existing) => existing.toLowerCase() === nameLower && existing.toLowerCase() !== currentName
-    );
-
-    if (isDuplicate) {
-      return 'Já existe um workspace com este nome';
-    }
-
-    return null;
+    // When editing, exclude the current workspace's name from duplicates
+    const namesToCheck = workspace
+      ? existingNames.filter((n) => n.toLowerCase() !== workspace!.name.toLowerCase())
+      : existingNames;
+    const result = validateWorkspaceName(value, namesToCheck);
+    return result.valid ? null : (result.error ?? null);
   }
 
   function handleSubmit(): void {
@@ -77,13 +60,9 @@
     });
   }
 
-  function handleCancel(): void {
-    dispatch('cancel');
-  }
-
   function handleKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
-      handleCancel();
+      dispatch('cancel');
     } else if (event.key === 'Enter' && canSubmit && event.target === inputElement) {
       handleSubmit();
     }
@@ -91,7 +70,7 @@
 
   function handleBackdropClick(event: MouseEvent): void {
     if (event.target === event.currentTarget) {
-      handleCancel();
+      dispatch('cancel');
     }
   }
 
@@ -111,25 +90,18 @@
     }
   }
 
-  function selectColor(c: string): void {
-    color = c;
-  }
-
   onMount(() => {
-    name = workspace?.name ?? '';
+    name = workspace ? getWorkspaceDisplayName(workspace) : '';
     description = workspace?.description ?? '';
     color = workspace?.color ?? WORKSPACE_COLORS[0];
     isSubmitting = false;
     validationError = null;
 
-    document.addEventListener('keydown', handleKeydown);
     setTimeout(() => inputElement?.focus(), 50);
   });
-
-  onDestroy(() => {
-    document.removeEventListener('keydown', handleKeydown);
-  });
 </script>
+
+<svelte:window on:keydown={handleKeydown} />
 
 <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <div
@@ -146,12 +118,12 @@
     transition:scale={{ duration: 200, start: 0.95, opacity: 0 }}
   >
     <div class="modal-header">
-      <h2 id="modal-title">{isEditing ? 'Editar Workspace' : 'Novo Workspace'}</h2>
+      <h2 id="modal-title">{isEditing ? t('workspace_modal_edit_title') : t('workspace_modal_new_title')}</h2>
       <button
         type="button"
         class="close-btn"
-        on:click={handleCancel}
-        aria-label="Fechar"
+        on:click={() => dispatch('cancel')}
+        aria-label={t('common_close')}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <path d="M18 6L6 18M6 6l12 12"/>
@@ -162,7 +134,7 @@
     <form on:submit|preventDefault={handleSubmit}>
       <div class="field">
         <label for="workspace-name">
-          Nome <span class="required">*</span>
+          {t('common_name')} <span class="required">{t('workspace_modal_name_required')}</span>
         </label>
         <div class="input-wrapper" class:has-error={validationError !== null}>
           <input
@@ -171,7 +143,7 @@
             bind:this={inputElement}
             bind:value={name}
             on:input={handleNameInput}
-            placeholder="Ex: Trabalho, Pessoal, Projeto X"
+            placeholder={t('workspace_modal_example')}
             maxlength={WORKSPACE_NAME_MAX_LENGTH}
             aria-describedby={validationError ? 'error-message' : undefined}
             aria-invalid={validationError !== null}
@@ -180,7 +152,7 @@
           <span class="char-count">{trimmedName.length}/{WORKSPACE_NAME_MAX_LENGTH}</span>
         </div>
         {#if isDefault}
-          <p class="hint">O nome do workspace padrão não pode ser alterado</p>
+          <p class="hint">{t('workspace_modal_default_hint')}</p>
         {/if}
         {#if validationError}
           <p id="error-message" class="error-message">{validationError}</p>
@@ -188,13 +160,13 @@
       </div>
 
       <div class="field">
-        <label for="workspace-description">Descrição</label>
+        <label for="workspace-description">{t('common_description')}</label>
         <div class="textarea-wrapper">
           <textarea
             id="workspace-description"
             bind:value={description}
             on:input={handleDescriptionInput}
-            placeholder="Descreva o propósito deste workspace..."
+            placeholder={t('workspace_modal_description_placeholder')}
             maxlength={WORKSPACE_DESCRIPTION_MAX_LENGTH}
             rows="2"
             disabled={isSubmitting}
@@ -204,7 +176,7 @@
       </div>
 
       <div class="field">
-        <span class="label-text" id="color-label">Cor</span>
+        <span class="label-text" id="color-label">{t('common_color')}</span>
         <div class="color-picker" role="radiogroup" aria-labelledby="color-label">
           {#each WORKSPACE_COLORS as c}
             <button
@@ -212,8 +184,8 @@
               class="color-option"
               class:selected={color === c}
               style="--color: {c}"
-              on:click={() => selectColor(c)}
-              aria-label="Selecionar cor {c}"
+              on:click={() => color = c}
+              aria-label={t('workspace_select_color', c)}
               disabled={isSubmitting}
             >
               {#if color === c}
@@ -230,10 +202,10 @@
         <button
           type="button"
           class="btn btn-cancel"
-          on:click={handleCancel}
+          on:click={() => dispatch('cancel')}
           disabled={isSubmitting}
         >
-          Cancelar
+          {t('common_cancel')}
         </button>
         <button
           type="submit"
@@ -242,9 +214,9 @@
         >
           {#if isSubmitting}
             <span class="spinner"></span>
-            {isEditing ? 'Salvando...' : 'Criando...'}
+            {isEditing ? t('common_saving') : t('common_creating')}
           {:else}
-            {isEditing ? 'Salvar' : 'Criar'}
+            {isEditing ? t('common_save') : t('common_create')}
           {/if}
         </button>
       </div>

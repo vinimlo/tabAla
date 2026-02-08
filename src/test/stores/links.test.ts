@@ -3,59 +3,42 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { get } from 'svelte/store';
-import { linksStore, linksByCollection } from '@/popup/stores/links';
+import { linksStore, linksByCollection } from '@/lib/stores/links';
 import * as storage from '@/lib/storage';
-import type { Link, Collection } from '@/lib/types';
+import { createMockLink, createMockCollection } from '../factories';
+const { createStorageMock } = await vi.hoisted(() => import('../mocks/storage'));
 
-vi.mock('@/lib/storage', () => ({
-  getLinks: vi.fn(() => Promise.resolve([])),
-  saveLinks: vi.fn(() => Promise.resolve()),
-  getCollections: vi.fn(() => Promise.resolve([])),
-  saveCollections: vi.fn(() => Promise.resolve()),
-  initializeInbox: vi.fn(() => Promise.resolve()),
-  removeCollection: vi.fn(() => Promise.resolve()),
-  createCollection: vi.fn(() => Promise.resolve({ id: 'new-collection', name: 'New', order: 1 })),
-  renameCollection: vi.fn(() => Promise.resolve({ success: true })),
-  moveLink: vi.fn(() => Promise.resolve({ success: true })),
-  updateCollectionOrder: vi.fn(() => Promise.resolve({ success: true })),
-  storage: {
-    watch: vi.fn(() => () => {}),
-  },
-}));
+vi.mock('@/lib/storage', () => createStorageMock());
 
-const mockLinks: Link[] = [
-  {
-    id: 'link-1',
-    url: 'https://example1.com',
-    title: 'Example 1',
-    collectionId: 'inbox',
-    createdAt: 1000,
-  },
-  {
-    id: 'link-2',
-    url: 'https://example2.com',
-    title: 'Example 2',
-    collectionId: 'work',
-    createdAt: 2000,
-  },
+const mockLinks = [
+  createMockLink({ id: 'link-1', url: 'https://example1.com', title: 'Example 1', collectionId: 'inbox', createdAt: 1000 }),
+  createMockLink({ id: 'link-2', url: 'https://example2.com', title: 'Example 2', collectionId: 'work', createdAt: 2000 }),
 ];
 
-const mockCollections: Collection[] = [
-  { id: 'inbox', name: 'Inbox', order: 0 },
-  { id: 'work', name: 'Work', order: 1 },
+const mockCollections = [
+  createMockCollection({ id: 'inbox', name: 'Inbox', order: 0 }),
+  createMockCollection({ id: 'work', name: 'Work', order: 1 }),
 ];
+
+const INITIAL_STORE_STATE = {
+  links: [],
+  collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
+  loading: true,
+  error: null,
+  isAdding: false,
+  isRemoving: new Set<string>(),
+  pendingLocalUpdate: false,
+};
+
+function mockStorageWith(links = mockLinks, collections = mockCollections): void {
+  vi.mocked(storage.getLinks).mockResolvedValue(links);
+  vi.mocked(storage.getCollections).mockResolvedValue(collections);
+}
 
 describe('linksStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    linksStore.set({
-      links: [],
-      collections: [{ id: 'inbox', name: 'Inbox', order: 0 }],
-      loading: true,
-      error: null,
-      isAdding: false,
-      isRemoving: new Set(),
-    });
+    linksStore.set(INITIAL_STORE_STATE);
   });
 
   afterEach(() => {
@@ -64,8 +47,7 @@ describe('linksStore', () => {
 
   describe('load', () => {
     it('should load links and collections from storage', async () => {
-      vi.mocked(storage.getLinks).mockResolvedValue(mockLinks);
-      vi.mocked(storage.getCollections).mockResolvedValue(mockCollections);
+      mockStorageWith();
 
       await linksStore.load();
 
@@ -76,8 +58,7 @@ describe('linksStore', () => {
     });
 
     it('should sort links by createdAt descending', async () => {
-      vi.mocked(storage.getLinks).mockResolvedValue(mockLinks);
-      vi.mocked(storage.getCollections).mockResolvedValue(mockCollections);
+      mockStorageWith();
 
       await linksStore.load();
 
@@ -87,9 +68,8 @@ describe('linksStore', () => {
     });
 
     it('should initialize Inbox collection via initializeInbox', async () => {
-      vi.mocked(storage.getLinks).mockResolvedValue([]);
-      vi.mocked(storage.getCollections).mockResolvedValue([
-        { id: 'inbox', name: 'Inbox', order: 0, isDefault: true },
+      mockStorageWith([], [
+        createMockCollection({ id: 'inbox', name: 'Inbox', order: 0, isDefault: true }),
       ]);
 
       await linksStore.load();
@@ -113,8 +93,7 @@ describe('linksStore', () => {
 
   describe('removeLink', () => {
     beforeEach(async () => {
-      vi.mocked(storage.getLinks).mockResolvedValue(mockLinks);
-      vi.mocked(storage.getCollections).mockResolvedValue(mockCollections);
+      mockStorageWith();
       await linksStore.load();
     });
 
@@ -137,8 +116,7 @@ describe('linksStore', () => {
 
   describe('addLink', () => {
     beforeEach(async () => {
-      vi.mocked(storage.getLinks).mockResolvedValue([]);
-      vi.mocked(storage.getCollections).mockResolvedValue(mockCollections);
+      mockStorageWith([]);
       await linksStore.load();
     });
 
@@ -180,8 +158,7 @@ describe('linksStore', () => {
 
 describe('linksByCollection', () => {
   beforeEach(async () => {
-    vi.mocked(storage.getLinks).mockResolvedValue(mockLinks);
-    vi.mocked(storage.getCollections).mockResolvedValue(mockCollections);
+    mockStorageWith();
     await linksStore.load();
   });
 
@@ -193,7 +170,7 @@ describe('linksByCollection', () => {
   });
 
   it('should return empty array for collections with no links', async () => {
-    vi.mocked(storage.getLinks).mockResolvedValue([]);
+    mockStorageWith([]);
     await linksStore.load();
 
     const grouped = get(linksByCollection);

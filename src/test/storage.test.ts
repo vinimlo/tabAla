@@ -2,13 +2,13 @@
  * Unit tests for the chrome.storage wrapper.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mockStorage, chromeMock } from './setup';
+import { mockStorage, chromeMock, clearMockStorage } from './setup';
 import { storage, StorageError } from '@/lib/storage';
 
 describe('Storage Wrapper', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
+    clearMockStorage();
   });
 
   describe('get()', () => {
@@ -325,26 +325,36 @@ describe('Storage Wrapper', () => {
   });
 
   describe('watch()', () => {
-    it('should register a listener for storage changes', () => {
-      const callback = vi.fn();
+    type StorageChanges = Record<string, { oldValue?: unknown; newValue?: unknown }>;
+    type StorageListener = (changes: StorageChanges, areaName: string) => void;
 
+    function watchAndCaptureListener(callback: ReturnType<typeof vi.fn>): StorageListener {
+      let captured: StorageListener;
+      chromeMock.storage.onChanged.addListener.mockImplementation(
+        (listener) => { captured = listener; }
+      );
       storage.watch(callback);
+      return captured!;
+    }
+
+    const TEST_CHANGES: StorageChanges = {
+      testKey: { oldValue: 'old', newValue: 'new' },
+    };
+
+    it('should register a listener for storage changes', () => {
+      storage.watch(vi.fn());
 
       expect(chromeMock.storage.onChanged.addListener).toHaveBeenCalled();
     });
 
     it('should return an unwatch function', () => {
-      const callback = vi.fn();
-
-      const unwatch = storage.watch(callback);
+      const unwatch = storage.watch(vi.fn());
 
       expect(typeof unwatch).toBe('function');
     });
 
     it('should unregister listener when unwatch is called', () => {
-      const callback = vi.fn();
-
-      const unwatch = storage.watch(callback);
+      const unwatch = storage.watch(vi.fn());
       unwatch();
 
       expect(chromeMock.storage.onChanged.removeListener).toHaveBeenCalled();
@@ -352,52 +362,18 @@ describe('Storage Wrapper', () => {
 
     it('should invoke callback when storage changes in local area', () => {
       const callback = vi.fn();
+      const listener = watchAndCaptureListener(callback);
 
-      let capturedListener: (
-        changes: Record<string, { oldValue?: unknown; newValue?: unknown }>,
-        areaName: string
-      ) => void;
-      chromeMock.storage.onChanged.addListener.mockImplementation(
-        (listener) => {
-          capturedListener = listener;
-        }
-      );
+      listener(TEST_CHANGES, 'local');
 
-      storage.watch(callback);
-
-      capturedListener!(
-        {
-          testKey: { oldValue: 'old', newValue: 'new' },
-        },
-        'local'
-      );
-
-      expect(callback).toHaveBeenCalledWith({
-        testKey: { oldValue: 'old', newValue: 'new' },
-      });
+      expect(callback).toHaveBeenCalledWith(TEST_CHANGES);
     });
 
     it('should not invoke callback when storage changes in other areas', () => {
       const callback = vi.fn();
+      const listener = watchAndCaptureListener(callback);
 
-      let capturedListener: (
-        changes: Record<string, { oldValue?: unknown; newValue?: unknown }>,
-        areaName: string
-      ) => void;
-      chromeMock.storage.onChanged.addListener.mockImplementation(
-        (listener) => {
-          capturedListener = listener;
-        }
-      );
-
-      storage.watch(callback);
-
-      capturedListener!(
-        {
-          testKey: { oldValue: 'old', newValue: 'new' },
-        },
-        'sync'
-      );
+      listener(TEST_CHANGES, 'sync');
 
       expect(callback).not.toHaveBeenCalled();
     });

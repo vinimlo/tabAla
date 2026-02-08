@@ -1,26 +1,24 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { t } from '@lib/i18n';
   import type { Link } from '@/lib/types';
+  import { extractDomain } from '@/lib/tabs';
 
   export let link: Link;
-  export let isDragging: boolean = false;
 
   const dispatch = createEventDispatcher<{
     open: Link;
+    openInNewTab: Link;
     remove: { id: string; title: string };
   }>();
 
-  function getDomain(url: string): string {
-    try {
-      const parsed = new URL(url);
-      return parsed.hostname.replace('www.', '');
-    } catch {
-      return url;
-    }
-  }
-
   function handleOpen(): void {
     dispatch('open', link);
+  }
+
+  function handleOpenInNewTab(event: MouseEvent): void {
+    event.stopPropagation();
+    dispatch('openInNewTab', link);
   }
 
   function handleRemove(event: MouseEvent): void {
@@ -35,12 +33,11 @@
     }
   }
 
-  $: domain = getDomain(link.url);
+  $: domain = extractDomain(link.url).replace('www.', '');
 </script>
 
 <div
   class="link-card"
-  class:dragging={isDragging}
   on:click={handleOpen}
   on:keydown={handleKeydown}
   role="button"
@@ -66,9 +63,9 @@
     <button
       type="button"
       class="btn-action btn-open"
-      on:click|stopPropagation={handleOpen}
-      aria-label="Abrir link"
-      title="Abrir em nova aba"
+      on:click={handleOpenInNewTab}
+      aria-label={t('linkcard_open')}
+      title={t('linkcard_open_new_tab')}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
@@ -80,8 +77,8 @@
       type="button"
       class="btn-action btn-remove"
       on:click={handleRemove}
-      aria-label="Remover link"
-      title="Remover"
+      aria-label={t('linkcard_remove')}
+      title={t('linkcard_remove_title')}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M18 6L6 18M6 6l12 12"/>
@@ -92,6 +89,7 @@
 
 <style>
   .link-card {
+    position: relative;
     display: flex;
     align-items: flex-start;
     gap: var(--space-3);
@@ -110,7 +108,7 @@
     border-color: var(--border-default);
     transform: translateY(-2px);
     box-shadow:
-      0 6px 16px rgba(0, 0, 0, 0.25),
+      var(--shadow-card-hover),
       0 0 0 1px var(--accent-soft);
   }
 
@@ -123,15 +121,6 @@
     outline-offset: 2px;
   }
 
-  .link-card.dragging {
-    opacity: 0.7;
-    transform: rotate(2deg) scale(1.02);
-    box-shadow:
-      var(--shadow-lg),
-      0 0 24px var(--accent-glow);
-    border-color: var(--accent-primary);
-  }
-
   .link-favicon {
     flex-shrink: 0;
     width: 38px;
@@ -140,9 +129,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--surface-base);
+    background: var(--surface-overlay);
     border-radius: var(--radius-md);
-    border: 1px solid var(--border-subtle);
+    border: 1px solid var(--border-default);
     color: var(--text-tertiary);
   }
 
@@ -179,17 +168,6 @@
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-
-    /* Transição suave de altura */
-    max-height: 60px;
-    transition: max-height var(--duration-fast) var(--ease-out);
-  }
-
-  /* Colapsar para 1 linha no hover */
-  .link-card:hover .link-title,
-  .link-card:focus-within .link-title {
-    -webkit-line-clamp: 1;
-    max-height: 20px;
   }
 
   .link-domain {
@@ -204,20 +182,26 @@
   }
 
   .link-actions {
+    position: absolute;
+    right: var(--space-3);
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
     align-items: center;
     gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    background: var(--surface-elevated);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-default);
     opacity: 0;
-    transform: translateX(4px);
-    transition: all var(--duration-fast) var(--ease-out);
-    margin-top: 2px;
-    align-self: flex-start;
+    transition: opacity var(--duration-fast) var(--ease-out);
   }
 
   .link-card:hover .link-actions,
   .link-card:focus-within .link-actions {
     opacity: 1;
-    transform: translateX(0);
   }
 
   .btn-action {
@@ -255,7 +239,7 @@
   }
 
   .btn-remove:hover {
-    background: rgba(212, 114, 106, 0.15);
+    background: var(--semantic-error-soft);
     color: var(--semantic-error);
   }
 </style>

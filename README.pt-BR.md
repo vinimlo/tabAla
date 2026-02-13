@@ -1,14 +1,16 @@
-*[English](README.md) | Portugues (Brasil)*
+[English](README.md) | Português (Brasil)
 
 # TabAla
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Chrome Extension](https://img.shields.io/badge/platform-Chrome-green.svg)](https://chrome.google.com)
-[![Manifest V3](https://img.shields.io/badge/manifest-v3-orange.svg)](https://developer.chrome.com/docs/extensions/mv3/)
+[![Licença](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Plataforma](https://img.shields.io/badge/platform-Chrome-green.svg)](https://chromewebstore.google.com/detail/tabala/ndnejipljgocfklehcimajinhamjkgjh)
+[![Manifest](https://img.shields.io/badge/manifest-v3-orange.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 
-> Salve abas. Organize em coleções. Processe quando quiser.
+Salve abas. Organize em coleções. Processe quando quiser.
 
-## Features
+[![Instalar na Chrome Web Store](https://img.shields.io/badge/Instalar%20na-Chrome%20Web%20Store-4285F4?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/tabala/ndnejipljgocfklehcimajinhamjkgjh)
+
+## Funcionalidades
 
 - Salve a aba atual com um clique
 - Organize links em coleções personalizadas
@@ -18,18 +20,15 @@
 
 ## Screenshots
 
-<p align="center">
-  <img src="store-assets/screenshots/screenshot_newtab.png" width="600" alt="Dashboard">
-</p>
+*(Adicione suas screenshots aqui)*
 
 ## Instalação
 
-<!--
-### Chrome Web Store (em breve)
-[Instalar TabAla](link-da-store)
--->
+### Chrome Web Store (Recomendado)
 
-### Manual
+Clique no botão acima ou visite a [página da Chrome Web Store](https://chromewebstore.google.com/detail/tabala/ndnejipljgocfklehcimajinhamjkgjh) para instalar o TabAla com um clique.
+
+### Instalação Manual
 
 1. Baixe a [última release](https://github.com/vinimlo/tabAla/releases)
 2. Acesse `chrome://extensions`

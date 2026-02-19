@@ -4,12 +4,30 @@
   import { t } from '@lib/i18n';
   import { settingsStore } from '@/lib/stores/settings';
   import type { ThemePreference } from '@/lib/types';
+  import {
+    validateExportFile,
+    previewImport,
+    executeImport,
+    exportData,
+    downloadExport,
+  } from '@/lib/storage';
+  import ConfirmDialog from '@/shared/components/ConfirmDialog.svelte';
+  import Toast from '@/shared/components/Toast.svelte';
 
   const dispatch = createEventDispatcher<{
     close: void;
   }>();
 
   $: settings = $settingsStore.settings;
+
+  let fileInput: HTMLInputElement;
+  let showConfirmDialog = false;
+  let confirmMessage = '';
+  let importPreviewData: { workspaces: number; collections: number; links: number; warnings: string[] } | null = null;
+  let pendingFileContent: string | null = null;
+  let toastMessage = '';
+  let toastType: 'success' | 'error' = 'success';
+  let showToast = false;
 
   function handleClose(): void {
     dispatch('close');
@@ -33,6 +51,116 @@
 
   async function handleThemeChange(theme: ThemePreference): Promise<void> {
     await settingsStore.setTheme(theme);
+  }
+
+  async function handleExport(): Promise<void> {
+    try {
+      const data = await exportData();
+      downloadExport(data);
+      showToastMessage(t('export_success'), 'success');
+    } catch (error) {
+      console.error('Export failed:', error);
+      showToastMessage(t('import_error_parse'), 'error');
+    }
+  }
+
+  function handleImportClick(): void {
+    fileInput.click();
+  }
+
+  async function handleFileSelect(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const content = e.target?.result as string;
+        pendingFileContent = content;
+
+        try {
+          const parsed = JSON.parse(content);
+          const validated = validateExportFile(parsed);
+          const preview = await previewImport(validated);
+
+          importPreviewData = preview;
+
+          // Build confirmation message
+          let msg = t('import_confirm_message')
+            .replace('$1', String(preview.workspaces))
+            .replace('$2', String(preview.collections))
+            .replace('$3', String(preview.links));
+
+          if (preview.warnings.length > 0) {
+            msg += '\n\n' + preview.warnings.join('\n');
+          }
+
+          confirmMessage = msg;
+          showConfirmDialog = true;
+        } catch (error) {
+          console.error('Validation failed:', error);
+          showToastMessage(
+            error instanceof Error ? error.message : t('import_error_invalid_file'),
+            'error'
+          );
+          pendingFileContent = null;
+        }
+      };
+
+      reader.readAsText(file);
+    } catch (error) {
+      console.error('File read failed:', error);
+      showToastMessage(t('import_error_parse'), 'error');
+    } finally {
+      // Reset input so same file can be selected again
+      input.value = '';
+    }
+  }
+
+  async function handleConfirmImport(): Promise<void> {
+    showConfirmDialog = false;
+
+    if (!pendingFileContent) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(pendingFileContent);
+      const validated = validateExportFile(parsed);
+      const result = await executeImport(validated);
+
+      if (result.success) {
+        showToastMessage(t('import_success'), 'success');
+      } else {
+        showToastMessage(result.error || t('import_error_invalid_file'), 'error');
+      }
+    } catch (error) {
+      console.error('Import failed:', error);
+      showToastMessage(t('import_error_parse'), 'error');
+    } finally {
+      pendingFileContent = null;
+      importPreviewData = null;
+    }
+  }
+
+  function handleCancelImport(): void {
+    showConfirmDialog = false;
+    pendingFileContent = null;
+    importPreviewData = null;
+  }
+
+  function showToastMessage(message: string, type: 'success' | 'error'): void {
+    toastMessage = message;
+    toastType = type;
+    showToast = true;
+  }
+
+  function handleToastClose(): void {
+    showToast = false;
   }
 </script>
 
@@ -172,9 +300,81 @@
           </div>
         </div>
       </div>
+
+      <div class="setting-divider"></div>
+
+      <div class="setting-section">
+        <h3>{t('settings_data_title')}</h3>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label">{t('settings_export_button')}</span>
+            <span class="setting-description">
+              {t('settings_export_description')}
+            </span>
+          </div>
+          <button
+            type="button"
+            class="btn-action"
+            on:click={handleExport}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label">{t('settings_import_button')}</span>
+            <span class="setting-description">
+              {t('settings_import_description')}
+            </span>
+          </div>
+          <button
+            type="button"
+            class="btn-action"
+            on:click={handleImportClick}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </button>
+        </div>
+
+        <input
+          type="file"
+          accept=".json"
+          bind:this={fileInput}
+          on:change={handleFileSelect}
+          style="display: none;"
+        />
+      </div>
     </div>
   </div>
 </div>
+
+{#if showConfirmDialog}
+  <ConfirmDialog
+    message={confirmMessage}
+    confirmText={t('common_save')}
+    cancelText={t('common_cancel')}
+    on:confirm={handleConfirmImport}
+    on:cancel={handleCancelImport}
+  />
+{/if}
+
+{#if showToast}
+  <Toast
+    message={toastMessage}
+    type={toastType}
+    onClose={handleToastClose}
+  />
+{/if}
 
 <style>
   .backdrop {
@@ -544,12 +744,47 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
+  .btn-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: var(--surface-overlay);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    flex-shrink: 0;
+  }
+
+  .btn-action:hover {
+    background: var(--surface-subtle);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+  }
+
+  .btn-action:active {
+    transform: translateY(0);
+  }
+
+  .btn-action:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .toggle-thumb {
       transition: transform var(--duration-fast) var(--ease-out);
     }
     .theme-option:hover .theme-preview {
+      transform: none;
+    }
+    .btn-action:hover {
       transform: none;
     }
   }

@@ -40,6 +40,7 @@ export {
   addLink,
   removeLink,
   moveLink,
+  recoverOrphanedLinks,
 } from './links';
 
 // Workspaces
@@ -54,3 +55,15 @@ export {
   moveCollectionToWorkspace,
   migrateToWorkspaces,
 } from './workspaces';
+
+// Import/Export
+export {
+  validateExportFile,
+  previewImport,
+  executeImport,
+  exportData,
+  downloadExport,
+  type TabAlaExportFile,
+  type ImportPreview,
+  type ImportResult,
+} from './import-export';

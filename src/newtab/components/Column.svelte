@@ -330,7 +330,7 @@
     width: var(--column-width);
     min-width: var(--column-min-width);
     max-width: var(--column-max-width);
-    max-height: calc(100vh - 140px);
+    max-height: 100%;
     background: var(--surface-elevated);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-xl);

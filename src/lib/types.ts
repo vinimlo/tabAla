@@ -92,18 +92,26 @@ export const DEFAULT_WORKSPACE_ID = 'general';
 export const DEFAULT_WORKSPACE_NAME = 'Geral';
 export const WORKSPACE_LIMIT = 12;
 
-/** Colors designed to work well with the dark theme. */
+/** Colors designed to work well with both dark and light themes. */
 export const WORKSPACE_COLORS = [
+  // Warm
   '#E85D42', // Coral (accent principal - reservado para workspace Geral/default)
   '#D4726A', // Dusty Rose
   '#D4A85A', // Warm Amber
+  '#E0976B', // Terracotta
+  // Cool
   '#7CB890', // Sage Green
+  '#5DA3A0', // Teal
   '#6B8AAF', // Slate Blue
+  '#5B7FC7', // Royal Blue
   '#9B8AA0', // Dusty Purple
-  '#5DA3A0', // Teal Muted
-  '#C4956A', // Warm Sand
-  '#8B7E6A', // Taupe
-  '#A08B7B', // Warm Gray
+  '#B07BAF', // Orchid
+  // Vibrant
+  '#C75B8F', // Berry
+  '#4EA8B5', // Cyan
+  // Neutral
+  '#8A9A82', // Olive
+  '#9B8E82', // Warm Stone
 ] as const;
 
 /**

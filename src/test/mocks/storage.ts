@@ -12,6 +12,7 @@ export function createStorageMock(): Record<string, unknown> {
     getCollections: vi.fn(() => Promise.resolve([])),
     saveCollections: vi.fn(() => Promise.resolve()),
     initializeInbox: vi.fn(() => Promise.resolve()),
+    recoverOrphanedLinks: vi.fn(() => Promise.resolve(0)),
     removeCollection: vi.fn(() => Promise.resolve()),
     createCollection: vi.fn(() => Promise.resolve({ id: 'new-collection', name: 'New', order: 1 })),
     renameCollection: vi.fn(() => Promise.resolve({ success: true })),

@@ -164,9 +164,15 @@ export async function updateWorkspaceOrder(
   orderedWorkspaces: Workspace[]
 ): Promise<OperationResult> {
   try {
-    await saveWorkspaces(
-      orderedWorkspaces.map((workspace, index) => ({ ...workspace, order: index }))
-    );
+    const allWorkspaces = await getWorkspaces();
+    const reorderedIds = new Map(orderedWorkspaces.map((w, i) => [w.id, i]));
+
+    const merged = allWorkspaces.map((w) => {
+      const newOrder = reorderedIds.get(w.id);
+      return newOrder !== undefined ? { ...w, order: newOrder } : w;
+    });
+
+    await saveWorkspaces(merged);
 
     return { success: true };
   } catch (error) {

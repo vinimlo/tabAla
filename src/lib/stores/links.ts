@@ -10,6 +10,7 @@ import {
   renameCollection as storageRenameCollection,
   moveLink as storageMoveLink,
   updateCollectionOrder as storageUpdateCollectionOrder,
+  recoverOrphanedLinks,
   getErrorMessage,
   storage,
 } from '@/lib/storage';
@@ -86,6 +87,7 @@ function createLinksStore(): Writable<LinksState> & {
 
     try {
       await initializeInbox();
+      await recoverOrphanedLinks();
       const [linksData, collections] = await Promise.all([getLinks(), getCollections()]);
       const links = deduplicateLinks(linksData.sort((a, b) => b.createdAt - a.createdAt));
 
@@ -268,10 +270,17 @@ function createLinksStore(): Writable<LinksState> & {
   async function reorderCollections(orderedCollections: Collection[]): Promise<void> {
     await optimisticUpdate(
       store,
-      (state) => ({
-        updated: { ...state, collections: orderedCollections },
-        rollback: { collections: state.collections } as Partial<LinksState>,
-      }),
+      (state) => {
+        const reorderedIds = new Set(orderedCollections.map((c) => c.id));
+        const merged = [
+          ...orderedCollections,
+          ...state.collections.filter((c) => !reorderedIds.has(c.id)),
+        ];
+        return {
+          updated: { ...state, collections: merged },
+          rollback: { collections: state.collections } as Partial<LinksState>,
+        };
+      },
       async () => {
         const result = await storageUpdateCollectionOrder(orderedCollections);
         return result.success ? null : (result.error ?? t('error_reorder_collections_failed'));

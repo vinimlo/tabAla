@@ -217,12 +217,14 @@
 {/if}
 
 {#if showCreateModal || editingWorkspace}
-  <WorkspaceModal
-    workspace={editingWorkspace}
-    existingNames={workspacesStore.getWorkspaceNames()}
-    on:save={handleSaveWorkspace}
-    on:cancel={handleCloseModal}
-  />
+  {#key editingWorkspace?.id}
+    <WorkspaceModal
+      workspace={editingWorkspace}
+      existingNames={workspacesStore.getWorkspaceNames()}
+      on:save={handleSaveWorkspace}
+      on:cancel={handleCloseModal}
+    />
+  {/key}
 {/if}
 
 <style>

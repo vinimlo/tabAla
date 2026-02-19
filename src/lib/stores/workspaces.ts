@@ -231,10 +231,17 @@ function createWorkspacesStore(): ReturnType<typeof writable<WorkspacesState>> &
   async function reorderWorkspaces(orderedWorkspaces: Workspace[]): Promise<void> {
     await optimisticUpdate(
       store,
-      (state) => ({
-        updated: { ...state, workspaces: orderedWorkspaces },
-        rollback: { workspaces: state.workspaces } as Partial<WorkspacesState>,
-      }),
+      (state) => {
+        const reorderedIds = new Set(orderedWorkspaces.map((w) => w.id));
+        const merged = [
+          ...orderedWorkspaces,
+          ...state.workspaces.filter((w) => !reorderedIds.has(w.id)),
+        ];
+        return {
+          updated: { ...state, workspaces: merged },
+          rollback: { workspaces: state.workspaces } as Partial<WorkspacesState>,
+        };
+      },
       async () => {
         const result = await storageUpdateWorkspaceOrder(orderedWorkspaces);
         return result.success ? null : (result.error ?? t('error_reorder_workspaces_failed'));

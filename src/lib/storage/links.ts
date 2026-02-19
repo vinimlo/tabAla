@@ -56,6 +56,24 @@ export async function removeLink(linkId: string): Promise<RemoveLinkResult> {
   }
 }
 
+/** Reassigns links whose collectionId doesn't match any existing collection to Inbox. */
+export async function recoverOrphanedLinks(): Promise<number> {
+  const [links, collections] = await Promise.all([getLinks(), getCollections()]);
+  const collectionIds = new Set(collections.map((c) => c.id));
+
+  const orphaned = links.filter((l) => !collectionIds.has(l.collectionId));
+  if (orphaned.length === 0) {
+    return 0;
+  }
+
+  const updatedLinks = links.map((l) =>
+    collectionIds.has(l.collectionId) ? l : { ...l, collectionId: INBOX_COLLECTION_ID }
+  );
+
+  await saveLinks(updatedLinks);
+  return orphaned.length;
+}
+
 export async function moveLink(
   linkId: string,
   toCollectionId: string

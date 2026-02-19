@@ -248,6 +248,21 @@
   "settings_shortcut_close_modal": {
     "message": "Close modal"
   },
+  "settings_data_title": {
+    "message": "Data"
+  },
+  "settings_export_button": {
+    "message": "Export data"
+  },
+  "settings_export_description": {
+    "message": "Download a backup of your links and collections"
+  },
+  "settings_import_button": {
+    "message": "Import data"
+  },
+  "settings_import_description": {
+    "message": "Restore data from a backup file"
+  },
 
   "newtab_error_loading": {
     "message": "Error loading data"
@@ -633,5 +648,47 @@
 
   "newtab_confirm_remove_link": {
     "message": "Remove this link?"
+  },
+
+  "import_confirm_title": {
+    "message": "Confirm import"
+  },
+  "import_confirm_message": {
+    "message": "Will be added: $1 workspaces, $2 collections, $3 links",
+    "placeholders": {
+      "workspaces": { "content": "$1" },
+      "collections": { "content": "$2" },
+      "links": { "content": "$3" }
+    }
+  },
+  "import_success": {
+    "message": "Import completed successfully"
+  },
+  "import_error_invalid_file": {
+    "message": "Invalid file. Select a TabAla backup."
+  },
+  "import_error_parse": {
+    "message": "Error reading file"
+  },
+  "export_success": {
+    "message": "Backup exported successfully"
+  },
+  "import_warning_invalid_urls": {
+    "message": "$1 links with invalid URLs will be skipped",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "import_warning_orphan_collections": {
+    "message": "$1 collections will be moved to General workspace",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "import_warning_orphan_links": {
+    "message": "$1 links will be moved to Inbox",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
   }
 }

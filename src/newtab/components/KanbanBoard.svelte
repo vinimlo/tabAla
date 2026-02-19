@@ -171,8 +171,10 @@
     display: flex;
     gap: var(--column-gap);
     overflow-x: auto;
+    overflow-y: hidden;
     padding-bottom: var(--space-4);
     flex: 1;
+    min-height: 0;
     align-items: flex-start;
   }
 
@@ -196,6 +198,8 @@
 
   .column-wrapper {
     flex-shrink: 0;
+    max-height: 100%;
+    align-self: stretch;
   }
 
   .no-results {

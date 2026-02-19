@@ -110,12 +110,15 @@ export async function updateCollectionOrder(
   orderedCollections: Collection[]
 ): Promise<OperationResult> {
   try {
-    const updatedCollections = orderedCollections.map((collection, index) => ({
-      ...collection,
-      order: index,
-    }));
+    const allCollections = await getCollections();
+    const reorderedIds = new Map(orderedCollections.map((c, i) => [c.id, i]));
 
-    await saveCollections(updatedCollections);
+    const merged = allCollections.map((c) => {
+      const newOrder = reorderedIds.get(c.id);
+      return newOrder !== undefined ? { ...c, order: newOrder } : c;
+    });
+
+    await saveCollections(merged);
 
     return { success: true };
   } catch (error) {

@@ -248,6 +248,21 @@
   "settings_shortcut_close_modal": {
     "message": "Fechar modal"
   },
+  "settings_data_title": {
+    "message": "Dados"
+  },
+  "settings_export_button": {
+    "message": "Exportar dados"
+  },
+  "settings_export_description": {
+    "message": "Baixar backup dos seus links e coleções"
+  },
+  "settings_import_button": {
+    "message": "Importar dados"
+  },
+  "settings_import_description": {
+    "message": "Restaurar dados de um arquivo de backup"
+  },
 
   "newtab_error_loading": {
     "message": "Erro ao carregar dados"
@@ -633,5 +648,47 @@
 
   "newtab_confirm_remove_link": {
     "message": "Remover este link?"
+  },
+
+  "import_confirm_title": {
+    "message": "Confirmar importação"
+  },
+  "import_confirm_message": {
+    "message": "Serão adicionados: $1 workspaces, $2 coleções, $3 links",
+    "placeholders": {
+      "workspaces": { "content": "$1" },
+      "collections": { "content": "$2" },
+      "links": { "content": "$3" }
+    }
+  },
+  "import_success": {
+    "message": "Importação concluída com sucesso"
+  },
+  "import_error_invalid_file": {
+    "message": "Arquivo inválido. Selecione um backup do TabAla."
+  },
+  "import_error_parse": {
+    "message": "Erro ao ler o arquivo"
+  },
+  "export_success": {
+    "message": "Backup exportado com sucesso"
+  },
+  "import_warning_invalid_urls": {
+    "message": "$1 links com URL inválida serão ignorados",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "import_warning_orphan_collections": {
+    "message": "$1 coleções serão movidas para o workspace Geral",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "import_warning_orphan_links": {
+    "message": "$1 links serão movidos para a Inbox",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
   }
 }

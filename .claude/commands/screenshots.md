@@ -1,0 +1,1 @@
+../../../screenshot-studio/commands/screenshots.md

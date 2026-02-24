@@ -51,10 +51,11 @@ describe('LinkCard Component', () => {
   });
 
   it('should dispatch remove event when remove button is clicked', async () => {
-    const { component } = render(LinkCard, { props: { link: defaultLink } });
-
     const removeFn = vi.fn();
-    component.$on('remove', removeFn);
+    render(LinkCard, {
+      props: { link: defaultLink },
+      events: { remove: removeFn },
+    });
 
     const removeButton = screen.getByRole('button', { name: /linkcard_remove/i });
     await fireEvent.click(removeButton);

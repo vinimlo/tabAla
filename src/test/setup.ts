@@ -119,6 +119,39 @@ const chromeMock = {
 
 vi.stubGlobal('chrome', chromeMock);
 
+// Polyfill Element.prototype.animate for Svelte 5 transitions (uses Web Animations API)
+if (typeof Element.prototype.animate !== 'function') {
+  Element.prototype.animate = function () {
+    return {
+      finished: Promise.resolve(),
+      cancel: () => {},
+      finish: () => {},
+      play: () => {},
+      pause: () => {},
+      reverse: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+      onfinish: null,
+      oncancel: null,
+      onremove: null,
+      currentTime: null,
+      playState: 'finished',
+      playbackRate: 1,
+      startTime: null,
+      timeline: null,
+      effect: null,
+      id: '',
+      pending: false,
+      ready: Promise.resolve(),
+      replaceState: 'active',
+      persist: () => {},
+      commitStyles: () => {},
+      updatePlaybackRate: () => {},
+    } as unknown as Animation;
+  };
+}
+
 // Mock window.matchMedia for theme detection
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

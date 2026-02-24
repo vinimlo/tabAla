@@ -23,7 +23,6 @@
   let fileInput: HTMLInputElement;
   let showConfirmDialog = false;
   let confirmMessage = '';
-  let importPreviewData: { workspaces: number; collections: number; links: number; warnings: string[] } | null = null;
   let pendingFileContent: string | null = null;
   let toastMessage = '';
   let toastType: 'success' | 'error' = 'success';
@@ -87,8 +86,6 @@
           const validated = validateExportFile(parsed);
           const preview = await previewImport(validated);
 
-          importPreviewData = preview;
-
           // Build confirmation message
           let msg = t('import_confirm_message')
             .replace('$1', String(preview.workspaces))
@@ -143,14 +140,12 @@
       showToastMessage(t('import_error_parse'), 'error');
     } finally {
       pendingFileContent = null;
-      importPreviewData = null;
     }
   }
 
   function handleCancelImport(): void {
     showConfirmDialog = false;
     pendingFileContent = null;
-    importPreviewData = null;
   }
 
   function showToastMessage(message: string, type: 'success' | 'error'): void {

@@ -95,7 +95,7 @@
     try {
       await linksStore.removeLink(linkToRemove.id);
       successMessage = t('success_link_removed');
-    } catch (err) {
+    } catch (_err) {
       errorMessage = t('error_remove_link_failed');
     }
     linkToRemove = null;
@@ -122,7 +122,7 @@
       const col = collections.find(c => c.id === detail.collectionId);
       const collectionName = col ? getCollectionDisplayName(col) : 'collection';
       successMessage = t('success_link_saved_to', collectionName);
-    } catch (err) {
+    } catch (_err) {
       errorMessage = t('error_save_link_failed');
     }
   }

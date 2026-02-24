@@ -6,7 +6,7 @@
  * storage.test.ts and component tests (LinkItem, ConfirmDialog).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/svelte';
+import { render, screen, cleanup, waitFor, act } from '@testing-library/svelte';
 import App from '@/popup/App.svelte';
 import { linksStore } from '@/lib/stores/links';
 import { workspacesStore } from '@/lib/stores/workspaces';
@@ -63,11 +63,13 @@ describe('App Component', () => {
     cleanup();
   });
 
-  it('should render TabAla watermark', () => {
+  it('should render TabAla watermark', async () => {
     setStoreState({});
 
     render(App);
-    expect(screen.getByText('TabAla')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('TabAla')).toBeInTheDocument();
+    });
   });
 
   it('should have main element', () => {
@@ -78,10 +80,17 @@ describe('App Component', () => {
     expect(main).not.toBeNull();
   });
 
-  it('should show collections when no links are saved', () => {
+  it('should show collections when no links are saved', async () => {
     setStoreState({});
 
     render(App);
+    // Wait for onMount load() to finish, then re-set store state
+    await waitFor(() => {
+      expect(screen.getByText('TabAla')).toBeInTheDocument();
+    });
+    // Re-set store state after load() overwrites it with mock data
+    await act(() => setStoreState({}));
+
     // When there are no links, the app still shows the collections list
     // Inbox appears in both the dropdown and collection header
     const inboxElements = screen.getAllByText('common_inbox');
@@ -96,22 +105,33 @@ describe('App Component', () => {
     expect(screen.getByText('common_loading')).toBeInTheDocument();
   });
 
-  it('should render save button even when error is set in store', () => {
+  it('should render save button even when error is set in store', async () => {
     // Note: The popup App component doesn't display store.error directly,
     // it uses Toast for showing error messages from user actions
     setStoreState({ error: 'Test error' });
 
     render(App);
     // The component still renders normally - errors are handled via Toast
-    expect(screen.getByText('common_save')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('common_save')).toBeInTheDocument();
+    });
   });
 
-  it('should display links grouped by collection', () => {
+  it('should display links grouped by collection', async () => {
     setStoreState({
       links: [createMockLink({ title: 'Example', collectionId: 'inbox' })],
     });
 
     render(App);
+    // Wait for onMount load() to finish
+    await waitFor(() => {
+      expect(screen.getByText('TabAla')).toBeInTheDocument();
+    });
+    // Re-set store state after load() overwrites it with mock data
+    await act(() => setStoreState({
+      links: [createMockLink({ title: 'Example', collectionId: 'inbox' })],
+    }));
+
     const inboxElements = screen.getAllByText('common_inbox');
     expect(inboxElements.length).toBeGreaterThanOrEqual(1);
     // Note: Links are hidden by default (collapsed collections)

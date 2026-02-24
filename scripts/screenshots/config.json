@@ -1,0 +1,147 @@
+{
+  "project": {
+    "type": "chrome-extension",
+    "buildCommand": "make build",
+    "serve": { "dir": "dist", "port": 8080 },
+    "viewport": { "width": 1280, "height": 800, "deviceScaleFactor": 2 },
+    "outputDir": "store-assets/screenshots",
+    "locale": "public/_locales/pt_BR/messages.json",
+    "extensionName": "TabAla",
+    "storageDefaults": {
+      "settings": {
+        "newtabEnabled": true,
+        "onboardingCompleted": true,
+        "theme": "dark"
+      }
+    },
+    "pages": {
+      "newtab": "/src/newtab/index.html",
+      "popup": "/popup-wrapper.html"
+    },
+    "popupWrapper": {
+      "iframeSrc": "/src/popup/index.html",
+      "iframeWidth": 380,
+      "iframeHeight": 600,
+      "background": "#0D0D0F"
+    }
+  },
+  "screenshots": [
+    {
+      "id": "01-dashboard-kanban-dark",
+      "description": "Hero: Coding Agents workspace — Kanban board (dark mode)",
+      "page": "newtab",
+      "actions": [
+        { "type": "click", "target": "Coding Agents workspace button in rail" }
+      ],
+      "waitMs": 2500
+    },
+    {
+      "id": "02-dashboard-geral-dark",
+      "description": "Geral workspace — Github, Google Developer, Inbox (dark mode)",
+      "page": "newtab",
+      "actions": [
+        { "type": "click", "target": "Geral workspace button in rail" }
+      ],
+      "waitMs": 2000
+    },
+    {
+      "id": "03-dashboard-study-dark",
+      "description": "Study workspace — SoftEng, LLMs, MCP collections (dark mode)",
+      "page": "newtab",
+      "actions": [
+        { "type": "click", "target": "Study workspace button in rail" }
+      ],
+      "waitMs": 2000
+    },
+    {
+      "id": "04-popup-dark",
+      "description": "Popup UI centered on dark background, one collection expanded (dark mode)",
+      "page": "popup",
+      "actions": [
+        { "type": "click", "target": "A collection with links (e.g. Claude Code)" }
+      ],
+      "waitMs": 2000
+    },
+    {
+      "id": "05-dashboard-search-dark",
+      "description": "Search filtering — 'GitHub' typed in search bar (dark mode)",
+      "page": "newtab",
+      "actions": [
+        { "type": "click", "target": "Search input field" },
+        { "type": "type", "text": "GitHub", "slowly": true }
+      ],
+      "waitMs": 1500
+    },
+    {
+      "id": "06-settings-dark",
+      "description": "Settings modal open (dark mode)",
+      "page": "newtab",
+      "actions": [
+        { "type": "click", "target": "Configurações (Settings) button" }
+      ],
+      "waitMs": 1000
+    },
+    {
+      "id": "07-dashboard-kanban-light",
+      "description": "Hero: Coding Agents workspace — Kanban board (light mode)",
+      "page": "newtab",
+      "themeOverride": "light",
+      "actions": [
+        { "type": "click", "target": "Coding Agents workspace button in rail" }
+      ],
+      "waitMs": 2500
+    },
+    {
+      "id": "08-dashboard-geral-light",
+      "description": "Geral workspace — Github, Google Developer, Inbox (light mode)",
+      "page": "newtab",
+      "themeOverride": "light",
+      "actions": [
+        { "type": "click", "target": "Geral workspace button in rail" }
+      ],
+      "waitMs": 2000
+    },
+    {
+      "id": "09-dashboard-study-light",
+      "description": "Study workspace — SoftEng, LLMs, MCP collections (light mode)",
+      "page": "newtab",
+      "themeOverride": "light",
+      "actions": [
+        { "type": "click", "target": "Study workspace button in rail" }
+      ],
+      "waitMs": 2000
+    },
+    {
+      "id": "10-popup-light",
+      "description": "Popup UI centered on light background, one collection expanded (light mode)",
+      "page": "popup",
+      "themeOverride": "light",
+      "popupWrapperOverride": { "background": "#E8E8EC" },
+      "actions": [
+        { "type": "click", "target": "A collection with links (e.g. Claude Code)" }
+      ],
+      "waitMs": 2000
+    },
+    {
+      "id": "11-dashboard-search-light",
+      "description": "Search filtering — 'GitHub' typed in search bar (light mode)",
+      "page": "newtab",
+      "themeOverride": "light",
+      "actions": [
+        { "type": "click", "target": "Search input field" },
+        { "type": "type", "text": "GitHub", "slowly": true }
+      ],
+      "waitMs": 1500
+    },
+    {
+      "id": "12-settings-light",
+      "description": "Settings modal open (light mode)",
+      "page": "newtab",
+      "themeOverride": "light",
+      "actions": [
+        { "type": "click", "target": "Configurações (Settings) button" }
+      ],
+      "waitMs": 1000
+    }
+  ]
+}

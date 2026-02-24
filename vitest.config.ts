@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [svelte({ hot: !process.env.VITEST })],
 
   resolve: {
+    conditions: ['browser'],
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       '@lib': fileURLToPath(new URL('./src/lib', import.meta.url)),

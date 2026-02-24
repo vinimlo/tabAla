@@ -144,9 +144,8 @@ describe('CreateCollectionModal', () => {
 
   describe('events', () => {
     it('should dispatch create event with trimmed name on submit', async () => {
-      const { component } = render(CreateCollectionModal);
       const createHandler = vi.fn();
-      component.$on('create', createHandler);
+      render(CreateCollectionModal, { events: { create: createHandler } });
 
       const input = getInput();
       await typeText(input, '  Nova Coleção  ');
@@ -160,9 +159,8 @@ describe('CreateCollectionModal', () => {
     });
 
     it('should dispatch cancel event when Cancelar is clicked', async () => {
-      const { component } = render(CreateCollectionModal);
       const cancelHandler = vi.fn();
-      component.$on('cancel', cancelHandler);
+      render(CreateCollectionModal, { events: { cancel: cancelHandler } });
 
       const cancelBtn = screen.getByText('common_cancel');
       await fireEvent.click(cancelBtn);
@@ -171,9 +169,8 @@ describe('CreateCollectionModal', () => {
     });
 
     it('should dispatch cancel event when backdrop is clicked', async () => {
-      const { component } = render(CreateCollectionModal);
       const cancelHandler = vi.fn();
-      component.$on('cancel', cancelHandler);
+      render(CreateCollectionModal, { events: { cancel: cancelHandler } });
 
       const backdrop = document.querySelector('.backdrop');
       if (backdrop) {
@@ -184,9 +181,8 @@ describe('CreateCollectionModal', () => {
     });
 
     it('should dispatch cancel event when ESC key is pressed', async () => {
-      const { component } = render(CreateCollectionModal);
       const cancelHandler = vi.fn();
-      component.$on('cancel', cancelHandler);
+      render(CreateCollectionModal, { events: { cancel: cancelHandler } });
 
       const backdrop = document.querySelector('.backdrop');
       if (backdrop) {
@@ -197,9 +193,8 @@ describe('CreateCollectionModal', () => {
     });
 
     it('should dispatch create event when form is submitted', async () => {
-      const { component } = render(CreateCollectionModal);
       const createHandler = vi.fn();
-      component.$on('create', createHandler);
+      render(CreateCollectionModal, { events: { create: createHandler } });
 
       const input = getInput();
       await typeText(input, 'Test Collection');
@@ -213,11 +208,11 @@ describe('CreateCollectionModal', () => {
     });
 
     it('should not dispatch create event when form submitted with invalid input', async () => {
-      const { component } = render(CreateCollectionModal, {
-        props: { existingNames: ['Existente'] },
-      });
       const createHandler = vi.fn();
-      component.$on('create', createHandler);
+      render(CreateCollectionModal, {
+        props: { existingNames: ['Existente'] },
+        events: { create: createHandler },
+      });
 
       const input = getInput();
       await typeText(input, 'Existente');
@@ -233,8 +228,7 @@ describe('CreateCollectionModal', () => {
 
   describe('loading state', () => {
     it('should show loading spinner when submitting', async () => {
-      const { component } = render(CreateCollectionModal);
-      component.$on('create', () => {});
+      render(CreateCollectionModal);
 
       const input = getInput();
       await typeText(input, 'Test');
@@ -246,8 +240,7 @@ describe('CreateCollectionModal', () => {
     });
 
     it('should disable buttons while submitting', async () => {
-      const { component } = render(CreateCollectionModal);
-      component.$on('create', () => {});
+      render(CreateCollectionModal);
 
       const input = getInput();
       await typeText(input, 'Test');

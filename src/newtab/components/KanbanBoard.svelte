@@ -73,7 +73,7 @@
     const { linkId, toCollectionId } = event.detail;
     try {
       await linksStore.moveLink(linkId, toCollectionId);
-    } catch (err) {
+    } catch (_err) {
       dispatch('error', t('error_move_link_failed'));
     }
   }
@@ -82,7 +82,7 @@
     const { id, newName } = event.detail;
     try {
       await linksStore.renameCollection(id, newName);
-    } catch (err) {
+    } catch (_err) {
       dispatch('error', t('error_rename_collection_failed'));
     }
   }
@@ -96,7 +96,7 @@
       } else {
         dispatch('success', t('success_collection_deleted', name));
       }
-    } catch (err) {
+    } catch (_err) {
       dispatch('error', t('error_delete_collection_failed'));
     }
   }

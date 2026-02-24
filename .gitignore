@@ -177,6 +177,9 @@ desktop.ini
 # ==============================================================================
 tabala-backup-recovery.json
 
+# Screenshot generation artifacts
+scripts/screenshots/dist/
+
 # ==============================================================================
 # Miscelânea
 # Outros arquivos que não devem ser versionados

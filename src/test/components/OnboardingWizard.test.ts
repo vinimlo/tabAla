@@ -195,9 +195,8 @@ describe('OnboardingWizard', () => {
   describe('step 4 - Completion', () => {
     it('should mark onboardingCompleted and dispatch close on Get Started', async () => {
       const updateSettingsSpy = vi.spyOn(settingsStore, 'updateSettings');
-      const { component } = render(OnboardingWizard);
       const closeHandler = vi.fn();
-      component.$on('close', closeHandler);
+      render(OnboardingWizard, { events: { close: closeHandler } });
 
       // Navigate to step 4
       await fireEvent.click(screen.getByText('onboarding_next'));
@@ -225,9 +224,8 @@ describe('OnboardingWizard', () => {
   describe('dismiss without completing', () => {
     it('should dispatch close on Escape without marking as completed', async () => {
       const updateSettingsSpy = vi.spyOn(settingsStore, 'updateSettings');
-      const { component } = render(OnboardingWizard);
       const closeHandler = vi.fn();
-      component.$on('close', closeHandler);
+      render(OnboardingWizard, { events: { close: closeHandler } });
 
       await fireEvent.keyDown(window, { key: 'Escape' });
 
@@ -237,9 +235,8 @@ describe('OnboardingWizard', () => {
 
     it('should dispatch close on backdrop click without marking as completed', async () => {
       const updateSettingsSpy = vi.spyOn(settingsStore, 'updateSettings');
-      const { component } = render(OnboardingWizard);
       const closeHandler = vi.fn();
-      component.$on('close', closeHandler);
+      render(OnboardingWizard, { events: { close: closeHandler } });
 
       const backdrop = screen.getByRole('dialog');
       await fireEvent.click(backdrop);

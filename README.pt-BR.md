@@ -20,7 +20,7 @@ Salve abas. Organize em coleções. Processe quando quiser.
 
 ## Screenshots
 
-*(Adicione suas screenshots aqui)*
+![TabAla Screenshot](store-assets/screenshots/screenshot_repo.png)
 
 ## Instalação
 

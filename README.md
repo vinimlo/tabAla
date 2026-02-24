@@ -20,7 +20,7 @@ Save tabs. Organize in collections. Process when you want.
 
 ## Screenshots
 
-*(Add your screenshots here)*
+![TabAla Screenshot](store-assets/screenshots/screenshot_repo.png)
 
 ## Installation
 

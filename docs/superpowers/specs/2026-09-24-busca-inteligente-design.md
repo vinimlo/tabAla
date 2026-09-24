@@ -1,6 +1,6 @@
 # Busca inteligente — design
 
-**Data:** 2026-09-24 · **Estado:** aprovado em conversa, aguardando revisão da spec · **Branch:** `feat/busca-inteligente` (a partir de `fix/varredura`)
+**Data:** 2026-09-24 · **Estado:** aprovado; **revisado em 2026-09-24 depois da medição** (busca por assunto por tradução da consulta, não por tags) · **Branch:** `feat/busca-inteligente` (a partir de `fix/varredura`)
 
 ## 1. Contexto e objetivo
 
@@ -18,17 +18,17 @@ Sucesso: nas buscas por assunto de um gabarito real, o link certo aparece no top
 
 | Decisão | Escolha | Por quê |
 |---|---|---|
-| Fonte da inteligência | Regras locais + IA embutida do Chrome (Gemini Nano, Prompt API) | Roda na máquina, sem chave, sem custo; nada sai do navegador |
+| Fonte da inteligência | Regras locais + IA embutida do Chrome | Roda na máquina, sem chave, sem custo; nada sai do navegador |
 | Público | Versão da Chrome Web Store | en + pt_BR, nenhuma permissão obrigatória nova, tudo funciona sem IA |
-| Busca por assunto | **Tags geradas pela IA para cada link, antes da busca** | Busca instantânea, funciona sem o modelo carregado, e as tags servem ao futuro espaço de recomendação |
-| Alternativa descartada | IA interpretando cada pergunta | ~1 s por busca e falha quando o tema não está no título; vira o plano B se a medição reprovar as tags |
+| Busca por assunto | **Traduzir a consulta para o inglês com o Translator do Chrome e buscar a original e a traduzida juntas** | Medido (§9): 24% → 44% no gabarito, 2 ms por busca, sem etiquetar nada |
+| Descartado depois da medição | Tags geradas pelo Gemini Nano | +16 pontos (abaixo do critério), ~6 min por 170 links, só em inglês (o Nano recusa português no Chrome 153) |
 | Filtro do quadro | Sai; o painel de busca substitui | Olhava só o workspace ativo; duas buscas com resultados diferentes confundem |
 
 ## 3. Escopo
 
-**Dentro:** tipo do link derivado da URL; motor de busca local ranqueado; tags por IA (etiquetador, ativação, edição manual); painel de busca no dashboard; busca no popup; medição com gabarito; política de privacidade atualizada.
+**Dentro:** tipo do link derivado da URL; motor de busca local ranqueado que aceita várias formas da mesma consulta; tradução da consulta com o Translator do Chrome (ativação em Configurações); painel de busca no dashboard; busca no popup; medição com gabarito; política de privacidade atualizada.
 
-**Fora:** ler o conteúdo das páginas; IA na hora da busca; histórico de buscas; operadores (`site:`, `tipo:`); busca vetorial ou embeddings (exigiria embutir um modelo e estourar o limite de 500 KB do bundle).
+**Fora:** tags geradas por IA e edição de tags; ler o conteúdo das páginas; histórico de buscas; operadores (`site:`, `tipo:`); busca vetorial ou embeddings (estouraria o limite de 500 KB do bundle).
 
 ## 4. Modelo de dados
 
@@ -37,14 +37,12 @@ Sucesso: nas buscas por assunto de um gabarito real, o link certo aparece no top
 ```ts
 interface Link {
   // ...campos atuais
-  /** Assunto do link. Ausente: ainda não etiquetado. []: etiquetado, sem tags. */
+  /** Assunto do link. Ausente: sem tags. */
   tags?: string[];
 }
 ```
 
-- Opcional: exports antigos continuam válidos, nenhuma migração.
-- O export leva as tags. O import rejeita `tags` que não seja lista de textos.
-- Limpeza (em toda gravação): minúsculas, `trim`, sem vazias, sem repetidas, no máximo 6 tags de até 40 caracteres.
+Campo opcional que o motor já pontua (peso 2,5), sem nenhum código que o preencha nesta versão. Fica porque não custa nada e é o caminho medido para 56% (§9) se um dia valer somar tags.
 
 ### 4.2 Tipo do link
 
@@ -65,56 +63,27 @@ Calculado da URL a cada uso, sem gravar: `linkKind(url): LinkKind` em `src/lib/l
 
 O espaço de recomendação (spec futura) reaproveita `linkKind`.
 
-## 5. Etiquetador
+## 5. Tradução da consulta
 
-### 5.1 Onde e quando roda
+### 5.1 O que faz
 
-- **No dashboard (nova aba)**, em segundo plano, depois que a página montou, se `settings.topicSearch === true` e o modelo estiver `available`.
-- **Uma aba por vez:** `navigator.locks.request('tabala-tagger', { ifAvailable: true }, ...)`. Se outra aba já etiqueta, esta desiste na hora (lock `null`).
-- **Fila:** links com `tags === undefined`, mais novos primeiro. Um link salvo pelo popup é etiquetado na próxima nova aba.
-- **Service worker fora:** não está confirmado que a Prompt API existe em service worker de extensão; o dashboard basta porque a nova aba abre o tempo todo.
-- Para ao fechar a aba (nada a limpar: o que foi gravado fica, o resto continua na fila).
+A consulta digitada na língua da interface (`chrome.i18n.getUILanguage()`, sem região: `pt-BR` → `pt`) é traduzida para o inglês pelo Translator embutido do Chrome, no próprio computador. O motor busca a original e a traduzida juntas (§6.5). Com a interface em inglês, não há tradução.
 
-### 5.2 Prompt
+### 5.2 Como roda
 
-Uma sessão por execução (`LanguageModel.create`) com instrução de sistema e lotes de **5 links** por `prompt()`:
+- Um tradutor por página, criado na primeira consulta com texto, só se a opção estiver ligada e o Translator estiver `available`.
+- O resultado aparece na hora com a consulta original e se completa quando a tradução chega (medido: 2 ms por consulta, 5,6 s para criar o tradutor uma vez).
+- Tradução igual ao texto original (nomes próprios, termos já em inglês) é descartada. O espaço final da consulta é preservado, para a regra da palavra em digitação (§6.1) valer igual nas duas formas.
+- Falha do tradutor: a consulta segue só com a forma original.
 
-- **Sistema** (~80 tokens, em inglês, que o modelo aceita em qualquer configuração de idioma): "You tag saved links in a tab organizer. For each link (title, site, collection and workspace), return 3 to 6 short subject tags, in Portuguese and in English, lowercase. Do not use the site name or generic words like link, page, article, video." Sem suporte a português, o trecho vira "in English".
-- **Usuário** (~30 tokens por link): `1. título: <título> | site: <domínio> | coleção: <coleção> (<workspace>)`.
-- **Saída** restrita por JSON Schema (`responseConstraint`), ~25 tokens por link:
+### 5.3 Ativação e configuração
 
-```json
-{ "type": "array", "items": { "type": "object",
-  "properties": { "i": { "type": "integer" },
-                  "tags": { "type": "array", "items": { "type": "string" }, "maxItems": 6 } },
-  "required": ["i", "tags"] } }
-```
-
-- Conta para uma biblioteca de 170 links: 34 lotes de ~230 tokens de entrada e ~125 de saída. Estimativa de 1 a 2 minutos no total, uma única vez; o spike (§10) mede o tempo real.
-- Idiomas declarados em `expectedInputs`/`expectedOutputs`: `['en', 'pt']`. Se o Chrome recusar `pt`, a sessão sobe com `['en']` e as tags saem em inglês (o spike decide).
-
-### 5.3 Gravação
-
-`setLinkTags(updates: { [linkId]: tags }, { onlyIfUntagged })` em `storage/links.ts`: um lote inteiro numa única gravação dentro de `withDataLock`, lendo o storage na hora e devolvendo os ids gravados. Link que não existe mais é ignorado, nunca recriado.
-
-- Etiquetador: `onlyIfUntagged: true` — grava só se o link ainda existir e continuar sem tags. Uma edição manual feita no meio do lote nunca é sobrescrita.
-- Edição manual: `onlyIfUntagged: false`.
-
-### 5.4 Ativação e configuração
-
-- `Settings.topicSearch: boolean`, padrão `false` (quem instala da loja decide).
-- Em Configurações, seção "Busca por assunto", com o estado vindo de `LanguageModel.availability()`:
-  - `unavailable`: "Indisponível neste computador" (sem botão);
-  - `downloadable`: botão "Ativar" — o clique é o gesto que o Chrome exige para baixar; mostra progresso via `monitor` / `downloadprogress`;
+- `Settings.topicSearch: boolean`, padrão `false`.
+- Em Configurações, seção "Busca por assunto", com o estado vindo de `Translator.availability({ sourceLanguage, targetLanguage: 'en' })`:
+  - `unavailable` (ou interface em inglês): "Indisponível neste computador";
+  - `downloadable`: botão "Ativar" — o clique é o gesto que o Chrome exige para baixar o pacote de idioma; progresso via `monitor` / `downloadprogress`;
   - `downloading`: progresso;
-  - `available`: interruptor ligado/desligado e "N de M links etiquetados".
-- Desligar para o etiquetador antes do próximo lote; as tags existentes ficam e continuam valendo na busca.
-
-### 5.5 Falhas
-
-- Modelo indisponível ou `create()` falhando: não etiqueta; a busca segue local.
-- `prompt()` falhando ou JSON fora do schema: o lote é descartado e fica na fila para a próxima execução. Depois de 3 falhas seguidas na mesma execução, o etiquetador para até a próxima nova aba.
-- Índice `i` desconhecido ou repetido na resposta: ignorado; o link sem resposta volta para a fila.
+  - `available`: interruptor ligado/desligado.
 
 ## 6. Motor de busca
 
@@ -161,56 +130,52 @@ Pontuação do link = soma dos termos. **Resultados:** links em que todos os ter
 
 Índice derivado de links, coleções e workspaces (tokens por campo, pré-normalizados), recalculado quando os dados mudam. Varredura linear: menos de 1 ms para centenas de links, poucos ms para milhares.
 
+### 6.5 Várias formas da mesma consulta
+
+`search(index, consultas: string[])` junta formas da mesma consulta (original e traduzida): um link é resultado se casar com todos os termos de **alguma** forma, com a maior pontuação entre elas; as palavras de tipo de todas as formas se somam; "Parciais" só aparecem quando nenhuma forma tem resultado completo.
+
 ## 7. Interface
 
 ### 7.1 Painel de busca (dashboard)
 
-- Abre ao focar ou digitar no campo de busca do topo, com ⌘K, Ctrl+K ou `/`.
-- Resultados de todos os workspaces (até 50). Cada um: favicon, título, `Workspace › Coleção`, tipo, domínio e as tags que casaram, em destaque.
+- Abre ao clicar no campo de busca do topo, com ⌘K, Ctrl+K ou `/` (fora de campo de texto).
+- Resultados de todos os workspaces (até 50). Cada um: favicon, título, `Workspace › Coleção`, tipo, domínio e as tags do link, se houver.
 - Chips de tipo com contagem no topo do painel.
-- Teclado: ↑↓ navega; Enter abre na aba atual (como o clique no card); ⌘Enter / Ctrl+Enter abre em aba nova; ⇧Enter "mostrar no quadro" (troca para o workspace do link — link da Inbox fica no workspace atual, porque a Inbox aparece em todos —, fecha o painel, rola até o card e o destaca por 2 s); Esc fecha.
-- Caminho do resultado: `Workspace › Coleção`; para a Inbox, só "Inbox".
-- Vazio: "Nada encontrado". Se a busca por assunto estiver desligada e o modelo existir, uma linha convida a ativar em Configurações.
-- **O filtro do quadro sai:** `searchQuery` deixa de existir em `KanbanBoard` e `Column`; o campo do topo só abre o painel.
-- `LinkCard` ganha `data-link-id` para o "mostrar no quadro".
+- Teclado: ↑↓ navega; Enter abre na aba atual; ⌘Enter / Ctrl+Enter abre em aba nova; ⇧Enter "mostrar no quadro" (troca para o workspace do link — link da Inbox fica no workspace atual —, fecha o painel, rola até o card e o destaca por 2 s); Esc fecha.
+- Vazio: "Nada encontrado". Se a busca por assunto estiver desligada e o Translator existir, uma linha convida a ativar em Configurações.
+- O filtro do quadro sai; `LinkCard` ganha `data-link-id` para o "mostrar no quadro".
 
 ### 7.2 Popup
 
-Campo de busca no topo. Enquanto há texto, os 8 melhores resultados substituem a lista de coleções; Enter abre em aba nova; Esc limpa.
-
-### 7.3 Editar tags
-
-Botão com ícone de etiqueta no card, ao lado de "abrir em nova aba" e "remover": abre um campo de texto no próprio card com as tags separadas por vírgula; Enter grava com `onlyIfUntagged: false` (vazio grava `[]`); Esc cancela. As tags do link aparecem também no resultado do painel.
+Campo de busca no topo. Enquanto há texto, os 8 melhores resultados substituem a lista de coleções; Enter abre em aba nova; Esc limpa. Usa a mesma tradução quando ligada.
 
 ## 8. Privacidade e textos
 
-- Política de privacidade (en e pt): a busca por assunto usa o modelo embutido do Chrome, que roda no computador; títulos, sites e nomes de coleção vão só para esse modelo local; nada é enviado para fora.
+- Política de privacidade (en e pt): com a busca por assunto ligada, o texto digitado na busca vai só para o tradutor embutido do Chrome, que roda no computador; nada é enviado para fora.
 - Todos os textos novos em `en` e `pt_BR`.
 
 ## 9. Testes e medição
 
-- **Motor:** testes em tabela com resultados escritos à mão — acento, plural, erro de digitação, palavras de tipo, pesos, parciais, empate.
-- **`linkKind`:** uma URL real por regra e as fronteiras (PR vs repositório, `.pdf` vs página).
-- **Etiquetador:** o único mock é o `LanguageModel`. Cobre lotes, `onlyIfUntagged`, a trava `ifAvailable`, a limpeza das tags, as falhas de §5.5.
-- **Componentes:** teclado do painel, "mostrar no quadro", busca no popup, edição de tags.
-- **Medição (decide a abordagem):** harness versionado no repositório lê três arquivos passados por caminho — um export do tabAla, um mapa de tags `{ [linkId]: string[] }` e um gabarito `{ consulta, idsEsperados, categoria }` — e imprime o acerto@5 por categoria, com e sem tags. O gabarito tem ~20 buscas por assunto e ~10 por título ou site, montadas a partir de dados reais, e fica fora do repositório.
-- **Critério:** as tags ficam se o acerto@5 nas buscas por assunto subir **pelo menos 20 pontos percentuais** sobre a busca sem tags, sem cair nas buscas por título ou site. Se não, a busca por assunto passa para o plano B (IA interpretando a pergunta), reaproveitando o motor.
+- **Motor:** testes em tabela com resultados escritos à mão — acento, plural, erro de digitação, palavras de tipo, pesos, parciais, empate, várias formas da consulta.
+- **`linkKind`:** uma URL real por regra e as fronteiras.
+- **Tradutor:** o único mock é o `Translator` do Chrome: língua da interface, disponibilidade, um tradutor por página, tradução igual descartada, falha.
+- **Componentes:** teclado do painel, "mostrar no quadro", busca no popup, tradução chegando depois da consulta.
+- **Medição:** harness versionado lê um export, um mapa de tags, as traduções e o gabarito (fora do repositório) e imprime o acerto@5.
+- **Resultado (2026-09-24, 25 buscas por assunto, 11 por título ou site):** sem IA, 24% / 100%; tags do Nano, 40% / 100%; original + traduzida, **44% / 100%**; tags + original + traduzida, 56% / 100%. Critério (+20 pontos por assunto sem cair em título): atingido pela tradução.
 
 ## 10. Riscos
 
 | Risco | Como tratamos |
 |---|---|
-| O Nano não aceitar português | Spike antes de tudo; tags em inglês se necessário, e a medição diz se basta |
-| Tags genéricas vindas só do título | Coleção e workspace entram no prompt; a medição decide |
-| Modelo indisponível em muitas máquinas da loja | Tudo funciona sem ele; a opção vem desligada |
-| Download grande do modelo | Só com clique explícito, com progresso visível |
-| Prompt API diferente do documentado | Spike valida `availability`, `create`, `responseConstraint` e o tempo por lote antes do plano detalhado |
+| Tradução literal de termo técnico ("problema da mochila" → "backpack problem") | A forma original continua valendo; o caminho de 56% com tags segue medido |
+| Tradução estraga nome próprio ("openrouter" → "opener") | Busca sempre original + traduzida, nunca só a traduzida (medido: título cairia de 100% para 91%) |
+| Translator indisponível em muitas máquinas da loja | Tudo funciona sem ele; a opção vem desligada |
 
 ## 11. Fases
 
-0. **Spike (descartável)** no Chrome real: disponibilidade, português, tempo por lote de 5, `responseConstraint`; gera o mapa de tags de uma biblioteca real num arquivo à parte, **sem gravar nada no storage** da extensão.
-1. `linkKind` e motor de busca (puros), com testes.
-2. Medição com o gabarito → decisão tags vs. plano B.
-3. Painel no dashboard, busca no popup, saída do filtro do quadro.
-4. `Link.tags` nos dados e no import/export, `setLinkTags`, etiquetador, ativação em Configurações, edição de tags.
+0. Spikes no Chrome real (descartáveis): Nano (tags) e Translator (tradução) — feitos.
+1. `linkKind` e motor de busca (puros), com testes — feitos.
+2. Medição com o gabarito → decisão: tradução — feita.
+3. Painel no dashboard, busca no popup, saída do filtro do quadro — feitos.
+4. Motor com várias formas da consulta; tradutor; ativação em Configurações e ligação no painel e no popup.
 5. Política de privacidade, textos, build.

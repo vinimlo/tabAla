@@ -4,9 +4,9 @@
 
 **Goal:** achar qualquer link salvo, em qualquer workspace, pelo assunto, por parte do título ou do site e pelo tipo de conteúdo — no dashboard (⌘K) e no popup.
 
-**Architecture:** um motor de busca local e puro (`src/lib/search/`) ranqueia título, tags, site, coleção, workspace e caminho da URL, com filtro por tipo derivado da URL (`src/lib/link-kind.ts`). A busca por assunto vem de tags que o Gemini Nano do Chrome gera para cada link em segundo plano, no dashboard (`src/lib/ai/`). Um painel (`SearchPanel.svelte`) substitui o filtro do quadro; o popup ganha um campo de busca que usa o mesmo motor.
+**Architecture:** um motor de busca local e puro (`src/lib/search/`) ranqueia título, tags, site, coleção, workspace e caminho da URL, com filtro por tipo derivado da URL (`src/lib/link-kind.ts`). A busca por assunto traduz a consulta para o inglês com o Translator do Chrome (`src/lib/ai/translator.ts`) e busca a original e a traduzida juntas (revisão de 2026-09-24, depois da medição da Task 4; as tags pelo Nano saíram). Um painel (`SearchPanel.svelte`) substitui o filtro do quadro; o popup ganha um campo de busca que usa o mesmo motor.
 
-**Tech Stack:** Svelte 5 (sintaxe legada do repo), TypeScript, Vite + crxjs, Vitest + @testing-library/svelte, Chrome MV3, Prompt API do Chrome (`LanguageModel`).
+**Tech Stack:** Svelte 5 (sintaxe legada do repo), TypeScript, Vite + crxjs, Vitest + @testing-library/svelte, Chrome MV3, Translator API do Chrome (e a Prompt API só no spike da Task 0).
 
 **Spec:** `docs/superpowers/specs/2026-09-24-busca-inteligente-design.md`
 
@@ -29,7 +29,7 @@
 - Uma consulta que é só palavra de tipo ou só palavra vazia ("vídeo", "de ") lista os vídeos ou nada — nunca erro. → Task 2 (palavra vazia) e Task 3 (tipo sozinho).
 - "/" digitado dentro de qualquer campo de texto (renomear coleção, editar tags) escreve a barra; ⌘K/Ctrl+K abrem a busca de qualquer lugar. → Task 5.
 - Títulos e consultas com pontuação, símbolos ou título vazio (links `file://`, "(PDF)", "node.js", "") não quebram nada e casam por site, caminho ou coleção. → Task 2 e Task 3.
-- Um link apagado ou re-etiquetado pelo usuário enquanto o lote do etiquetador está em voo nunca volta e a tag do usuário vence. → Task 9.
+- A tradução que chega depois de a consulta mudar é ignorada: o painel nunca mostra resultados de uma consulta antiga. → Task 10.
 - A busca do popup acha links de workspaces que não são o ativo; link da Inbox mostra só "Inbox" como caminho. → Task 3 e Task 7.
 
 ---
@@ -2108,767 +2108,342 @@ git commit -m "feat(search): search every workspace from the popup"
 
 ---
 
-### Task 8: Tags nos dados
+### Task 8: Motor com várias formas da consulta
+
+> Revisão de 2026-09-24: as Tasks 8–11 originais (tags pelo Nano) foram substituídas depois da medição da Task 4 (ver spec §2 e §9).
 
 **Files:**
-- Create: `src/lib/tags.ts`
-- Modify: `src/lib/storage/links.ts`, `src/lib/storage/index.ts`, `src/lib/storage/import-export.ts`, `src/lib/stores/links.ts`, `src/test/mocks/storage.ts`, os dois locales
-- Test: `src/test/lib/tags.test.ts`, `src/test/lib/storage.test.ts`, `src/test/lib/storage/import-export.test.ts`, `src/test/stores/links.test.ts`
+- Modify: `src/lib/search/engine.ts`, `src/test/lib/search/engine.test.ts`, `src/test/eval/search.eval.test.ts`
 
 **Interfaces:**
-- Consumes: `withDataLock`, `getLinks`, `saveLinks` (storage).
-- Produces:
-  - `MAX_TAGS = 6`, `MAX_TAG_LENGTH = 40`, `sanitizeTags(input: unknown): string[]`, `parseTagInput(text: string): string[]` em `src/lib/tags.ts`.
-  - `setLinkTags(updates: Record<string, string[]>, options: { onlyIfUntagged: boolean }): Promise<string[]>` (ids gravados) em `src/lib/storage/links.ts`, exportado pelo barrel.
-  - `linksStore.setTags(linkId: string, tags: string[]): Promise<void>`.
+- Consumes: `parseQuery` (Task 2); `buildIndex`, `search` (Task 3).
+- Produces: `search(index: SearchIndex, query: string | string[], options?: SearchOptions): SearchResult` — uma lista junta formas da mesma consulta (original e traduzida).
 
-- [ ] **Step 1: Testes que falham**
+- [ ] **Step 1: Testes que falham** — em `src/test/lib/search/engine.test.ts`, dentro de `describe('search')`:
 
-`src/test/lib/tags.test.ts`:
 ```ts
+  it('treats a link as a result when it fully matches any phrasing', () => {
+    const result = search(index, ['hermes lesson', 'the bitter lesson']);
+    expect(ids(result.results)).toEqual(['bitter']);
+    expect(result.partial).toEqual([]);
+  });
+
+  it('keeps the original phrasing working when the other one is wrong', () => {
+    expect(ids(search(index, ['mckinsey', 'opener']).results)).toEqual(['mckinsey']);
+  });
+
+  it('gives a single phrasing in a list the same result as a plain query', () => {
+    expect(search(index, ['hermes'])).toEqual(search(index, 'hermes'));
+  });
+
+  it('adds up the kind words of every phrasing', () => {
+    expect(ids(search(index, ['hermes', 'video hermes']).results)).toEqual(['hermes-video']);
+  });
+
+  it('keeps the best score of a link among the phrasings', () => {
+    const [hit] = search(index, ['incompleteideas', 'bitter']).results;
+    expect(hit.link.id).toBe('bitter');
+    expect(hit.score).toBe(3);
+  });
+```
+
+Rodar `docker compose run --rm app npx vitest run src/test/lib/search/engine.test.ts` → FAIL (a lista ainda não é aceita).
+
+- [ ] **Step 2: Implementar** — em `src/lib/search/engine.ts`:
+
+`Scored` ganha `full`:
+```ts
+interface Scored {
+  entry: Entry;
+  score: number;
+  matched: number;
+  /** Matched every term of its phrasing. */
+  full: boolean;
+  matchedTags: string[];
+}
+```
+
+Em `scoreEntry`, o retorno passa a ser:
+```ts
+  return { entry, score, matched, full: matched === terms.length, matchedTags: [...matchedTags] };
+```
+
+Nova função, depois de `scoreEntry`:
+```ts
+/** Best reading of a link among the phrasings: a full match wins, then the higher score. */
+function bestOf(candidates: Scored[]): Scored {
+  return candidates.reduce((best, candidate) => {
+    if (candidate.full !== best.full) {
+      return candidate.full ? candidate : best;
+    }
+    if (candidate.full) {
+      return candidate.score > best.score ? candidate : best;
+    }
+    return candidate.matched > best.matched || (candidate.matched === best.matched && candidate.score > best.score)
+      ? candidate
+      : best;
+  });
+}
+```
+
+`search` passa a ser:
+```ts
+/**
+ * Searches one query, or several phrasings of the same query (the original
+ * and its translation): a link is a result when it matches every term of
+ * any phrasing, with its best score among them.
+ */
+export function search(index: SearchIndex, query: string | string[], options: SearchOptions = {}): SearchResult {
+  const phrasings = (typeof query === 'string' ? [query] : query).map(parseQuery);
+  const kinds = [...new Set([...phrasings.flatMap((p) => p.kinds), ...(options.kinds ?? [])])];
+  const termLists = phrasings.map((p) => p.terms).filter((terms) => terms.length > 0);
+  const limit = options.limit ?? 50;
+  const passesKinds = (s: Scored): boolean => kinds.length === 0 || kinds.includes(s.entry.kind);
+
+  if (termLists.length === 0) {
+    const all: Scored[] = index.entries.map((entry) => ({ entry, score: 0, matched: 0, full: false, matchedTags: [] }));
+    const results = kinds.length === 0
+      ? []
+      : all.filter(passesKinds).sort(newestFirst).slice(0, limit).map(toHit);
+    return { results, partial: [], kinds, kindCounts: countKinds(all) };
+  }
+
+  const scored = index.entries.map((entry) => bestOf(termLists.map((terms) => scoreEntry(entry, terms))));
+  const full = scored.filter((s) => s.full);
+  const results = full
+    .filter(passesKinds)
+    .sort((a, b) => b.score - a.score || newestFirst(a, b))
+    .slice(0, limit)
+    .map(toHit);
+  const some = scored.filter((s) => s.matched > 0);
+  const partial = results.length > 0
+    ? []
+    : some
+      .filter(passesKinds)
+      .sort((a, b) => b.matched - a.matched || b.score - a.score || newestFirst(a, b))
+      .slice(0, limit)
+      .map(toHit);
+
+  return { results, partial, kinds, kindCounts: countKinds(full.length > 0 ? full : some) };
+}
+```
+
+Rodar → PASS (todos os testes do motor, antigos e novos).
+
+- [ ] **Step 3: Harness mede a tradução** — substituir o conteúdo de `src/test/eval/search.eval.test.ts` por:
+
+```ts
+/* eslint-disable no-console -- the harness reports through the console */
+/**
+ * Offline evaluation of the search: hit@5 by category, with and without tags,
+ * and with the query translated when translations.json is present.
+ * Skipped unless TABALA_EVAL_DIR points to a folder with export.json,
+ * tags.json, gabarito.json and optionally translations.json (spike output).
+ * Those files hold personal data and never enter the repository (.eval/ is
+ * gitignored).
+ */
 import { describe, it, expect } from 'vitest';
-import { sanitizeTags, parseTagInput } from '@/lib/tags';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { buildIndex, search, type SearchIndex } from '@/lib/search/engine';
+import type { TabAlaExportFile } from '@/lib/storage';
+import type { Link } from '@/lib/types';
 
-describe('sanitizeTags', () => {
-  it('lowercases, trims, drops empty, long and repeated tags, and keeps at most six', () => {
-    expect(sanitizeTags([
-      '  História da IA ', 'história  da ia', 'Escala', '', 42, 'x'.repeat(41), 'a', 'b', 'c', 'd', 'e',
-    ])).toEqual(['história da ia', 'escala', 'a', 'b', 'c', 'd']);
-  });
-
-  it('returns an empty list for anything that is not a list', () => {
-    expect(sanitizeTags('ia')).toEqual([]);
-    expect(sanitizeTags(undefined)).toEqual([]);
-  });
-});
-
-describe('parseTagInput', () => {
-  it('splits on commas and cleans each tag', () => {
-    expect(parseTagInput('ia, agentes,, IA ')).toEqual(['ia', 'agentes']);
-  });
-});
-```
-
-Em `src/test/lib/storage.test.ts` (importar `setLinkTags` do barrel junto dos outros):
-```ts
-describe('setLinkTags', () => {
-  beforeEach(async () => {
-    vi.clearAllMocks();
-    clearMockStorage();
-    await saveLinks([
-      createMockLink({ id: 'untagged' }),
-      createMockLink({ id: 'tagged', tags: ['minha tag'] }),
-    ]);
-  });
-
-  const tagsOf = async (id: string): Promise<string[] | undefined> =>
-    (await getLinks()).find((l) => l.id === id)?.tags;
-
-  it('fills only untagged links when asked to, skipping missing ones', async () => {
-    const written = await setLinkTags(
-      { untagged: ['IA'], tagged: ['outra'], gone: ['x'] },
-      { onlyIfUntagged: true }
-    );
-
-    expect(written).toEqual(['untagged']);
-    expect(await tagsOf('untagged')).toEqual(['ia']);
-    expect(await tagsOf('tagged')).toEqual(['minha tag']);
-    expect((await getLinks()).map((l) => l.id)).toEqual(['untagged', 'tagged']);
-  });
-
-  it('overwrites tags on a manual edit', async () => {
-    const written = await setLinkTags({ tagged: ['nova'] }, { onlyIfUntagged: false });
-
-    expect(written).toEqual(['tagged']);
-    expect(await tagsOf('tagged')).toEqual(['nova']);
-  });
-});
-```
-
-Em `src/test/lib/storage/import-export.test.ts`, no `describe('validateExportFile')`:
-```ts
-  it('rejects tags that are not a list of texts', () => {
-    const notList = exportFile({ links: [{ ...createMockLink({ id: 'l1' }), tags: 'ia' as unknown as string[] }] });
-    const notTexts = exportFile({ links: [{ ...createMockLink({ id: 'l1' }), tags: [1] as unknown as string[] }] });
-
-    expect(() => validateExportFile(notList)).toThrow('Invalid link at index 0');
-    expect(() => validateExportFile(notTexts)).toThrow('Invalid link at index 0');
-  });
-```
-e no `describe('executeImport')`:
-```ts
-  it('cleans imported tags', async () => {
-    mockExisting({ collections: [createMockCollection({ id: 'col-1' })] });
-
-    await executeImport(exportFile({
-      links: [createMockLink({ id: 'l1', collectionId: 'col-1', tags: ['  IA ', 'ia', 'Escala'] })],
-    }));
-
-    const saved = vi.mocked(dataAccess.saveLinks).mock.calls[0][0];
-    expect(saved[0].tags).toEqual(['ia', 'escala']);
-  });
-```
-
-Em `src/test/stores/links.test.ts`, novo `describe`:
-```ts
-describe('setTags', () => {
-  beforeEach(async () => {
-    vi.clearAllMocks();
-    linksStore.set(INITIAL_STORE_STATE);
-    mockStorageWith([createMockLink({ id: 'l1', collectionId: 'inbox' })]);
-    await linksStore.load();
-  });
-
-  it('shows the cleaned tags right away', async () => {
-    vi.mocked(storage.setLinkTags).mockResolvedValue(['l1']);
-
-    await linksStore.setTags('l1', ['  IA ', 'ia']);
-
-    expect(get(linksStore).links[0].tags).toEqual(['ia']);
-  });
-
-  it('rolls back when the tags could not be saved', async () => {
-    vi.mocked(storage.setLinkTags).mockResolvedValue([]);
-
-    await linksStore.setTags('l1', ['ia']);
-
-    expect(get(linksStore).links[0].tags).toBeUndefined();
-    expect(get(linksStore).error).toBe('error_save_tags_failed');
-  });
-});
-```
-e em `src/test/mocks/storage.ts` acrescentar `setLinkTags: vi.fn(() => Promise.resolve([])),`.
-
-Rodar os quatro arquivos → FAIL (módulos e funções não existem).
-
-- [ ] **Step 2: Implementar `src/lib/tags.ts`**
-
-```ts
-/** Subject tags: lowercase, trimmed, unique, at most MAX_TAGS of MAX_TAG_LENGTH chars. */
-export const MAX_TAGS = 6;
-export const MAX_TAG_LENGTH = 40;
-
-export function sanitizeTags(input: unknown): string[] {
-  if (!Array.isArray(input)) {
-    return [];
-  }
-  const tags: string[] = [];
-  for (const raw of input) {
-    if (typeof raw !== 'string') {
-      continue;
-    }
-    const tag = raw.trim().toLowerCase().replace(/\s+/g, ' ');
-    if (tag === '' || tag.length > MAX_TAG_LENGTH || tags.includes(tag)) {
-      continue;
-    }
-    tags.push(tag);
-    if (tags.length === MAX_TAGS) {
-      break;
-    }
-  }
-  return tags;
+interface GabaritoItem {
+  consulta: string;
+  idsEsperados: string[];
+  categoria: 'assunto' | 'titulo';
 }
 
-/** Tags typed by the user, separated by commas. */
-export function parseTagInput(text: string): string[] {
-  return sanitizeTags(text.split(','));
-}
-```
+const dir = process.env.TABALA_EVAL_DIR;
 
-- [ ] **Step 3: `setLinkTags` em `src/lib/storage/links.ts`** (import `sanitizeTags` de `'../tags'`), e exportar no barrel `src/lib/storage/index.ts` junto de `reorderLinks`:
-
-```ts
-/**
- * Writes tags for several links in one locked write. With onlyIfUntagged,
- * links that already have tags (e.g. edited by the user meanwhile) are left
- * alone. Missing links are skipped, never recreated. Returns the ids written.
- */
-export async function setLinkTags(
-  updates: Record<string, string[]>,
-  options: { onlyIfUntagged: boolean }
-): Promise<string[]> {
-  return withDataLock(async () => {
-    const links = await getLinks();
-    const written: string[] = [];
-    const updatedLinks = links.map((link) => {
-      const tags = updates[link.id];
-      if (tags === undefined || (options.onlyIfUntagged && link.tags !== undefined)) {
-        return link;
-      }
-      written.push(link.id);
-      return { ...link, tags: sanitizeTags(tags) };
-    });
-    if (written.length > 0) {
-      await saveLinks(updatedLinks);
-    }
-    return written;
-  });
-}
-```
-
-(`updates[link.id]` tem tipo `string[]` sem `noUncheckedIndexedAccess`; se o ESLint reclamar de condição desnecessária, declarar o parâmetro como `Partial<Record<string, string[]>>`.)
-
-- [ ] **Step 4: Import** — em `src/lib/storage/import-export.ts`:
-
-No laço de validação de links, depois da checagem de `order`:
-```ts
-    if (l.tags !== undefined && (!Array.isArray(l.tags) || !l.tags.every((tag) => typeof tag === 'string'))) {
-      throw new Error(`Invalid link at index ${i}: invalid tags`);
-    }
-```
-
-Em `executeImport`, trocar `newLinks.push({ ...link, collectionId });` por:
-```ts
-        newLinks.push(
-          link.tags === undefined
-            ? { ...link, collectionId }
-            : { ...link, collectionId, tags: sanitizeTags(link.tags) }
-        );
-```
-(import `sanitizeTags` de `'../tags'`).
-
-- [ ] **Step 5: Store** — em `src/lib/stores/links.ts`: importar `setLinkTags as storageSetLinkTags` do storage e `sanitizeTags` de `'@/lib/tags'`; declarar `setTags: (linkId: string, tags: string[]) => Promise<void>;` no tipo de retorno de `createLinksStore`; implementar e devolver `setTags`:
-
-```ts
-  async function setTags(linkId: string, tags: string[]): Promise<void> {
-    const clean = sanitizeTags(tags);
-    await optimisticUpdate(
-      store,
-      (state) => ({
-        updated: {
-          ...state,
-          links: state.links.map((link) => (link.id === linkId ? { ...link, tags: clean } : link)),
-        },
-        rollback: { links: state.links } as Partial<LinksState>,
-      }),
-      async () => {
-        const written = await storageSetLinkTags({ [linkId]: clean }, { onlyIfUntagged: false });
-        return written.length === 1 ? null : t('error_save_tags_failed');
-      },
-      t('error_save_tags_failed')
-    );
-  }
-```
-
-Chave: en `"error_save_tags_failed": { "message": "Could not save the tags" }`; pt_BR `"error_save_tags_failed": { "message": "Não foi possível salvar as tags" }`.
-
-- [ ] **Step 6: Rodar** — os quatro arquivos → PASS; `make test` → PASS.
-
-- [ ] **Step 7: Lint, tipos e commit**
-
-```bash
-docker compose run --rm app sh -c "npx eslint src/lib/tags.ts src/lib/storage src/lib/stores/links.ts src/test/lib/tags.test.ts src/test/lib/storage.test.ts src/test/lib/storage/import-export.test.ts src/test/stores/links.test.ts src/test/mocks/storage.ts; npx tsc --noEmit 2>&1 | grep -E '^src/(lib/(tags|storage|stores/links)|test/(lib/tags|lib/storage|stores/links|mocks))'"
-git add src/lib/tags.ts src/lib/storage/links.ts src/lib/storage/index.ts src/lib/storage/import-export.ts src/lib/stores/links.ts src/test/mocks/storage.ts public/_locales/en/messages.json public/_locales/pt_BR/messages.json src/test/lib/tags.test.ts src/test/lib/storage.test.ts src/test/lib/storage/import-export.test.ts src/test/stores/links.test.ts
-git commit -m "feat(tags): store subject tags on links, with cleaning and locked writes"
-```
-
----
-
-### Task 9: Modelo do Chrome e etiquetador
-
-**Files:**
-- Create: `src/lib/ai/language-model.ts`, `src/lib/ai/tagger.ts`
-- Test: `src/test/lib/ai/language-model.test.ts`, `src/test/lib/ai/tagger.test.ts`
-
-**Interfaces:**
-- Consumes: `setLinkTags` (Task 8), `sanitizeTags` (Task 8), `getLinks`/`getCollections`/`getWorkspaces`, `removeLink` (testes).
-- Produces:
-  - `type ModelAvailability = 'unavailable' | 'downloadable' | 'downloading' | 'available'`
-  - `interface PromptSession { prompt(input: string, options?: { responseConstraint?: unknown }): Promise<string>; destroy(): void }`
-  - `MODEL_LANGUAGES: string[]`, `getModelAvailability(): Promise<ModelAvailability>`, `createSession(systemPrompt: string, onDownloadProgress?: (fraction: number) => void): Promise<PromptSession>` em `language-model.ts`.
-  - `TAG_BATCH_SIZE = 5`, `MAX_CONSECUTIVE_FAILURES = 3`, `TAG_RESPONSE_SCHEMA`, `taggerSystemPrompt(languages: string[]): string`, `interface TaggerDeps { readLibrary; createSession; saveTags; withLock; shouldContinue? }` (tipos no código da Step 3), `interface TaggerReport { tagged: number; failedBatches: number; skipped: boolean }`, `withTaggerLock<T>(task: () => Promise<T>): Promise<T | null>`, `runTagger(deps: TaggerDeps): Promise<TaggerReport>` em `tagger.ts`.
-
-- [ ] **Step 1: Testes que falham**
-
-`src/test/lib/ai/language-model.test.ts`:
-```ts
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getModelAvailability, createSession } from '@/lib/ai/language-model';
-
-afterEach(() => {
-  delete (globalThis as Record<string, unknown>).LanguageModel;
-});
-
-describe('getModelAvailability', () => {
-  it('is unavailable when Chrome has no built-in model', async () => {
-    expect(await getModelAvailability()).toBe('unavailable');
-  });
-
-  it('reports what Chrome says', async () => {
-    (globalThis as Record<string, unknown>).LanguageModel = { availability: vi.fn(async () => 'downloadable') };
-    expect(await getModelAvailability()).toBe('downloadable');
-  });
-
-  it('is unavailable when Chrome refuses the request', async () => {
-    (globalThis as Record<string, unknown>).LanguageModel = { availability: vi.fn(async () => { throw new Error('no'); }) };
-    expect(await getModelAvailability()).toBe('unavailable');
-  });
-});
-
-describe('createSession', () => {
-  it('starts a session with the system prompt and reports download progress', async () => {
-    const progress: number[] = [];
-    const create = vi.fn(async (options: { initialPrompts: { content: string }[]; monitor: (m: { addEventListener: (t: string, l: (e: { loaded: number }) => void) => void }) => void }) => {
-      options.monitor({ addEventListener: (_type, listener) => listener({ loaded: 0.5 }) });
-      return { prompt: vi.fn(), destroy: vi.fn() };
-    });
-    (globalThis as Record<string, unknown>).LanguageModel = { create };
-
-    await createSession('tag links', (fraction) => progress.push(fraction));
-
-    expect(create.mock.calls[0][0].initialPrompts[0].content).toBe('tag links');
-    expect(progress).toEqual([0.5]);
-  });
-});
-```
-
-`src/test/lib/ai/tagger.test.ts`:
-```ts
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { clearMockStorage } from '../../setup';
-import { getLinks, getCollections, getWorkspaces, saveLinks, saveCollections, setLinkTags, removeLink } from '@/lib/storage';
-import { runTagger, withTaggerLock, type TaggerDeps } from '@/lib/ai/tagger';
-import type { PromptSession } from '@/lib/ai/language-model';
-import { createMockCollection, createMockLink } from '../../factories';
-
-/** Answers each prompt line with a tag equal to the title on that line. */
-function tagWithTitle(prompt: string): string {
-  return JSON.stringify(prompt.split('\n').map((line) => {
-    const match = /^(\d+)\. title: (.*?) \| /.exec(line);
-    return { i: Number(match?.[1]), tags: [match?.[2] ?? ''] };
-  }));
+function read<T>(name: string): T {
+  return JSON.parse(readFileSync(join(dir ?? '', name), 'utf8')) as T;
 }
 
-function fakeSession(reply: (prompt: string) => Promise<string>): { session: PromptSession; prompts: string[] } {
-  const prompts: string[] = [];
-  const session: PromptSession = {
-    prompt: vi.fn(async (input: string) => {
-      prompts.push(input);
-      return reply(input);
-    }),
-    destroy: vi.fn(),
-  };
-  return { session, prompts };
+function top5(index: SearchIndex, phrasings: string[]): string[] {
+  const result = search(index, phrasings.map((q) => `${q} `));
+  const hits = result.results.length > 0 ? result.results : result.partial;
+  return hits.slice(0, 5).map((hit) => hit.link.id);
 }
 
-function deps(session: PromptSession, overrides: Partial<TaggerDeps> = {}): TaggerDeps {
-  return {
-    readLibrary: async () => ({
-      links: await getLinks(),
-      collections: await getCollections(),
-      workspaces: await getWorkspaces(),
-    }),
-    createSession: vi.fn(async () => session),
-    saveTags: (updates) => setLinkTags(updates, { onlyIfUntagged: true }),
-    withLock: (task) => task(),
-    ...overrides,
-  };
-}
+describe.skipIf(dir === undefined)('search evaluation', () => {
+  it('prints hit@5 by index and strategy', () => {
+    const data = read<TabAlaExportFile>('export.json');
+    const { tags } = read<{ tags: Record<string, string[]> }>('tags.json');
+    const gabarito = read<GabaritoItem[]>('gabarito.json');
+    const translations = existsSync(join(dir ?? '', 'translations.json'))
+      ? read<{ translations: Record<string, string> }>('translations.json').translations
+      : null;
 
-const tagsOf = async (id: string): Promise<string[] | undefined> =>
-  (await getLinks()).find((l) => l.id === id)?.tags;
+    const untagged: Link[] = data.links.map(({ tags: _tags, ...link }) => link);
+    const tagged: Link[] = untagged.map((link) => (tags[link.id] === undefined ? link : { ...link, tags: tags[link.id] }));
+    console.log(`links com tags: ${tagged.filter((link) => link.tags !== undefined).length}/${tagged.length}`);
 
-describe('runTagger', () => {
-  beforeEach(async () => {
-    clearMockStorage();
-    await saveCollections([createMockCollection({ id: 'inbox', name: 'Inbox', isDefault: true })]);
-  });
-
-  async function seed(count: number, extra: Parameters<typeof createMockLink>[0][] = []): Promise<void> {
-    const links = Array.from({ length: count }, (_, i) =>
-      createMockLink({ id: `l${i + 1}`, title: `Title ${i + 1}`, collectionId: 'inbox', createdAt: i + 1 })
-    );
-    await saveLinks([...links, ...extra.map((o) => createMockLink(o))]);
-  }
-
-  it('tags every untagged link, newest first, in batches of five', async () => {
-    await seed(7, [{ id: 'done', title: 'Done', collectionId: 'inbox', createdAt: 100, tags: ['kept'] }]);
-    const { session, prompts } = fakeSession(async (p) => tagWithTitle(p));
-
-    const report = await runTagger(deps(session));
-
-    expect(prompts).toHaveLength(2);
-    expect(prompts[0].split('\n').map((line) => /title: (.*?) \|/.exec(line)?.[1]))
-      .toEqual(['Title 7', 'Title 6', 'Title 5', 'Title 4', 'Title 3']);
-    expect(await tagsOf('l1')).toEqual(['title 1']);
-    expect(await tagsOf('done')).toEqual(['kept']);
-    expect(report).toEqual({ tagged: 7, failedBatches: 0, skipped: false });
-    expect(session.destroy).toHaveBeenCalledTimes(1);
-  });
-
-  it('keeps tags the user edited while the batch was running', async () => {
-    await seed(1);
-    const { session } = fakeSession(async (p) => {
-      await setLinkTags({ l1: ['minha'] }, { onlyIfUntagged: false });
-      return tagWithTitle(p);
-    });
-
-    await runTagger(deps(session));
-
-    expect(await tagsOf('l1')).toEqual(['minha']);
-  });
-
-  it('never brings back a link deleted while its batch was running', async () => {
-    await seed(2);
-    const { session } = fakeSession(async (p) => {
-      await removeLink('l2');
-      return tagWithTitle(p);
-    });
-
-    await runTagger(deps(session));
-
-    expect((await getLinks()).map((l) => l.id)).toEqual(['l1']);
-  });
-
-  it('skips a batch the model answers badly and goes on', async () => {
-    await seed(10);
-    let call = 0;
-    const { session } = fakeSession(async (p) => {
-      call += 1;
-      return call === 1 ? 'not json' : tagWithTitle(p);
-    });
-
-    const report = await runTagger(deps(session));
-
-    expect(await tagsOf('l10')).toBeUndefined();
-    expect(await tagsOf('l1')).toEqual(['title 1']);
-    expect(report.failedBatches).toBe(1);
-  });
-
-  it('stops after three failures in a row', async () => {
-    await seed(20);
-    const { session, prompts } = fakeSession(async () => { throw new Error('model error'); });
-
-    const report = await runTagger(deps(session));
-
-    expect(prompts).toHaveLength(3);
-    expect(report.failedBatches).toBe(3);
-    expect(session.destroy).toHaveBeenCalledTimes(1);
-  });
-
-  it('ignores unknown and repeated indexes', async () => {
-    await seed(2);
-    const { session } = fakeSession(async () =>
-      JSON.stringify([{ i: 1, tags: ['a'] }, { i: 1, tags: ['b'] }, { i: 9, tags: ['c'] }])
-    );
-
-    await runTagger(deps(session));
-
-    expect(await tagsOf('l2')).toEqual(['a']);
-    expect(await tagsOf('l1')).toBeUndefined();
-  });
-
-  it('cleans the tags the model returns', async () => {
-    await seed(1);
-    const { session } = fakeSession(async () => JSON.stringify([{ i: 1, tags: ['  IA ', 'ia', ''] }]));
-
-    await runTagger(deps(session));
-
-    expect(await tagsOf('l1')).toEqual(['ia']);
-  });
-
-  it('stops when topic search is turned off in the middle of a run', async () => {
-    await seed(10);
-    const { session, prompts } = fakeSession(async (p) => tagWithTitle(p));
-    let checks = 0;
-
-    await runTagger(deps(session, { shouldContinue: async () => (checks += 1) === 1 }));
-
-    expect(prompts).toHaveLength(1);
-    expect(await tagsOf('l10')).toEqual(['title 10']);
-    expect(await tagsOf('l1')).toBeUndefined();
-  });
-
-  it('gives up without loading the model when another tab is tagging', async () => {
-    await seed(1);
-    const { session } = fakeSession(async (p) => tagWithTitle(p));
-    const d = deps(session, { withLock: async () => null });
-
-    expect(await runTagger(d)).toEqual({ tagged: 0, failedBatches: 0, skipped: true });
-    expect(d.createSession).not.toHaveBeenCalled();
-  });
-
-  it('does not load the model when every link is tagged', async () => {
-    await seed(0, [{ id: 'done', title: 'Done', collectionId: 'inbox', tags: [] }]);
-    const { session } = fakeSession(async (p) => tagWithTitle(p));
-    const d = deps(session);
-
-    await runTagger(d);
-
-    expect(d.createSession).not.toHaveBeenCalled();
-  });
-});
-
-describe('withTaggerLock', () => {
-  it('skips the task when the lock is taken', async () => {
-    Object.defineProperty(navigator, 'locks', {
-      configurable: true,
-      value: { request: async (_n: string, _o: unknown, cb: (lock: null) => unknown) => cb(null) },
-    });
-    const task = vi.fn(async () => 'ran');
-
-    expect(await withTaggerLock(task)).toBeNull();
-    expect(task).not.toHaveBeenCalled();
-    delete (navigator as unknown as Record<string, unknown>).locks;
-  });
-});
-```
-
-Rodar `docker compose run --rm app npx vitest run src/test/lib/ai` → FAIL (módulos não existem).
-
-- [ ] **Step 2: Implementar `src/lib/ai/language-model.ts`** — usar em `MODEL_LANGUAGES` o `langs` registrado na Task 0 (`['en', 'pt']` ou `['en']`):
-
-```ts
-/**
- * Thin wrapper over Chrome's built-in Prompt API (Gemini Nano). Runs on the
- * device; nothing leaves the browser. The TS DOM lib has no types for it.
- */
-export type ModelAvailability = 'unavailable' | 'downloadable' | 'downloading' | 'available';
-
-export interface PromptSession {
-  prompt(input: string, options?: { responseConstraint?: unknown }): Promise<string>;
-  destroy(): void;
-}
-
-interface LanguageOptions {
-  expectedInputs: { type: 'text'; languages: string[] }[];
-  expectedOutputs: { type: 'text'; languages: string[] }[];
-}
-
-interface DownloadMonitor {
-  addEventListener(type: 'downloadprogress', listener: (event: { loaded: number }) => void): void;
-}
-
-interface LanguageModelApi {
-  availability(options: LanguageOptions): Promise<ModelAvailability>;
-  create(options: LanguageOptions & {
-    initialPrompts: { role: 'system'; content: string }[];
-    monitor: (monitor: DownloadMonitor) => void;
-  }): Promise<PromptSession>;
-}
-
-/** Languages this Chrome build accepts for the model, measured in the spike. */
-export const MODEL_LANGUAGES: string[] = ['en', 'pt'];
-
-function languageOptions(): LanguageOptions {
-  return {
-    expectedInputs: [{ type: 'text', languages: MODEL_LANGUAGES }],
-    expectedOutputs: [{ type: 'text', languages: MODEL_LANGUAGES }],
-  };
-}
-
-function languageModel(): LanguageModelApi | undefined {
-  return (globalThis as { LanguageModel?: LanguageModelApi }).LanguageModel;
-}
-
-export async function getModelAvailability(): Promise<ModelAvailability> {
-  const api = languageModel();
-  if (api === undefined) {
-    return 'unavailable';
-  }
-  try {
-    return await api.availability(languageOptions());
-  } catch {
-    return 'unavailable';
-  }
-}
-
-/** Needs a user click when the model still has to be downloaded. */
-export async function createSession(
-  systemPrompt: string,
-  onDownloadProgress?: (fraction: number) => void
-): Promise<PromptSession> {
-  const api = languageModel();
-  if (api === undefined) {
-    throw new Error("Chrome's built-in AI is not available");
-  }
-  return api.create({
-    ...languageOptions(),
-    initialPrompts: [{ role: 'system', content: systemPrompt }],
-    monitor(monitor) {
-      monitor.addEventListener('downloadprogress', (event) => onDownloadProgress?.(event.loaded));
-    },
-  });
-}
-```
-
-- [ ] **Step 3: Implementar `src/lib/ai/tagger.ts`**
-
-```ts
-/**
- * Background tagger: asks the on-device model for subject tags of untagged
- * links, a batch at a time, from one dashboard tab at a time.
- */
-import type { Collection, Link, Workspace } from '@/lib/types';
-import { sanitizeTags } from '@/lib/tags';
-import type { PromptSession } from './language-model';
-
-export const TAG_BATCH_SIZE = 5;
-export const MAX_CONSECUTIVE_FAILURES = 3;
-const TAGGER_LOCK = 'tabala-tagger';
-
-export const TAG_RESPONSE_SCHEMA = {
-  type: 'array',
-  items: {
-    type: 'object',
-    properties: {
-      i: { type: 'integer' },
-      tags: { type: 'array', items: { type: 'string' }, maxItems: 6 },
-    },
-    required: ['i', 'tags'],
-  },
-};
-
-export function taggerSystemPrompt(languages: string[]): string {
-  const inLanguages = languages.includes('pt') ? 'in Portuguese and in English' : 'in English';
-  return 'You tag saved links in a tab organizer. For each link (title, site, collection and workspace), '
-    + `return 3 to 6 short subject tags, ${inLanguages}, lowercase. `
-    + 'Do not use the site name or generic words like link, page, article, video.';
-}
-
-export interface TaggerDeps {
-  readLibrary: () => Promise<{ links: Link[]; collections: Collection[]; workspaces: Workspace[] }>;
-  createSession: () => Promise<PromptSession>;
-  /** Persists tags only for links still untagged; returns the ids written. */
-  saveTags: (updates: Record<string, string[]>) => Promise<string[]>;
-  /** Runs the task holding the tagger lock, or returns null when another tab holds it. */
-  withLock: <T>(task: () => Promise<T>) => Promise<T | null>;
-  /** Checked before each batch; false stops the run (topic search turned off). */
-  shouldContinue?: () => Promise<boolean>;
-}
-
-export interface TaggerReport {
-  tagged: number;
-  failedBatches: number;
-  skipped: boolean;
-}
-
-export async function withTaggerLock<T>(task: () => Promise<T>): Promise<T | null> {
-  if (typeof navigator === 'undefined' || !('locks' in navigator)) {
-    return await task();
-  }
-  return await navigator.locks.request(TAGGER_LOCK, { ifAvailable: true }, async (lock) =>
-    lock === null ? null : await task()
-  );
-}
-
-function batchPrompt(batch: Link[], collections: Collection[], workspaces: Workspace[]): string {
-  return batch.map((link, n) => {
-    const collection = collections.find((c) => c.id === link.collectionId);
-    const workspace = workspaces.find((w) => w.id === collection?.workspaceId);
-    let site = '';
-    try {
-      site = new URL(link.url).hostname.replace(/^www\./, '');
-    } catch {
-      site = '';
-    }
-    const where = collection === undefined ? 'Inbox' : collection.name;
-    const workspaceName = workspace === undefined ? '' : ` (${workspace.name})`;
-    return `${n + 1}. title: ${link.title} | site: ${site} | collection: ${where}${workspaceName}`;
-  }).join('\n');
-}
-
-/** Maps 1-based indexes to tags; throws when nothing usable came back. */
-function parseBatchResponse(text: string, size: number): Map<number, string[]> {
-  const parsed: unknown = JSON.parse(text);
-  if (!Array.isArray(parsed)) {
-    throw new Error('Model answer is not a list');
-  }
-  const byIndex = new Map<number, string[]>();
-  for (const item of parsed as { i?: unknown; tags?: unknown }[]) {
-    const index = item.i;
-    if (typeof index === 'number' && Number.isInteger(index) && index >= 1 && index <= size && !byIndex.has(index)) {
-      byIndex.set(index, sanitizeTags(item.tags));
-    }
-  }
-  if (byIndex.size === 0) {
-    throw new Error('Model answer has no usable item');
-  }
-  return byIndex;
-}
-
-export async function runTagger(deps: TaggerDeps): Promise<TaggerReport> {
-  const outcome = await deps.withLock(async (): Promise<TaggerReport> => {
-    const { links, collections, workspaces } = await deps.readLibrary();
-    const queue = links
-      .filter((link) => link.tags === undefined)
-      .sort((a, b) => b.createdAt - a.createdAt);
-    if (queue.length === 0) {
-      return { tagged: 0, failedBatches: 0, skipped: false };
+    const indexes: Record<string, SearchIndex> = {
+      semTags: buildIndex(untagged, data.collections, data.workspaces),
+      comTags: buildIndex(tagged, data.collections, data.workspaces),
+    };
+    const strategies: Record<string, (g: GabaritoItem) => string[]> = { original: (g) => [g.consulta] };
+    if (translations !== null) {
+      strategies['original+traduzida'] = (g) => [g.consulta, translations[g.consulta] ?? g.consulta];
     }
 
-    const session = await deps.createSession();
-    let tagged = 0;
-    let failedBatches = 0;
-    let failuresInARow = 0;
-    try {
-      for (let start = 0; start < queue.length; start += TAG_BATCH_SIZE) {
-        if (deps.shouldContinue !== undefined && !(await deps.shouldContinue())) {
-          break;
-        }
-        const batch = queue.slice(start, start + TAG_BATCH_SIZE);
-        try {
-          const answer = await session.prompt(batchPrompt(batch, collections, workspaces), {
-            responseConstraint: TAG_RESPONSE_SCHEMA,
-          });
-          const updates: Record<string, string[]> = {};
-          parseBatchResponse(answer, batch.length).forEach((tags, index) => {
-            updates[batch[index - 1].id] = tags;
-          });
-          tagged += (await deps.saveTags(updates)).length;
-          failuresInARow = 0;
-        } catch (error) {
-          console.warn('[TabAla] Tagging batch failed:', error);
-          failedBatches += 1;
-          failuresInARow += 1;
-          if (failuresInARow >= MAX_CONSECUTIVE_FAILURES) {
-            break;
+    const rows: { indice: string; estrategia: string; categoria: string; acerto5: string; pct: number }[] = [];
+    for (const [indice, index] of Object.entries(indexes)) {
+      for (const [estrategia, phrasings] of Object.entries(strategies)) {
+        for (const categoria of ['assunto', 'titulo'] as const) {
+          const items = gabarito.filter((g) => g.categoria === categoria);
+          const misses = items.filter((g) => !g.idsEsperados.some((id) => top5(index, phrasings(g)).includes(id)));
+          const hits = items.length - misses.length;
+          rows.push({ indice, estrategia, categoria, acerto5: `${hits}/${items.length}`, pct: Math.round((100 * hits) / items.length) });
+          for (const miss of misses) {
+            console.log(`[${indice}/${estrategia}] errou "${miss.consulta}" -> ${top5(index, phrasings(miss)).join(', ')}`);
           }
         }
       }
-    } finally {
-      session.destroy();
     }
-    return { tagged, failedBatches, skipped: false };
+    console.table(rows);
+    expect(rows.length).toBeGreaterThan(0);
   });
-
-  return outcome ?? { tagged: 0, failedBatches: 0, skipped: true };
-}
+});
 ```
 
-- [ ] **Step 4: Rodar** — `docker compose run --rm app npx vitest run src/test/lib/ai` → PASS; `make test` → PASS.
+Rodar `docker compose run --rm -e TABALA_EVAL_DIR=/app/.eval app npx vitest run src/test/eval` (com `.eval/translations.json` copiado de `<caderno>/anexos/tabala/translate-spike-2026-09.json`). Expected: `semTags / original+traduzida / assunto` ≥ 11/25 e `titulo` 11/11 (o experimento descartável deu 44% e 100%).
 
-- [ ] **Step 5: Lint, tipos e commit**
+- [ ] **Step 4: Lint, tipos e commit**
 
 ```bash
-docker compose run --rm app sh -c "npx eslint src/lib/ai src/test/lib/ai; npx tsc --noEmit 2>&1 | grep -E '^src/(lib|test/lib)/ai'"
-git add src/lib/ai/language-model.ts src/lib/ai/tagger.ts src/test/lib/ai/language-model.test.ts src/test/lib/ai/tagger.test.ts
-git commit -m "feat(tags): tag links in the background with Chrome's on-device model"
+docker compose run --rm app sh -c "npx eslint src/lib/search src/test/lib/search src/test/eval; npx tsc --noEmit 2>&1 | grep -E '^src/(lib/search|test/lib/search|test/eval)'"
+git add src/lib/search/engine.ts src/test/lib/search/engine.test.ts src/test/eval/search.eval.test.ts
+git commit -m "feat(search): search several phrasings of a query at once"
 ```
 
 ---
 
-### Task 10: Ativação nas Configurações e etiquetagem no dashboard
+### Task 9: Tradutor da consulta
 
 **Files:**
-- Create: `src/lib/ai/topic-search.ts`
-- Modify: `src/lib/types.ts` (`Settings.topicSearch`), `src/lib/stores/settings.ts`, `src/newtab/components/SettingsModal.svelte`, `src/newtab/App.svelte`, os dois locales
-- Test: `src/test/lib/ai/topic-search.test.ts`, `src/test/stores/settings.test.ts`
+- Create: `src/lib/ai/translator.ts`
+- Test: `src/test/lib/ai/translator.test.ts`
 
 **Interfaces:**
-- Consumes: `getModelAvailability`, `createSession`, `MODEL_LANGUAGES` (Task 9); `runTagger`, `withTaggerLock`, `taggerSystemPrompt`, `TaggerDeps`, `TaggerReport` (Task 9); `setLinkTags` (Task 8); `getSettings`, `getLinks`, `getCollections`, `getWorkspaces`.
-- Produces: `Settings.topicSearch: boolean` (padrão `false`); `settingsStore.setTopicSearch(enabled: boolean): Promise<void>`; em `topic-search.ts`: `type TopicSearchView = 'unavailable' | 'enable' | 'downloading' | 'toggle'`, `topicSearchView(availability: ModelAvailability, progress: number | null): TopicSearchView`, `downloadModel(onProgress: (fraction: number) => void): Promise<void>`, `startBackgroundTagging(): Promise<TaggerReport | null>`.
+- Consumes: `chrome.i18n.getUILanguage()`.
+- Produces: `type ModelAvailability = 'unavailable' | 'downloadable' | 'downloading' | 'available'`; `queryLanguage(): string | null`; `getTranslationAvailability(): Promise<ModelAvailability>`; `downloadTranslation(onProgress: (fraction: number) => void): Promise<void>`; `type TranslateQuery = (query: string) => Promise<string | null>`; `createQueryTranslator(): TranslateQuery`; `type TopicSearchView = 'unavailable' | 'enable' | 'downloading' | 'toggle'`; `topicSearchView(availability: ModelAvailability, progress: number | null): TopicSearchView`.
 
-- [ ] **Step 1: Testes que falham**
+- [ ] **Step 1: Teste que falha** — `src/test/lib/ai/translator.test.ts`:
 
-`src/test/lib/ai/topic-search.test.ts`:
 ```ts
+/**
+ * Query translation with Chrome's built-in Translator (the only mock).
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { clearMockStorage } from '../../setup';
-import { getLinks, saveCollections, saveLinks, saveSettings } from '@/lib/storage';
-import { DEFAULT_SETTINGS } from '@/lib/types';
-import { startBackgroundTagging, topicSearchView } from '@/lib/ai/topic-search';
-import { createMockCollection, createMockLink } from '../../factories';
+import { chromeMock } from '../../setup';
+import {
+  createQueryTranslator,
+  downloadTranslation,
+  getTranslationAvailability,
+  queryLanguage,
+  topicSearchView,
+} from '@/lib/ai/translator';
+
+interface Monitor {
+  addEventListener: (type: string, listener: (event: { loaded: number }) => void) => void;
+}
+
+function installTranslator(availability: string, translate: (text: string) => Promise<string>) {
+  const instance = { translate: vi.fn(translate), destroy: vi.fn() };
+  const create = vi.fn(async (options: { monitor?: (monitor: Monitor) => void }) => {
+    options.monitor?.({ addEventListener: (_type, listener) => listener({ loaded: 1 }) });
+    return instance;
+  });
+  const api = { availability: vi.fn(async () => availability), create };
+  (globalThis as Record<string, unknown>).Translator = api;
+  return { api, create, instance };
+}
+
+beforeEach(() => {
+  chromeMock.i18n.getUILanguage.mockReturnValue('pt-BR');
+});
+
+afterEach(() => {
+  delete (globalThis as Record<string, unknown>).Translator;
+  chromeMock.i18n.getUILanguage.mockReturnValue('en');
+});
+
+describe('queryLanguage', () => {
+  it('uses the interface language without region, and none for English', () => {
+    expect(queryLanguage()).toBe('pt');
+    chromeMock.i18n.getUILanguage.mockReturnValue('en-US');
+    expect(queryLanguage()).toBeNull();
+  });
+});
+
+describe('getTranslationAvailability', () => {
+  it('is unavailable without the Translator API', async () => {
+    expect(await getTranslationAvailability()).toBe('unavailable');
+  });
+
+  it('asks Chrome about the interface language into English', async () => {
+    const { api } = installTranslator('downloadable', async (text) => text);
+    expect(await getTranslationAvailability()).toBe('downloadable');
+    expect(api.availability).toHaveBeenCalledWith({ sourceLanguage: 'pt', targetLanguage: 'en' });
+  });
+
+  it('is unavailable when the interface is already in English', async () => {
+    installTranslator('available', async (text) => text);
+    chromeMock.i18n.getUILanguage.mockReturnValue('en');
+    expect(await getTranslationAvailability()).toBe('unavailable');
+  });
+});
+
+describe('createQueryTranslator', () => {
+  it('translates with one translator per page, keeping the trailing space', async () => {
+    const { create } = installTranslator('available', async (text) =>
+      (text === 'problema da mochila' ? 'knapsack problem' : 'binary search'));
+    const translate = createQueryTranslator();
+
+    expect(await translate('problema da mochila ')).toBe('knapsack problem ');
+    expect(await translate('busca binária')).toBe('binary search');
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops a translation that only changes the case', async () => {
+    installTranslator('available', async (text) => text.toUpperCase());
+    expect(await createQueryTranslator()('openrouter')).toBeNull();
+  });
+
+  it('gives nothing while the translator is not ready', async () => {
+    const { create } = installTranslator('downloadable', async (text) => text);
+    expect(await createQueryTranslator()('mochila')).toBeNull();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('gives nothing when the translation fails', async () => {
+    installTranslator('available', async () => {
+      throw new Error('translation failed');
+    });
+    expect(await createQueryTranslator()('mochila')).toBeNull();
+  });
+
+  it('gives nothing for an empty query', async () => {
+    const { create } = installTranslator('available', async (text) => text);
+    expect(await createQueryTranslator()('   ')).toBeNull();
+    expect(create).not.toHaveBeenCalled();
+  });
+});
+
+describe('downloadTranslation', () => {
+  it('creates the translator from a click, reporting progress, and frees it', async () => {
+    const { instance } = installTranslator('downloadable', async (text) => text);
+    const progress: number[] = [];
+
+    await downloadTranslation((fraction) => progress.push(fraction));
+
+    expect(progress).toEqual([1]);
+    expect(instance.destroy).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('topicSearchView', () => {
   it.each([
@@ -2881,60 +2456,165 @@ describe('topicSearchView', () => {
     expect(topicSearchView(availability, progress)).toBe(view);
   });
 });
+```
 
-describe('startBackgroundTagging', () => {
-  beforeEach(async () => {
-    clearMockStorage();
-    await saveCollections([createMockCollection({ id: 'inbox', name: 'Inbox', isDefault: true })]);
-    await saveLinks([createMockLink({ id: 'l1', title: 'Title 1', collectionId: 'inbox' })]);
+Rodar `docker compose run --rm app npx vitest run src/test/lib/ai/translator.test.ts` → FAIL (módulo não existe).
+
+- [ ] **Step 2: Implementar** — `src/lib/ai/translator.ts`:
+
+```ts
+/**
+ * Query translation with Chrome's built-in Translator, on the device. A query
+ * typed in the interface language also runs in English, where most saved
+ * titles are. The TS DOM lib has no types for this API.
+ */
+export type ModelAvailability = 'unavailable' | 'downloadable' | 'downloading' | 'available';
+
+interface TranslatorInstance {
+  translate(text: string): Promise<string>;
+  destroy(): void;
+}
+
+interface DownloadMonitor {
+  addEventListener(type: 'downloadprogress', listener: (event: { loaded: number }) => void): void;
+}
+
+interface LanguagePair {
+  sourceLanguage: string;
+  targetLanguage: string;
+}
+
+interface TranslatorApi {
+  availability(options: LanguagePair): Promise<ModelAvailability>;
+  create(options: LanguagePair & { monitor?: (monitor: DownloadMonitor) => void }): Promise<TranslatorInstance>;
+}
+
+const TARGET_LANGUAGE = 'en';
+
+function translatorApi(): TranslatorApi | undefined {
+  return (globalThis as { Translator?: TranslatorApi }).Translator;
+}
+
+/** Interface language without region ('pt-BR' -> 'pt'); null when it is English. */
+export function queryLanguage(): string | null {
+  const language = chrome.i18n.getUILanguage().split('-')[0].toLowerCase();
+  return language === TARGET_LANGUAGE ? null : language;
+}
+
+function languagePair(): LanguagePair | null {
+  const source = queryLanguage();
+  return source === null ? null : { sourceLanguage: source, targetLanguage: TARGET_LANGUAGE };
+}
+
+export async function getTranslationAvailability(): Promise<ModelAvailability> {
+  const api = translatorApi();
+  const pair = languagePair();
+  if (api === undefined || pair === null) {
+    return 'unavailable';
+  }
+  try {
+    return await api.availability(pair);
+  } catch {
+    return 'unavailable';
+  }
+}
+
+/** Must run from a click: Chrome downloads the language pack only after a user gesture. */
+export async function downloadTranslation(onProgress: (fraction: number) => void): Promise<void> {
+  const api = translatorApi();
+  const pair = languagePair();
+  if (api === undefined || pair === null) {
+    throw new Error('Translation is not available');
+  }
+  const translator = await api.create({
+    ...pair,
+    monitor(monitor) {
+      monitor.addEventListener('downloadprogress', (event) => onProgress(event.loaded));
+    },
   });
+  translator.destroy();
+}
 
-  afterEach(() => {
-    delete (globalThis as Record<string, unknown>).LanguageModel;
-  });
+export type TranslateQuery = (query: string) => Promise<string | null>;
 
-  function installModel(availability: string): void {
-    (globalThis as Record<string, unknown>).LanguageModel = {
-      availability: vi.fn(async () => availability),
-      create: vi.fn(async () => ({
-        prompt: vi.fn(async () => JSON.stringify([{ i: 1, tags: ['assunto'] }])),
-        destroy: vi.fn(),
-      })),
-    };
+/**
+ * Translates queries with one translator per page, created on first use.
+ * Gives null when translation is not ready, fails, or returns the same text.
+ * Keeps the query's trailing space, which tells the search a word is finished.
+ */
+export function createQueryTranslator(): TranslateQuery {
+  let translator: Promise<TranslatorInstance | null> | null = null;
+
+  async function open(): Promise<TranslatorInstance | null> {
+    const api = translatorApi();
+    const pair = languagePair();
+    if (api === undefined || pair === null || (await api.availability(pair)) !== 'available') {
+      return null;
+    }
+    return api.create(pair);
   }
 
-  it('is off on a fresh install', async () => {
-    installModel('available');
+  return async (query) => {
+    const text = query.trim();
+    if (text === '') {
+      return null;
+    }
+    translator ??= open().catch(() => null);
+    const instance = await translator;
+    if (instance === null) {
+      return null;
+    }
+    try {
+      const translated = (await instance.translate(text)).trim();
+      if (translated === '' || translated.toLowerCase() === text.toLowerCase()) {
+        return null;
+      }
+      return /\s$/.test(query) ? `${translated} ` : translated;
+    } catch {
+      return null;
+    }
+  };
+}
 
-    expect(await startBackgroundTagging()).toBeNull();
-  });
+export type TopicSearchView = 'unavailable' | 'enable' | 'downloading' | 'toggle';
 
-  it('does nothing while topic search is off', async () => {
-    installModel('available');
-    await saveSettings({ ...DEFAULT_SETTINGS, topicSearch: false });
-
-    expect(await startBackgroundTagging()).toBeNull();
-    expect((await getLinks())[0].tags).toBeUndefined();
-  });
-
-  it('does nothing when the model is not ready', async () => {
-    installModel('downloadable');
-    await saveSettings({ ...DEFAULT_SETTINGS, topicSearch: true });
-
-    expect(await startBackgroundTagging()).toBeNull();
-  });
-
-  it('tags the library when topic search is on and the model is ready', async () => {
-    installModel('available');
-    await saveSettings({ ...DEFAULT_SETTINGS, topicSearch: true });
-
-    const report = await startBackgroundTagging();
-
-    expect(report?.tagged).toBe(1);
-    expect((await getLinks())[0].tags).toEqual(['assunto']);
-  });
-});
+/** What the Settings section shows for the translator state. */
+export function topicSearchView(availability: ModelAvailability, progress: number | null): TopicSearchView {
+  if (progress !== null || availability === 'downloading') {
+    return 'downloading';
+  }
+  if (availability === 'unavailable') {
+    return 'unavailable';
+  }
+  return availability === 'downloadable' ? 'enable' : 'toggle';
+}
 ```
+
+Nota: se o tradutor não estava pronto na primeira consulta, a página não tenta de novo (o `null` fica guardado). A ativação acontece em Configurações, e a próxima página já nasce com ele pronto.
+
+Rodar → PASS.
+
+- [ ] **Step 3: Lint, tipos e commit**
+
+```bash
+docker compose run --rm app sh -c "npx eslint src/lib/ai src/test/lib/ai; npx tsc --noEmit 2>&1 | grep -E '^src/(lib|test/lib)/ai'"
+git add src/lib/ai/translator.ts src/test/lib/ai/translator.test.ts
+git commit -m "feat(search): translate queries into English with Chrome's on-device translator"
+```
+
+---
+
+### Task 10: Ativação nas Configurações e tradução no painel e no popup
+
+**Files:**
+- Modify: `src/lib/types.ts` (`Settings.topicSearch`), `src/lib/stores/settings.ts`, `src/newtab/components/SettingsModal.svelte`, `src/newtab/components/SearchPanel.svelte`, `src/newtab/App.svelte`, `src/popup/App.svelte`, os dois locales, `src/test/lib/storage.test.ts` (literal de `Settings`)
+- Test: `src/test/stores/settings.test.ts`, `src/test/components/SearchPanel.test.ts`, `src/test/components/App.test.ts`
+
+**Interfaces:**
+- Consumes: `createQueryTranslator`, `TranslateQuery`, `getTranslationAvailability`, `downloadTranslation`, `topicSearchView`, `ModelAvailability` (Task 9); `search(index, string | string[])` (Task 8); prop `topicSearchHint` do `SearchPanel` (Task 5).
+- Produces: `Settings.topicSearch: boolean` (padrão `false`); `settingsStore.setTopicSearch(enabled: boolean): Promise<void>`; prop `translate: TranslateQuery | null = null` no `SearchPanel`.
+
+- [ ] **Step 1: Testes que falham**
 
 Em `src/test/stores/settings.test.ts`, dentro de `describe('settingsStore')`:
 ```ts
@@ -2948,14 +2628,72 @@ Em `src/test/stores/settings.test.ts`, dentro de `describe('settingsStore')`:
   });
 ```
 
-Rodar → FAIL.
+Em `src/test/components/SearchPanel.test.ts` (importar `tick` de `'svelte'`), dentro de `describe('SearchPanel')`:
+```ts
+  const knapsack = createMockLink({
+    id: 'knapsack', title: 'Knapsack tutorial', url: 'https://cp.example/knapsack', collectionId: 'inbox', createdAt: 9,
+  });
+
+  it('adds the translated query to the search when it arrives', async () => {
+    const translate = vi.fn(async (query: string) => (query.startsWith('problema da mochila') ? 'knapsack' : null));
+    const { input } = setup({ links: [...links, knapsack], translate });
+
+    await type(input, 'problema da mochila');
+
+    expect(await screen.findByText('Knapsack tutorial')).toBeInTheDocument();
+  });
+
+  it('ignores a translation that arrives after the query changed', async () => {
+    let release: (value: string) => void = () => {};
+    const translate = vi.fn((query: string) =>
+      (query === 'mochila' ? new Promise<string>((resolve) => { release = resolve; }) : Promise.resolve(null)));
+    const { input } = setup({ links: [...links, knapsack], translate });
+
+    await type(input, 'mochila');
+    await type(input, 'hermes');
+    release('knapsack');
+    await tick();
+
+    expect(screen.queryByText('Knapsack tutorial')).toBeNull();
+    expect(screen.getAllByRole('option')).toHaveLength(2);
+  });
+```
+
+Em `src/test/components/App.test.ts` (popup), importar `settingsStore` de `'@/lib/stores/settings'`, `DEFAULT_SETTINGS` de `'@/lib/types'` e `chromeMock` de `'../setup'`, e acrescentar:
+```ts
+  it('also searches the English translation when topic search is on', async () => {
+    chromeMock.i18n.getUILanguage.mockReturnValue('pt-BR');
+    (globalThis as Record<string, unknown>).Translator = {
+      availability: vi.fn(async () => 'available'),
+      create: vi.fn(async () => ({ translate: vi.fn(async () => 'knapsack'), destroy: vi.fn() })),
+    };
+    setStoreState({});
+    render(App);
+    await waitFor(() => {
+      expect(screen.getByText('TabAla')).toBeInTheDocument();
+    });
+    linksStore.set({
+      ...DEFAULT_LINKS_STATE,
+      links: [createMockLink({ id: 'k', title: 'Knapsack tutorial', url: 'https://cp.example/k', collectionId: 'inbox' })],
+    });
+    settingsStore.set({ settings: { ...DEFAULT_SETTINGS, topicSearch: true }, loading: false, error: null, pendingLocalUpdate: false });
+
+    await fireEvent.input(screen.getByPlaceholderText('popup_search_placeholder'), { target: { value: 'mochila' } });
+
+    expect(await screen.findByText('Knapsack tutorial')).toBeInTheDocument();
+    delete (globalThis as Record<string, unknown>).Translator;
+    chromeMock.i18n.getUILanguage.mockReturnValue('en');
+  });
+```
+
+Rodar os três arquivos → FAIL.
 
 - [ ] **Step 2: Configuração** — em `src/lib/types.ts`, na interface `Settings`:
 ```ts
-  /** Tag links with Chrome's on-device AI so they can be found by subject. */
+  /** Also search the English translation of each query (Chrome's on-device translator). */
   topicSearch: boolean;
 ```
-e em `DEFAULT_SETTINGS`: `topicSearch: false,`.
+e em `DEFAULT_SETTINGS`: `topicSearch: false,`. Em `src/test/lib/storage.test.ts`, no literal `saveSettings({ newtabEnabled: true, onboardingCompleted: false, theme: 'system' })` (perto da linha 334), acrescentar `topicSearch: false`.
 
 Em `src/lib/stores/settings.ts`: declarar `setTopicSearch: (enabled: boolean) => Promise<void>;` no tipo de retorno, implementar e devolver:
 ```ts
@@ -2964,108 +2702,132 @@ Em `src/lib/stores/settings.ts`: declarar `setTopicSearch: (enabled: boolean) =>
   }
 ```
 
-- [ ] **Step 3: `src/lib/ai/topic-search.ts`**
+- [ ] **Step 3: Painel** — em `src/newtab/components/SearchPanel.svelte`:
 
+Imports: `import type { TranslateQuery } from '@/lib/ai/translator';`
+
+Prop e estado:
 ```ts
-/** Glue between settings, the on-device model and the background tagger. */
-import { getCollections, getLinks, getSettings, getWorkspaces, setLinkTags } from '@/lib/storage';
-import { createSession, getModelAvailability, MODEL_LANGUAGES, type ModelAvailability } from './language-model';
-import { runTagger, taggerSystemPrompt, withTaggerLock, type TaggerReport } from './tagger';
+  /** Translates the query into English; null keeps the search in the typed language. */
+  export let translate: TranslateQuery | null = null;
 
-export type TopicSearchView = 'unavailable' | 'enable' | 'downloading' | 'toggle';
+  let translatedQuery: string | null = null;
 
-export function topicSearchView(availability: ModelAvailability, progress: number | null): TopicSearchView {
-  if (progress !== null || availability === 'downloading') {
-    return 'downloading';
+  async function requestTranslation(current: string, translator: TranslateQuery | null): Promise<void> {
+    translatedQuery = null;
+    if (translator === null || current.trim() === '') {
+      return;
+    }
+    const translated = await translator(current);
+    if (current === query) {
+      translatedQuery = translated;
+    }
   }
-  if (availability === 'unavailable') {
-    return 'unavailable';
-  }
-  return availability === 'downloadable' ? 'enable' : 'toggle';
-}
 
-/** Must run from a click: Chrome downloads the model only after a user gesture. */
-export async function downloadModel(onProgress: (fraction: number) => void): Promise<void> {
-  const session = await createSession(taggerSystemPrompt(MODEL_LANGUAGES), onProgress);
-  session.destroy();
-}
-
-/** Tags untagged links when topic search is on and the model is ready. */
-export async function startBackgroundTagging(): Promise<TaggerReport | null> {
-  const settings = await getSettings();
-  if (!settings.topicSearch || (await getModelAvailability()) !== 'available') {
-    return null;
-  }
-  return runTagger({
-    readLibrary: async () => {
-      const [links, collections, workspaces] = await Promise.all([getLinks(), getCollections(), getWorkspaces()]);
-      return { links, collections, workspaces };
-    },
-    createSession: () => createSession(taggerSystemPrompt(MODEL_LANGUAGES)),
-    saveTags: (updates) => setLinkTags(updates, { onlyIfUntagged: true }),
-    withLock: withTaggerLock,
-    shouldContinue: async () => (await getSettings()).topicSearch,
-  });
-}
+  $: void requestTranslation(query, translate);
 ```
 
-- [ ] **Step 4: Chaves de texto**
+Trocar `$: result = search(index, query, { kinds: selectedKinds });` por:
+```ts
+  $: result = search(index, translatedQuery === null ? query : [query, translatedQuery], { kinds: selectedKinds });
+```
+
+- [ ] **Step 4: Dashboard** — em `src/newtab/App.svelte`:
+```ts
+  import { createQueryTranslator, getTranslationAvailability } from '@/lib/ai/translator';
+
+  const translateQuery = createQueryTranslator();
+  let translationAvailable = false;
+```
+No fim do `onMount`: `translationAvailable = (await getTranslationAvailability()) !== 'unavailable';`
+
+No `<SearchPanel>`, acrescentar:
+```svelte
+    translate={$settingsStore.settings.topicSearch ? translateQuery : null}
+    topicSearchHint={translationAvailable && !$settingsStore.settings.topicSearch}
+```
+
+- [ ] **Step 5: Popup** — em `src/popup/App.svelte`:
+```ts
+  import { createQueryTranslator } from '@/lib/ai/translator';
+
+  const translateQuery = createQueryTranslator();
+  let translatedQuery: string | null = null;
+
+  async function requestTranslation(current: string, enabled: boolean): Promise<void> {
+    translatedQuery = null;
+    if (!enabled || current.trim() === '') {
+      return;
+    }
+    const translated = await translateQuery(current);
+    if (current === query) {
+      translatedQuery = translated;
+    }
+  }
+
+  $: void requestTranslation(query, $settingsStore.settings.topicSearch);
+```
+e trocar o reativo `found` por:
+```ts
+  $: found = query.trim() === ''
+    ? null
+    : search(searchIndex, translatedQuery === null ? query : [query, translatedQuery], { limit: 8 });
+```
+
+- [ ] **Step 6: Chaves de texto**
 
 en:
 ```json
   "topic_search_title": { "message": "Topic search" },
-  "topic_search_description": { "message": "Uses Chrome's built-in AI, on this computer, to tag each link by subject. Nothing leaves your browser." },
+  "topic_search_description": { "message": "Translates your searches into English on this computer, with Chrome's built-in translator, so they also find links with English titles. Nothing leaves your browser." },
   "topic_search_unavailable": { "message": "Not available on this computer" },
   "topic_search_enable": { "message": "Enable" },
   "topic_search_enable_failed": { "message": "Could not enable topic search" },
-  "topic_search_downloading": { "message": "Downloading the model… $1%", "placeholders": { "percent": { "content": "$1" } } },
-  "topic_search_downloading_wait": { "message": "Downloading the model…" },
-  "topic_search_progress": { "message": "$1 of $2 links tagged", "placeholders": { "tagged": { "content": "$1" }, "total": { "content": "$2" } } },
+  "topic_search_downloading": { "message": "Downloading the language pack… $1%", "placeholders": { "percent": { "content": "$1" } } },
+  "topic_search_downloading_wait": { "message": "Downloading the language pack…" },
   "topic_search_toggle_label": { "message": "Turn topic search on or off" }
 ```
 
 pt_BR:
 ```json
   "topic_search_title": { "message": "Busca por assunto" },
-  "topic_search_description": { "message": "Usa a IA embutida do Chrome, neste computador, para etiquetar cada link por assunto. Nada sai do seu navegador." },
+  "topic_search_description": { "message": "Traduz suas buscas para o inglês neste computador, com o tradutor embutido do Chrome, para achar também links com título em inglês. Nada sai do seu navegador." },
   "topic_search_unavailable": { "message": "Indisponível neste computador" },
   "topic_search_enable": { "message": "Ativar" },
   "topic_search_enable_failed": { "message": "Não foi possível ativar a busca por assunto" },
-  "topic_search_downloading": { "message": "Baixando o modelo… $1%", "placeholders": { "percent": { "content": "$1" } } },
-  "topic_search_downloading_wait": { "message": "Baixando o modelo…" },
-  "topic_search_progress": { "message": "$1 de $2 links etiquetados", "placeholders": { "tagged": { "content": "$1" }, "total": { "content": "$2" } } },
+  "topic_search_downloading": { "message": "Baixando o pacote de idioma… $1%", "placeholders": { "percent": { "content": "$1" } } },
+  "topic_search_downloading_wait": { "message": "Baixando o pacote de idioma…" },
   "topic_search_toggle_label": { "message": "Ligar ou desligar a busca por assunto" }
 ```
 
-- [ ] **Step 5: Seção nas Configurações** — em `src/newtab/components/SettingsModal.svelte`:
+- [ ] **Step 7: Seção nas Configurações** — em `src/newtab/components/SettingsModal.svelte`:
 
-Script (imports e lógica):
+Script: juntar `onMount` ao import de `'svelte'` e acrescentar:
 ```ts
-  import { onMount } from 'svelte';
-  import { linksStore } from '@/lib/stores/links';
-  import { getModelAvailability, type ModelAvailability } from '@/lib/ai/language-model';
-  import { downloadModel, startBackgroundTagging, topicSearchView } from '@/lib/ai/topic-search';
+  import {
+    downloadTranslation,
+    getTranslationAvailability,
+    topicSearchView,
+    type ModelAvailability,
+  } from '@/lib/ai/translator';
 
   let availability: ModelAvailability = 'unavailable';
   let downloadProgress: number | null = null;
 
   onMount(async () => {
-    availability = await getModelAvailability();
+    availability = await getTranslationAvailability();
   });
 
   $: topicView = topicSearchView(availability, downloadProgress);
-  $: totalLinks = $linksStore.links.length;
-  $: taggedLinks = $linksStore.links.filter((link) => link.tags !== undefined).length;
 
   async function handleEnableTopicSearch(): Promise<void> {
     downloadProgress = 0;
     try {
-      await downloadModel((fraction) => {
+      await downloadTranslation((fraction) => {
         downloadProgress = fraction;
       });
       availability = 'available';
       await settingsStore.setTopicSearch(true);
-      void startBackgroundTagging();
     } catch (error) {
       console.error('Could not enable topic search:', error);
       showToastMessage(t('topic_search_enable_failed'), 'error');
@@ -3075,16 +2837,11 @@ Script (imports e lógica):
   }
 
   async function toggleTopicSearch(): Promise<void> {
-    const enabling = !settings.topicSearch;
-    await settingsStore.setTopicSearch(enabling);
-    if (enabling) {
-      void startBackgroundTagging();
-    }
+    await settingsStore.setTopicSearch(!settings.topicSearch);
   }
 ```
-(Se `svelte` já estiver importado no arquivo, juntar `onMount` ao import existente.)
 
-Markup, logo depois do `setting-item` do "Usar como nova aba" (antes do `setting-divider` seguinte):
+Markup, logo depois do `setting-item` do "Usar como nova aba":
 ```svelte
       <div class="setting-divider"></div>
 
@@ -3092,9 +2849,6 @@ Markup, logo depois do `setting-item` do "Usar como nova aba" (antes do `setting
         <div class="setting-info">
           <span class="setting-label">{t('topic_search_title')}</span>
           <span class="setting-description">{t('topic_search_description')}</span>
-          {#if topicView === 'toggle' && settings.topicSearch}
-            <span class="setting-description">{t('topic_search_progress', taggedLinks, totalLinks)}</span>
-          {/if}
         </div>
         {#if topicView === 'unavailable'}
           <span class="setting-status">{t('topic_search_unavailable')}</span>
@@ -3135,187 +2889,21 @@ CSS:
   }
 ```
 
-- [ ] **Step 6: Dashboard** — em `src/newtab/App.svelte`:
+- [ ] **Step 8: Rodar** — os três arquivos de teste → PASS; `make test` → PASS.
 
-```ts
-  import { settingsStore } from '@/lib/stores/settings';   // já existe
-  import { getModelAvailability } from '@/lib/ai/language-model';
-  import { startBackgroundTagging } from '@/lib/ai/topic-search';
-
-  let modelAvailable = false;
-```
-
-No fim do `onMount`, depois do `Promise.all` e do `setTimeout` existentes:
-```ts
-    modelAvailable = (await getModelAvailability()) !== 'unavailable';
-    setTimeout(() => {
-      void startBackgroundTagging();
-    }, 1500);
-```
-
-No `<SearchPanel>`, acrescentar a prop:
-```svelte
-    topicSearchHint={modelAvailable && !$settingsStore.settings.topicSearch}
-```
-
-- [ ] **Step 7: Rodar** — os testes novos → PASS; `make test` → PASS. O `tsc` vai apontar `src/test/lib/storage.test.ts` (literal de `Settings` sem `topicSearch`, perto da linha 334): acrescentar `topicSearch: false` ao objeto.
-
-- [ ] **Step 8: Lint, tipos e commit**
+- [ ] **Step 9: Lint, tipos e commit**
 
 ```bash
-docker compose run --rm app sh -c "npx eslint src/lib/ai src/lib/types.ts src/lib/stores/settings.ts src/newtab/components/SettingsModal.svelte src/newtab/App.svelte src/test/lib/ai src/test/stores/settings.test.ts; npx tsc --noEmit 2>&1 | grep -E '^src/(lib/(ai|types|stores/settings)|newtab/(App|components/SettingsModal)|test/(lib/ai|stores/settings))'"
-git add src/lib/ai/topic-search.ts src/lib/types.ts src/lib/stores/settings.ts src/newtab/components/SettingsModal.svelte src/newtab/App.svelte public/_locales/en/messages.json public/_locales/pt_BR/messages.json src/test/lib/ai/topic-search.test.ts src/test/stores/settings.test.ts src/test/lib/storage.test.ts
-git commit -m "feat(tags): turn on topic search in Settings; the dashboard tags in the background"
+docker compose run --rm app sh -c "npx eslint src/lib/types.ts src/lib/stores/settings.ts src/newtab/components/SettingsModal.svelte src/newtab/components/SearchPanel.svelte src/newtab/App.svelte src/popup/App.svelte src/test/stores/settings.test.ts src/test/components/SearchPanel.test.ts src/test/components/App.test.ts src/test/lib/storage.test.ts; npx tsc --noEmit 2>&1 | grep -E '^src/(lib/(types|stores/settings)|newtab/(App|components/(SettingsModal|SearchPanel))|popup/App|test/(stores/settings|components/(SearchPanel|App)|lib/storage.test))'"
+git add src/lib/types.ts src/lib/stores/settings.ts src/newtab/components/SettingsModal.svelte src/newtab/components/SearchPanel.svelte src/newtab/App.svelte src/popup/App.svelte public/_locales/en/messages.json public/_locales/pt_BR/messages.json src/test/stores/settings.test.ts src/test/components/SearchPanel.test.ts src/test/components/App.test.ts src/test/lib/storage.test.ts
+git commit -m "feat(search): turn on topic search in Settings; the panel and the popup also search the translation"
 ```
 
 ---
 
-### Task 11: Editar tags no card
+### Task 11: removida
 
-**Files:**
-- Modify: `src/newtab/components/LinkCard.svelte`, `src/newtab/components/Column.svelte`, `src/newtab/components/KanbanBoard.svelte`, os dois locales
-- Test: `src/test/components/LinkCard.test.ts`
-
-**Interfaces:**
-- Consumes: `parseTagInput` (Task 8); `linksStore.setTags` (Task 8).
-- Produces: evento `editTags: { id: string; tags: string[] }` em `LinkCard` e `Column`.
-
-- [ ] **Step 1: Teste que falha** — em `src/test/components/LinkCard.test.ts` (importar `fireEvent` se ainda não estiver):
-
-```ts
-  describe('editing tags', () => {
-    const tagged = createMockLink({ id: 'l1', title: 'Tagged', tags: ['ia', 'agentes'] });
-
-    it('edits the tags in place and reports the cleaned list with Enter', async () => {
-      const editTags = vi.fn();
-      const open = vi.fn();
-      render(LinkCard, { props: { link: tagged }, events: { editTags, open } });
-
-      await fireEvent.click(screen.getByRole('button', { name: 'linkcard_edit_tags' }));
-      const field = screen.getByRole('textbox', { name: 'linkcard_edit_tags' });
-      expect(field).toHaveValue('ia, agentes');
-
-      await fireEvent.input(field, { target: { value: 'IA, agentes, Novo' } });
-      await fireEvent.keyDown(field, { key: 'Enter' });
-
-      expect(editTags.mock.calls[0][0].detail).toEqual({ id: 'l1', tags: ['ia', 'agentes', 'novo'] });
-      expect(open).not.toHaveBeenCalled();
-      expect(screen.queryByRole('textbox')).toBeNull();
-    });
-
-    it('cancels with Escape', async () => {
-      const editTags = vi.fn();
-      render(LinkCard, { props: { link: tagged }, events: { editTags } });
-
-      await fireEvent.click(screen.getByRole('button', { name: 'linkcard_edit_tags' }));
-      await fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Escape' });
-
-      expect(editTags).not.toHaveBeenCalled();
-      expect(screen.queryByRole('textbox')).toBeNull();
-    });
-  });
-```
-
-Rodar → FAIL.
-
-- [ ] **Step 2: Chaves** — en `"linkcard_edit_tags": { "message": "Edit tags" }`, `"linkcard_tags_placeholder": { "message": "tags, separated by commas" }`; pt_BR `"linkcard_edit_tags": { "message": "Editar tags" }`, `"linkcard_tags_placeholder": { "message": "tags separadas por vírgula" }`.
-
-- [ ] **Step 3: `LinkCard.svelte`**
-
-Script: importar `parseTagInput` de `'@/lib/tags'`; acrescentar `editTags: { id: string; tags: string[] };` ao dispatcher; e:
-```ts
-  let editingTags = false;
-  let tagText = '';
-
-  function startEditingTags(event: MouseEvent): void {
-    event.stopPropagation();
-    tagText = (link.tags ?? []).join(', ');
-    editingTags = true;
-  }
-
-  function handleTagsKeydown(event: KeyboardEvent): void {
-    event.stopPropagation();
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      dispatch('editTags', { id: link.id, tags: parseTagInput(tagText) });
-      editingTags = false;
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      editingTags = false;
-    }
-  }
-
-  function focusOnMount(node: HTMLInputElement): void {
-    node.focus();
-  }
-```
-
-Markup: dentro de `.link-content`, depois do `<span class="link-domain">`:
-```svelte
-    {#if editingTags}
-      <input
-        class="tags-input"
-        type="text"
-        bind:value={tagText}
-        placeholder={t('linkcard_tags_placeholder')}
-        aria-label={t('linkcard_edit_tags')}
-        on:click|stopPropagation
-        on:keydown={handleTagsKeydown}
-        on:blur={() => (editingTags = false)}
-        use:focusOnMount
-      />
-    {/if}
-```
-Em `.link-actions`, antes do botão de abrir em nova aba:
-```svelte
-    <button
-      type="button"
-      class="btn-action btn-tags"
-      on:click={startEditingTags}
-      aria-label={t('linkcard_edit_tags')}
-      title={t('linkcard_edit_tags')}
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-        <line x1="7" y1="7" x2="7.01" y2="7"/>
-      </svg>
-    </button>
-```
-CSS:
-```css
-  .tags-input {
-    margin-top: var(--space-1);
-    padding: 4px 8px;
-    background: var(--surface-base);
-    border: 1px solid var(--accent-primary);
-    border-radius: var(--radius-md);
-    color: var(--text-primary);
-    font-family: var(--font-body);
-    font-size: var(--text-xs);
-  }
-```
-
-- [ ] **Step 4: Repassar o evento** — em `Column.svelte`: acrescentar `editTags: { id: string; tags: string[] };` ao dispatcher e `on:editTags={(e) => dispatch('editTags', e.detail)}` no `<LinkCard>`. Em `KanbanBoard.svelte`:
-```ts
-  async function handleEditTags(event: CustomEvent<{ id: string; tags: string[] }>): Promise<void> {
-    try {
-      await linksStore.setTags(event.detail.id, event.detail.tags);
-    } catch (_err) {
-      dispatch('error', t('error_save_tags_failed'));
-    }
-  }
-```
-e `on:editTags={handleEditTags}` no `<Column>`.
-
-- [ ] **Step 5: Rodar** — `docker compose run --rm app npx vitest run src/test/components/LinkCard.test.ts` → PASS; `make test` → PASS.
-
-- [ ] **Step 6: Lint, tipos e commit**
-
-```bash
-docker compose run --rm app sh -c "npx eslint src/newtab/components/LinkCard.svelte src/newtab/components/Column.svelte src/newtab/components/KanbanBoard.svelte src/test/components/LinkCard.test.ts; npx tsc --noEmit 2>&1 | grep -E '^src/(newtab/components/(LinkCard|Column|KanbanBoard)|test/components/LinkCard)'"
-git add src/newtab/components/LinkCard.svelte src/newtab/components/Column.svelte src/newtab/components/KanbanBoard.svelte public/_locales/en/messages.json public/_locales/pt_BR/messages.json src/test/components/LinkCard.test.ts
-git commit -m "feat(tags): edit the tags of a link on its card"
-```
+As tags pelo Nano saíram do escopo depois da medição (spec §2 e §9). `Link.tags` continua opcional e pontuado pelo motor, sem nada que o preencha.
 
 ---
 
@@ -3328,21 +2916,21 @@ git commit -m "feat(tags): edit the tags of a link on its card"
 
 pt:
 ```markdown
-## Busca por assunto (IA no próprio computador)
+## Busca por assunto (tradução no próprio computador)
 
-Quando o usuário ativa a busca por assunto, o TabAla usa o modelo de IA embutido no Chrome (Gemini Nano), que roda no próprio computador. O título, o site e os nomes de coleção e workspace de cada link salvo vão apenas para esse modelo local, que devolve tags de assunto. As tags ficam no `chrome.storage.local`, como os demais dados. Nada é enviado para servidores externos. A opção vem desligada e pode ser desligada a qualquer momento em Configurações.
+Quando o usuário ativa a busca por assunto, o texto digitado na busca do TabAla é traduzido para o inglês pelo tradutor embutido no Chrome, que roda no próprio computador. Só o texto da busca vai para esse tradutor local; os links salvos não. Nada é enviado para servidores externos. A opção vem desligada e pode ser desligada a qualquer momento em Configurações.
 ```
 
 en:
 ```markdown
-## Topic search (on-device AI)
+## Topic search (on-device translation)
 
-When the user turns on topic search, TabAla uses Chrome's built-in AI model (Gemini Nano), which runs on the user's own computer. The title, site, and collection and workspace names of each saved link go only to that local model, which returns subject tags. Tags are stored in `chrome.storage.local` like all other data. Nothing is sent to external servers. The option is off by default and can be turned off at any time in Settings.
+When the user turns on topic search, the text typed in TabAla's search is translated into English by Chrome's built-in translator, which runs on the user's own computer. Only the search text goes to that local translator; saved links do not. Nothing is sent to external servers. The option is off by default and can be turned off at any time in Settings.
 ```
 
 - [ ] **Step 2: `CLAUDE.md` do app, só o trecho próprio** — o arquivo tem mudanças de outra sessão no working tree. Aplicar a edição nos dois lugares e colocar no índice só a versão `HEAD` + esta edição:
 
-Edição: na entidade `Link`, depois de `order?: number;   // posição manual na coleção (arrastar)`, acrescentar `tags?: string[];   // assunto (IA local ou edição manual)`; em "Regras de Negócio", acrescentar a linha `- **Busca**: painel ⌘K em todos os workspaces (src/lib/search); tags de assunto geradas pelo Gemini Nano no dashboard (src/lib/ai), nunca sobrescrevem tag editada à mão`.
+Edição: na entidade `Link`, depois de `order?: number;   // posição manual na coleção (arrastar)`, acrescentar `tags?: string[];   // assunto (opcional; o motor pontua, nada preenche por enquanto)`; em "Regras de Negócio", acrescentar a linha `- **Busca**: painel ⌘K em todos os workspaces (src/lib/search); a busca por assunto traduz a consulta para o inglês com o Translator do Chrome e busca a original e a traduzida juntas (src/lib/ai/translator.ts)`.
 
 ```bash
 S=<scratchpad>
@@ -3372,7 +2960,7 @@ git commit -m "docs: privacy policy and project notes for topic search"
   2. "vídeo agentes" lista vídeos; "mckinsy" acha a McKinsey; ⇧Enter troca de workspace e destaca o card; Esc fecha.
   3. O campo do topo abre o painel; o quadro não filtra mais.
   4. Popup: buscar um link de outro workspace e abrir com Enter.
-  5. Configurações → Busca por assunto → Ativar (ou ligar); a contagem "N de M links etiquetados" sobe enquanto a nova aba fica aberta.
-  6. Uma busca por assunto do gabarito acha o link pela tag; "Editar tags" no card troca as tags e a busca reflete.
+  5. Configurações → Busca por assunto → Ativar (ou ligar).
+  6. "busca binária" e "repetição espaçada" acham os links de título em inglês; "openrouter" continua achando o OpenRouter.
 
-- [ ] **Step 6: Registrar** — log em `caderno/projetos/tabAla.md` (o que entrou, números da medição, tempo real de etiquetagem da biblioteca) e commit no caderno.
+- [ ] **Step 6: Registrar** — log em `caderno/projetos/tabAla.md` (o que entrou e os números finais da medição) e commit no caderno.

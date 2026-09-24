@@ -23,6 +23,8 @@ export interface Link {
   favicon?: string;
   /** Manual position within the collection, set by drag and drop. */
   order?: number;
+  /** Subject tags. Absent: not tagged yet. []: tagged, without tags. */
+  tags?: string[];
 }
 
 /**

@@ -751,5 +751,9 @@
 
   "search_open_placeholder": {
     "message": "Buscar em todos os links"
+  },
+
+  "popup_search_placeholder": {
+    "message": "Buscar links"
   }
 }

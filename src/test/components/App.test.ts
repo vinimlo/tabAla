@@ -6,7 +6,7 @@
  * storage.test.ts and component tests (LinkItem, ConfirmDialog).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, waitFor, act } from '@testing-library/svelte';
+import { render, screen, cleanup, waitFor, act, fireEvent } from '@testing-library/svelte';
 import App from '@/popup/App.svelte';
 import { linksStore } from '@/lib/stores/links';
 import { workspacesStore } from '@/lib/stores/workspaces';
@@ -82,6 +82,34 @@ describe('App Component', () => {
     expect(chrome.tabs.create).toHaveBeenCalledWith({
       url: 'chrome-extension://test-extension-id/src/newtab/index.html?dashboard',
     });
+  });
+
+  it('searches every workspace and opens the first result with Enter', async () => {
+    setStoreState({});
+    render(App);
+    await waitFor(() => {
+      expect(screen.getByText('TabAla')).toBeInTheDocument();
+    });
+
+    const study = createMockWorkspace({ id: 'ws-study', name: 'Estudos', order: 1 });
+    linksStore.set({
+      ...DEFAULT_LINKS_STATE,
+      collections: [
+        { id: 'inbox', name: 'Inbox', order: 0 },
+        { id: 'icpc', name: 'ICPC', order: 1, workspaceId: 'ws-study' },
+      ],
+      links: [createMockLink({ id: 'dij', title: 'Dijkstra notes', url: 'https://cp.example/dijkstra', collectionId: 'icpc' })],
+    });
+    workspacesStore.set({ ...DEFAULT_WORKSPACES_STATE, workspaces: [defaultWorkspace, study] });
+
+    const input = screen.getByPlaceholderText('popup_search_placeholder');
+    await fireEvent.input(input, { target: { value: 'dijkstra' } });
+
+    expect(await screen.findByText('Dijkstra notes')).toBeInTheDocument();
+    expect(screen.getByText('Estudos › ICPC')).toBeInTheDocument();
+
+    await fireEvent.keyDown(input, { key: 'Enter' });
+    expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'https://cp.example/dijkstra', active: true });
   });
 
   it('should have main element', () => {

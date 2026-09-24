@@ -12,6 +12,8 @@
   import Toast from '@/shared/components/Toast.svelte';
   import ConfirmDialog from '@/shared/components/ConfirmDialog.svelte';
   import WorkspaceSelect from './components/WorkspaceSelect.svelte';
+  import { buildIndex, search } from '@/lib/search/engine';
+  import { displayNames, hitPath } from '@/lib/search/labels';
 
   let mounted = false;
   let selectedCollectionId = INBOX_COLLECTION_ID;
@@ -20,6 +22,20 @@
   let errorMessage: string | null = null;
   let successMessage: string | null = null;
   let linkToRemove: Link | null = null;
+  let query = '';
+  $: searchIndex = buildIndex($linksStore.links, $linksStore.collections, $workspacesStore.workspaces, displayNames);
+  $: found = query.trim() === '' ? null : search(searchIndex, query, { limit: 8 });
+  $: searchHits = found === null ? [] : (found.results.length > 0 ? found.results : found.partial);
+
+  function handleSearchKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && searchHits.length > 0) {
+      event.preventDefault();
+      void handleOpenLink(searchHits[0].link);
+    } else if (event.key === 'Escape' && query !== '') {
+      event.preventDefault();
+      query = '';
+    }
+  }
 
   $: loading = $linksStore.loading || $workspacesStore.loading;
   $: workspaces = $workspacesStore.workspaces;
@@ -151,6 +167,17 @@
       </button>
     </header>
 
+    <div class="popup-search">
+      <input
+        type="search"
+        class="popup-search-input"
+        bind:value={query}
+        on:keydown={handleSearchKeydown}
+        placeholder={t('popup_search_placeholder')}
+        aria-label={t('popup_search_placeholder')}
+      />
+    </div>
+
     <!-- Save Section -->
     <section class="save-section">
       <div class="save-row">
@@ -192,72 +219,92 @@
       </div>
     </section>
 
-    <!-- Collections List -->
-    <section class="collections">
-      {#each collections as collection (collection.id)}
-        {@const count = linkCounts.get(collection.id) ?? 0}
-        {@const isExpanded = expandedCollectionId === collection.id}
-        {@const recentLinks = getRecentLinks(collection.id)}
-
-        <div class="collection-item" class:expanded={isExpanded}>
-          <button
-            type="button"
-            class="collection-header"
-            on:click={() => toggleCollection(collection.id)}
-          >
-            <svg class="folder-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-            </svg>
-            <span class="collection-name">{getCollectionDisplayName(collection)}</span>
-            <span class="collection-count">{count}</span>
-            <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
+    {#if found !== null}
+      <section class="search-results">
+        {#each searchHits as hit (hit.link.id)}
+          <button type="button" class="search-hit" on:click={() => handleOpenLink(hit.link)} title={hit.link.url}>
+            {#if hit.link.favicon}
+              <img src={hit.link.favicon} alt="" width="14" height="14" class="link-favicon" />
+            {:else}
+              <span class="link-favicon-placeholder"></span>
+            {/if}
+            <span class="search-hit-text">
+              <span class="search-hit-title">{hit.link.title || hit.link.url}</span>
+              <span class="search-hit-path">{hitPath(hit)}</span>
+            </span>
           </button>
+        {:else}
+          <span class="empty-hint">{t('search_empty')}</span>
+        {/each}
+      </section>
+    {:else}
+      <!-- Collections List -->
+      <section class="collections">
+        {#each collections as collection (collection.id)}
+          {@const count = linkCounts.get(collection.id) ?? 0}
+          {@const isExpanded = expandedCollectionId === collection.id}
+          {@const recentLinks = getRecentLinks(collection.id)}
 
-          {#if isExpanded}
-            <div class="collection-links" transition:slide={{ duration: 150 }}>
-              {#if recentLinks.length > 0}
-                {#each recentLinks as link (link.id)}
-                  <div class="link-row">
-                    <button
-                      type="button"
-                      class="link-btn"
-                      on:click={() => handleOpenLink(link)}
-                      title={link.url}
-                    >
-                      {#if link.favicon}
-                        <img src={link.favicon} alt="" width="14" height="14" class="link-favicon" />
-                      {:else}
-                        <span class="link-favicon-placeholder"></span>
-                      {/if}
-                      <span class="link-title">{link.title}</span>
+          <div class="collection-item" class:expanded={isExpanded}>
+            <button
+              type="button"
+              class="collection-header"
+              on:click={() => toggleCollection(collection.id)}
+            >
+              <svg class="folder-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+              <span class="collection-name">{getCollectionDisplayName(collection)}</span>
+              <span class="collection-count">{count}</span>
+              <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+
+            {#if isExpanded}
+              <div class="collection-links" transition:slide={{ duration: 150 }}>
+                {#if recentLinks.length > 0}
+                  {#each recentLinks as link (link.id)}
+                    <div class="link-row">
+                      <button
+                        type="button"
+                        class="link-btn"
+                        on:click={() => handleOpenLink(link)}
+                        title={link.url}
+                      >
+                        {#if link.favicon}
+                          <img src={link.favicon} alt="" width="14" height="14" class="link-favicon" />
+                        {:else}
+                          <span class="link-favicon-placeholder"></span>
+                        {/if}
+                        <span class="link-title">{link.title}</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="link-remove"
+                        on:click|stopPropagation={() => handleRemoveLink(link)}
+                        title={t('common_remove')}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                          <path d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                      </button>
+                    </div>
+                  {/each}
+                  {#if count > 4}
+                    <button type="button" class="view-more" on:click={openDashboard}>
+                      {t('popup_view_all', count)}
                     </button>
-                    <button
-                      type="button"
-                      class="link-remove"
-                      on:click|stopPropagation={() => handleRemoveLink(link)}
-                      title={t('common_remove')}
-                    >
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                        <path d="M18 6L6 18M6 6l12 12"/>
-                      </svg>
-                    </button>
-                  </div>
-                {/each}
-                {#if count > 4}
-                  <button type="button" class="view-more" on:click={openDashboard}>
-                    {t('popup_view_all', count)}
-                  </button>
+                  {/if}
+                {:else}
+                  <span class="empty-hint">{t('popup_no_links')}</span>
                 {/if}
-              {:else}
-                <span class="empty-hint">{t('popup_no_links')}</span>
-              {/if}
-            </div>
-          {/if}
-        </div>
-      {/each}
-    </section>
+              </div>
+            {/if}
+          </div>
+        {/each}
+      </section>
+    {/if}
 
     <!-- Footer -->
     <footer class="footer">
@@ -730,5 +777,70 @@
 
   .btn-open-dashboard:hover svg {
     color: var(--accent-primary);
+  }
+
+  .popup-search {
+    padding: 0 var(--space-4) var(--space-3);
+  }
+
+  .popup-search-input {
+    width: 100%;
+    height: 34px;
+    padding: 0 var(--space-3);
+    background: var(--surface-overlay);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+  }
+
+  .popup-search-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+  }
+
+  .search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 var(--space-2) var(--space-3);
+  }
+
+  .search-hit {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-md);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .search-hit:hover {
+    background: var(--surface-overlay);
+  }
+
+  .search-hit-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .search-hit-title {
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .search-hit-path {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
   }
 </style>

@@ -147,6 +147,22 @@ describe('validateExportFile', () => {
     expect(() => validateExportFile(invalidFile)).toThrow('missing or invalid order');
   });
 
+  it('rejects a link whose position is not a number', () => {
+    const file = exportFile({
+      links: [{ ...createMockLink({ id: 'link-1' }), order: '2' as unknown as number }],
+    });
+
+    expect(() => validateExportFile(file)).toThrow('Invalid link at index 0');
+  });
+
+  it('accepts links with and without a position', () => {
+    const file = exportFile({
+      links: [createMockLink({ id: 'link-1', order: 0 }), createMockLink({ id: 'link-2' })],
+    });
+
+    expect(() => validateExportFile(file)).not.toThrow();
+  });
+
   it('should reject link without URL', () => {
     const invalidFile = {
       version: '1.0',

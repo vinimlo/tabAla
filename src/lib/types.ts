@@ -8,7 +8,10 @@
  * IDs: UUID v4 | Timestamps: Unix ms | Colors: #RGB or #RRGGBB
  */
 
-/** A saved tab/URL. Always belongs to a collection, ordered by createdAt desc. */
+/**
+ * A saved tab/URL. Always belongs to a collection. Display order: see
+ * sortCollectionLinks (manual position, new links on top).
+ */
 export interface Link {
   id: string;
   url: string;
@@ -18,6 +21,8 @@ export interface Link {
   /** Unix timestamp (ms). */
   createdAt: number;
   favicon?: string;
+  /** Manual position within the collection, set by drag and drop. */
+  order?: number;
 }
 
 /**

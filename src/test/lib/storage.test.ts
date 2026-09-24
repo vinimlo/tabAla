@@ -12,6 +12,7 @@ import {
   saveLinks,
   saveCollections,
   moveLink,
+  reorderLinks,
   updateCollectionOrder,
   getSettings,
   saveSettings,
@@ -20,6 +21,7 @@ import {
 import type { Settings } from '@/lib/types';
 import { DEFAULT_SETTINGS } from '@/lib/types';
 import { createMockLink, createMockCollection } from '../factories';
+import { sortCollectionLinks } from '@/lib/link-order';
 
 describe('saving a link', () => {
   beforeEach(() => {
@@ -49,6 +51,56 @@ describe('saving a link', () => {
     await addLink({ url: 'file:///Users/me/notes.html', title: 'Notes' });
 
     expect((await getLinks()).map((l) => l.url)).toEqual(['file:///Users/me/notes.html']);
+  });
+});
+
+describe('reorderLinks', () => {
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    clearMockStorage();
+    await saveCollections([
+      createMockCollection({ id: 'col' }),
+      createMockCollection({ id: 'col-2', order: 1 }),
+    ]);
+    await saveLinks([
+      createMockLink({ id: 'a', collectionId: 'col', createdAt: 3 }),
+      createMockLink({ id: 'b', collectionId: 'col', createdAt: 2 }),
+      createMockLink({ id: 'c', collectionId: 'col', createdAt: 1 }),
+      createMockLink({ id: 'x', collectionId: 'col-2', createdAt: 4 }),
+    ]);
+  });
+
+  const columnIds = async (collectionId: string): Promise<string[]> =>
+    sortCollectionLinks((await getLinks()).filter((l) => l.collectionId === collectionId)).map((l) => l.id);
+
+  it('keeps the manual order when the data is read again', async () => {
+    const result = await reorderLinks('col', ['c', 'a', 'b']);
+
+    expect(result.success).toBe(true);
+    expect(await columnIds('col')).toEqual(['c', 'a', 'b']);
+  });
+
+  it('moves a link dropped from another collection', async () => {
+    await reorderLinks('col', ['a', 'x', 'b', 'c']);
+
+    expect(await columnIds('col')).toEqual(['a', 'x', 'b', 'c']);
+    expect(await columnIds('col-2')).toEqual([]);
+  });
+
+  it('refuses a collection that does not exist', async () => {
+    const result = await reorderLinks('missing', ['a']);
+
+    expect(result.success).toBe(false);
+    expect(await columnIds('col')).toEqual(['a', 'b', 'c']);
+  });
+
+  it('puts a link moved without dragging on top of its new collection', async () => {
+    await reorderLinks('col-2', ['x']);
+    await reorderLinks('col', ['c', 'b', 'a']);
+
+    await moveLink('b', 'col-2');
+
+    expect(await columnIds('col-2')).toEqual(['b', 'x']);
   });
 });
 

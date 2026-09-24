@@ -64,6 +64,7 @@ interface Link {
   favicon?: string;
   collectionId: string;
   createdAt: number;
+  order?: number;   // posição manual na coleção (arrastar)
 }
 
 interface Collection {
@@ -78,7 +79,7 @@ interface Collection {
 - **Inbox**: Coleção padrão que sempre existe e não pode ser excluída
 - **Links órfãos**: Links de coleções excluídas vão para Inbox
 - **Unicidade**: Mesmo URL pode existir em múltiplas coleções
-- **Ordenação**: Links ordenados por data (mais recente primeiro)
+- **Ordenação**: posição manual na coleção (arrastar grava `order`); links sem posição, como os recém-salvos, ficam no topo por data. Mover sem arrastar (`moveLink`) tira a posição
 
 ## Comandos
 

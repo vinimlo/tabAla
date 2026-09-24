@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { flip } from 'svelte/animate';
-  import { dndzone, SOURCES, TRIGGERS } from 'svelte-dnd-action';
+  import { dndzone, TRIGGERS } from 'svelte-dnd-action';
   import { t, getCollectionDisplayName, getWorkspaceDisplayName } from '@lib/i18n';
   import type { Collection, Link, Workspace } from '@/lib/types';
   import { INBOX_COLLECTION_ID } from '@/lib/types';
@@ -17,7 +17,7 @@
     openLink: Link;
     openLinkInNewTab: Link;
     removeLink: { id: string; title: string };
-    moveLink: { linkId: string; toCollectionId: string };
+    reorderLinks: { collectionId: string; orderedIds: string[] };
     renameCollection: { id: string; newName: string };
     deleteCollection: { id: string; name: string; linkCount: number };
     tabDrop: { url: string; title: string; favicon?: string; collectionId: string };
@@ -50,19 +50,13 @@
   function handleDndFinalize(e: CustomEvent): void {
     links = e.detail.items;
 
-    // Check if this is a drop from another column
-    const { source, trigger } = e.detail.info;
-    if (source === SOURCES.POINTER && trigger === TRIGGERS.DROPPED_INTO_ZONE) {
-      // Find the newly dropped link (one that wasn't in this collection before)
-      for (const link of e.detail.items) {
-        if (link.collectionId !== collection.id) {
-          dispatch('moveLink', {
-            linkId: link.id,
-            toCollectionId: collection.id,
-          });
-          break;
-        }
-      }
+    // Only the column that received the drop saves: its list carries both the
+    // new order and any link dragged in from another column (mouse or keyboard).
+    if (e.detail.info.trigger === TRIGGERS.DROPPED_INTO_ZONE) {
+      dispatch('reorderLinks', {
+        collectionId: collection.id,
+        orderedIds: (e.detail.items as Link[]).map((link) => link.id),
+      });
     }
   }
 

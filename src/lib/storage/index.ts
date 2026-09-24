@@ -42,6 +42,7 @@ export {
   insertLink,
   removeLink,
   moveLink,
+  reorderLinks,
   recoverOrphanedLinks,
 } from './links';
 

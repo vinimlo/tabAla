@@ -4,6 +4,7 @@ import { t } from '../i18n';
 import type { OperationResult, RemoveLinkResult, AddLinkInput } from './core';
 import { StorageError, getErrorMessage, withDataLock } from './core';
 import { getLinks, saveLinks, getCollections } from './data-access';
+import { applyLinkOrder } from '../link-order';
 
 /**
  * Prepends a link built by the caller (e.g. an optimistic store update).
@@ -94,9 +95,14 @@ export async function moveLink(
         return { success: false, error: t('storage_target_collection_not_found') };
       }
 
-      const updatedLinks = links.map((link) =>
-        link.id === linkId ? { ...link, collectionId: toCollectionId } : link
-      );
+      // Its old position meant nothing in the new collection: it goes on top.
+      const updatedLinks = links.map((link) => {
+        if (link.id !== linkId) {
+          return link;
+        }
+        const { order: _order, ...unplaced } = link;
+        return { ...unplaced, collectionId: toCollectionId };
+      });
 
       await saveLinks(updatedLinks);
 
@@ -104,6 +110,31 @@ export async function moveLink(
     });
   } catch (error) {
     console.error('Failed to move link:', error);
+    return {
+      success: false,
+      error: getErrorMessage(error, t('error_move_link_failed')),
+    };
+  }
+}
+
+/** Saves the order of a collection after a drag, moving in links dropped from elsewhere. */
+export async function reorderLinks(
+  collectionId: string,
+  orderedIds: string[]
+): Promise<OperationResult> {
+  try {
+    return await withDataLock(async () => {
+      const collections = await getCollections();
+
+      if (!collections.some((c) => c.id === collectionId)) {
+        return { success: false, error: t('storage_target_collection_not_found') };
+      }
+
+      await saveLinks(applyLinkOrder(await getLinks(), collectionId, orderedIds));
+      return { success: true };
+    });
+  } catch (error) {
+    console.error('Failed to reorder links:', error);
     return {
       success: false,
       error: getErrorMessage(error, t('error_move_link_failed')),

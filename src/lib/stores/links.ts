@@ -10,6 +10,7 @@ import {
   createCollection as storageCreateCollection,
   renameCollection as storageRenameCollection,
   moveLink as storageMoveLink,
+  reorderLinks as storageReorderLinks,
   updateCollectionOrder as storageUpdateCollectionOrder,
   recoverOrphanedLinks,
   getErrorMessage,
@@ -18,6 +19,7 @@ import {
 import { validateCollectionName, type ValidationResult } from '@/lib/validation';
 import { t } from '@/lib/i18n';
 import { optimisticUpdate } from './helpers';
+import { applyLinkOrder, sortCollectionLinks } from '@/lib/link-order';
 
 interface LinksState {
   links: Link[];
@@ -47,6 +49,7 @@ function createLinksStore(): Writable<LinksState> & {
   addLink: (link: Omit<Link, 'id' | 'createdAt'>) => Promise<void>;
   removeLink: (id: string) => Promise<void>;
   moveLink: (linkId: string, toCollectionId: string) => Promise<void>;
+  reorderLinks: (collectionId: string, orderedIds: string[]) => Promise<void>;
   addCollection: (name: string, workspaceId?: string) => Promise<Collection>;
   removeCollection: (id: string) => Promise<void>;
   renameCollection: (id: string, newName: string) => Promise<void>;
@@ -167,14 +170,33 @@ function createLinksStore(): Writable<LinksState> & {
       (state) => ({
         updated: {
           ...state,
-          links: state.links.map((link) =>
-            link.id === linkId ? { ...link, collectionId: toCollectionId } : link
-          ),
+          links: state.links.map((link) => {
+            if (link.id !== linkId) {
+              return link;
+            }
+            const { order: _order, ...unplaced } = link;
+            return { ...unplaced, collectionId: toCollectionId };
+          }),
         },
         rollback: { links: state.links } as Partial<LinksState>,
       }),
       async () => {
         const result = await storageMoveLink(linkId, toCollectionId);
+        return result.success ? null : (result.error ?? t('error_move_link_failed'));
+      },
+      t('error_move_link_failed')
+    );
+  }
+
+  async function reorderLinks(collectionId: string, orderedIds: string[]): Promise<void> {
+    await optimisticUpdate(
+      store,
+      (state) => ({
+        updated: { ...state, links: applyLinkOrder(state.links, collectionId, orderedIds) },
+        rollback: { links: state.links } as Partial<LinksState>,
+      }),
+      async () => {
+        const result = await storageReorderLinks(collectionId, orderedIds);
         return result.success ? null : (result.error ?? t('error_move_link_failed'));
       },
       t('error_move_link_failed')
@@ -291,6 +313,7 @@ function createLinksStore(): Writable<LinksState> & {
     addLink,
     removeLink,
     moveLink,
+    reorderLinks,
     addCollection,
     removeCollection,
     getCollectionNames,
@@ -319,6 +342,10 @@ export const linksByCollection = derived(linksStore, ($store) => {
       }
     }
     links.push(link);
+  }
+
+  for (const [collectionId, links] of grouped) {
+    grouped.set(collectionId, sortCollectionLinks(links));
   }
 
   return grouped;

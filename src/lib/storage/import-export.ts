@@ -135,6 +135,9 @@ export function validateExportFile(data: unknown): TabAlaExportFile {
     if (typeof l.createdAt !== 'number') {
       throw new Error(`Invalid link at index ${i}: missing or invalid createdAt`);
     }
+    if (l.order !== undefined && !Number.isFinite(l.order)) {
+      throw new Error(`Invalid link at index ${i}: invalid order`);
+    }
   }
 
   return obj as TabAlaExportFile;

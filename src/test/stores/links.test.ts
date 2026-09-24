@@ -138,6 +138,31 @@ describe('linksStore', () => {
   });
 });
 
+describe('manual link order', () => {
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    linksStore.set(INITIAL_STORE_STATE);
+    mockStorageWith([
+      createMockLink({ id: 'placed-1', collectionId: 'work', order: 1, createdAt: 3000 }),
+      createMockLink({ id: 'new', collectionId: 'work', createdAt: 1000 }),
+      createMockLink({ id: 'placed-0', collectionId: 'work', order: 0, createdAt: 2000 }),
+    ]);
+    await linksStore.load();
+  });
+
+  const workIds = (): string[] => (get(linksByCollection).get('work') ?? []).map((l) => l.id);
+
+  it('shows new links on top, then links in their manual position', () => {
+    expect(workIds()).toEqual(['new', 'placed-0', 'placed-1']);
+  });
+
+  it('shows a reorder right away', async () => {
+    await linksStore.reorderLinks('work', ['placed-1', 'new', 'placed-0']);
+
+    expect(workIds()).toEqual(['placed-1', 'new', 'placed-0']);
+  });
+});
+
 describe('linksByCollection', () => {
   beforeEach(async () => {
     mockStorageWith();

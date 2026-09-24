@@ -19,6 +19,7 @@ export function createStorageMock(): Record<string, unknown> {
     createCollection: vi.fn(() => Promise.resolve({ id: 'new-collection', name: 'New', order: 1 })),
     renameCollection: vi.fn(() => Promise.resolve({ success: true })),
     moveLink: vi.fn(() => Promise.resolve({ success: true })),
+    reorderLinks: vi.fn(() => Promise.resolve({ success: true })),
     updateCollectionOrder: vi.fn(() => Promise.resolve({ success: true })),
     getWorkspaces: vi.fn(() => Promise.resolve([])),
     saveWorkspaces: vi.fn(() => Promise.resolve()),

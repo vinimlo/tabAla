@@ -3,6 +3,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
+import { fireEvent } from '@testing-library/svelte';
 import Column from '@/newtab/components/Column.svelte';
 import { createMockLink, createMockCollection } from '../factories';
 import { INBOX_COLLECTION_ID } from '@/lib/types';
@@ -31,6 +32,28 @@ describe('Column Component', () => {
     createMockLink({ id: 'link-1', url: 'https://example.com', title: 'Link 1', collectionId: 'work' }),
     createMockLink({ id: 'link-2', url: 'https://test.com', title: 'Link 2', collectionId: 'work' }),
   ];
+
+  it('reports the new order of its links after a drop', async () => {
+    const reorderLinks = vi.fn();
+    const { container } = render(Column, {
+      props: { collection: workCollection, links: mockLinks },
+      events: { reorderLinks },
+    });
+
+    const zone = container.querySelector('.column-content') as HTMLElement;
+    await fireEvent(zone, new CustomEvent('finalize', {
+      detail: {
+        items: [mockLinks[1], mockLinks[0]],
+        info: { source: 'pointer', trigger: 'droppedIntoZone', id: 'link-2' },
+      },
+    }));
+
+    expect(reorderLinks).toHaveBeenCalledTimes(1);
+    expect(reorderLinks.mock.calls[0][0].detail).toEqual({
+      collectionId: 'work',
+      orderedIds: ['link-2', 'link-1'],
+    });
+  });
 
   it('should render collection name and link count', () => {
     render(Column, {

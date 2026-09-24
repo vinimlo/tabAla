@@ -69,10 +69,10 @@
     }
   }
 
-  async function handleMoveLink(event: CustomEvent<{ linkId: string; toCollectionId: string }>): Promise<void> {
-    const { linkId, toCollectionId } = event.detail;
+  async function handleReorderLinks(event: CustomEvent<{ collectionId: string; orderedIds: string[] }>): Promise<void> {
+    const { collectionId, orderedIds } = event.detail;
     try {
-      await linksStore.moveLink(linkId, toCollectionId);
+      await linksStore.reorderLinks(collectionId, orderedIds);
     } catch (_err) {
       dispatch('error', t('error_move_link_failed'));
     }
@@ -136,7 +136,7 @@
           on:openLink={handleOpenLink}
           on:openLinkInNewTab={handleOpenLinkInNewTab}
           on:removeLink={(e) => dispatch('removeLink', e.detail)}
-          on:moveLink={handleMoveLink}
+          on:reorderLinks={handleReorderLinks}
           on:renameCollection={handleRenameCollection}
           on:deleteCollection={handleDeleteCollection}
           on:tabDrop={(e) => dispatch('tabDrop', e.detail)}

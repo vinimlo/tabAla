@@ -72,6 +72,18 @@ describe('App Component', () => {
     });
   });
 
+  it('opens the dashboard page itself, which works even when it is not the new tab', async () => {
+    setStoreState({});
+
+    render(App);
+    const button = await screen.findByTitle('popup_open_dashboard');
+    await act(() => button.click());
+
+    expect(chrome.tabs.create).toHaveBeenCalledWith({
+      url: 'chrome-extension://test-extension-id/src/newtab/index.html?dashboard',
+    });
+  });
+
   it('should have main element', () => {
     setStoreState({});
 

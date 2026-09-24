@@ -71,6 +71,7 @@ const chromeMock = {
   tabs: {
     query: vi.fn(() => Promise.resolve([])),
     get: vi.fn((tabId: number) => Promise.resolve({ id: tabId, url: '', title: '' })),
+    getCurrent: vi.fn(() => Promise.resolve({ id: 1, url: '', title: '' })),
     create: vi.fn((props) => Promise.resolve({ id: 1, ...props })),
     update: vi.fn((tabId: number, props) => Promise.resolve({ id: tabId, ...props })),
     remove: vi.fn(() => Promise.resolve()),

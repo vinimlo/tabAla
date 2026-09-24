@@ -1,14 +1,19 @@
 import { mount } from 'svelte';
 import App from './App.svelte';
+import { startNewtab } from './start';
 
-try {
-  const target = document.getElementById('app');
-  if (!target) {
-    throw new Error('Target element #app not found in DOM');
+function mountApp(): void {
+  try {
+    const target = document.getElementById('app');
+    if (!target) {
+      throw new Error('Target element #app not found in DOM');
+    }
+    mount(App, { target });
+  } catch (error) {
+    console.error('Failed to mount Newtab App component:', error);
+    document.body.innerHTML =
+      '<div style="padding: 20px; font-family: system-ui; color: #d00;">Failed to load TabAla Dashboard. Check console for details.</div>';
   }
-  mount(App, { target });
-} catch (error) {
-  console.error('Failed to mount Newtab App component:', error);
-  document.body.innerHTML =
-    '<div style="padding: 20px; font-family: system-ui; color: #d00;">Failed to load TabAla Dashboard. Check console for details.</div>';
 }
+
+void startNewtab(location.search, mountApp);

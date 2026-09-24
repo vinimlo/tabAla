@@ -226,3 +226,11 @@ export function extractDomain(url: string): string {
     return url;
   }
 }
+
+/** Marks the dashboard as opened on purpose, so it shows even when it is not the new tab. */
+export const DASHBOARD_PARAM = 'dashboard';
+
+/** The dashboard page itself; `chrome://newtab` would follow the new tab setting. */
+export function dashboardUrl(): string {
+  return chrome.runtime.getURL(`src/newtab/index.html?${DASHBOARD_PARAM}`);
+}

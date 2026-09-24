@@ -5,7 +5,7 @@
   import { t, getCollectionDisplayName } from '@lib/i18n';
   import type { Link } from '@/lib/types';
   import { INBOX_COLLECTION_ID } from '@/lib/types';
-  import { getCurrentTab, isSaveableUrl, openLinkInNewTab } from '@/lib/tabs';
+  import { getCurrentTab, isSaveableUrl, openLinkInNewTab, dashboardUrl } from '@/lib/tabs';
   import { linksStore, linksByCollection } from '@/lib/stores/links';
   import { settingsStore } from '@/lib/stores/settings';
   import { workspacesStore, collectionsByActiveWorkspace } from '@/lib/stores/workspaces';
@@ -90,7 +90,7 @@
   }
 
   function openDashboard(): void {
-    void chrome.tabs.create({ url: 'chrome://newtab' });
+    void chrome.tabs.create({ url: dashboardUrl() });
   }
 
   async function handleOpenLink(link: Link): Promise<void> {

@@ -55,6 +55,13 @@ describe('Column Component', () => {
     });
   });
 
+  it('always shows every link of the collection', () => {
+    render(Column, { props: { collection: workCollection, links: mockLinks } });
+
+    expect(screen.getByText('Link 1')).toBeInTheDocument();
+    expect(screen.getByText('Link 2')).toBeInTheDocument();
+  });
+
   it('should render collection name and link count', () => {
     render(Column, {
       props: { collection: workCollection, links: mockLinks },

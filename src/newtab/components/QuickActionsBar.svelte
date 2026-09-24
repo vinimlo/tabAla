@@ -2,46 +2,22 @@
   import { createEventDispatcher } from 'svelte';
   import { t } from '@lib/i18n';
 
-  export let searchQuery: string = '';
-
   const dispatch = createEventDispatcher<{
-    search: string;
+    openSearch: void;
     openSettings: void;
     newCollection: void;
   }>();
-
-  function handleSearchInput(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    dispatch('search', target.value);
-  }
-
-  function clearSearch(): void {
-    dispatch('search', '');
-  }
 </script>
 
 <header class="quick-actions-bar">
-  <div class="search-container">
+  <button type="button" class="search-container search-trigger" on:click={() => dispatch('openSearch')}>
     <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="11" cy="11" r="8"/>
       <path d="M21 21l-4.35-4.35"/>
     </svg>
-    <input
-      type="text"
-      class="search-input"
-      placeholder={t('newtab_search_placeholder')}
-      value={searchQuery}
-      on:input={handleSearchInput}
-      data-search-input
-    />
-    {#if searchQuery}
-      <button class="clear-search" on:click={clearSearch} type="button" aria-label={t('newtab_clear_search')}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <path d="M18 6L6 18M6 6l12 12"/>
-        </svg>
-      </button>
-    {/if}
-  </div>
+    <span class="search-placeholder">{t('search_open_placeholder')}</span>
+    <kbd class="search-kbd">⌘K</kbd>
+  </button>
 
   <div class="actions">
     <button
@@ -98,63 +74,42 @@
     transition: all var(--duration-fast) var(--ease-out);
   }
 
-  .search-input {
+  .search-trigger {
     width: 100%;
     height: 48px;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
     padding: 0 var(--space-4);
     padding-left: calc(var(--space-4) + 20px + var(--space-2));
     background: var(--surface-overlay);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-lg);
-    color: var(--text-primary);
+    color: var(--text-tertiary);
     font-family: var(--font-body);
     font-size: var(--text-sm);
+    text-align: left;
+    cursor: text;
     transition: all var(--duration-fast) var(--ease-out);
   }
 
-  .search-input::placeholder {
-    color: var(--text-tertiary);
-  }
-
-  .search-input:focus {
+  .search-trigger:hover,
+  .search-trigger:focus-visible {
     outline: none;
     border-color: var(--accent-primary);
-    background: var(--surface-base);
     box-shadow: 0 0 0 3px var(--accent-soft);
   }
 
-  .search-container:focus-within .search-icon {
-    color: var(--accent-primary);
-    transform: translateY(-50%) scale(1.1);
+  .search-placeholder {
+    flex: 1;
   }
 
-  .clear-search {
-    position: absolute;
-    right: var(--space-2);
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-full);
-    color: var(--text-tertiary);
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .clear-search:hover {
-    color: var(--text-primary);
-    background: var(--border-default);
-  }
-
-  .clear-search:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
+  .search-kbd {
+    padding: 2px 6px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
   }
 
   .actions {

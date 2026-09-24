@@ -9,7 +9,6 @@
 
   export let collection: Collection;
   export let links: Link[] = [];
-  export let searchQuery: string = '';
   export let workspaces: Workspace[] = [];
   export let currentWorkspaceId: string = '';
 
@@ -35,13 +34,6 @@
   let menuRef: HTMLDivElement;
 
   $: isInbox = collection.id === INBOX_COLLECTION_ID;
-  $: filteredLinks = searchQuery
-    ? links.filter(link =>
-        link.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        link.url.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : links;
-  $: hasMatches = filteredLinks.length > 0;
 
   function handleDndConsider(e: CustomEvent): void {
     links = e.detail.items;
@@ -118,7 +110,7 @@
 
   function handleOpenAll(): void {
     closeMenu();
-    for (const link of filteredLinks) {
+    for (const link of links) {
       dispatch('openLinkInNewTab', link);
     }
   }
@@ -178,7 +170,6 @@
 
 <svelte:window on:click={handleClickOutside} />
 
-{#if searchQuery === '' || hasMatches}
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div
     class="column"
@@ -207,7 +198,7 @@
           title={isInbox ? t('common_inbox') : t('column_double_click_rename')}
         >
           {getCollectionDisplayName(collection)}
-          <span class="link-count">{filteredLinks.length}</span>
+          <span class="link-count">{links.length}</span>
         </button>
       {/if}
 
@@ -228,7 +219,7 @@
 
           {#if showMenu}
             <div class="menu-dropdown">
-              <button type="button" class="menu-item" on:click={handleOpenAll} disabled={filteredLinks.length === 0}>
+              <button type="button" class="menu-item" on:click={handleOpenAll} disabled={links.length === 0}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
                   <polyline points="15 3 21 3 21 9"/>
@@ -285,7 +276,7 @@
     <div
       class="column-content scrollbar-thin"
       use:dndzone={{
-        items: filteredLinks,
+        items: links,
         flipDurationMs,
         dropTargetStyle: {},
         dropTargetClasses: ['drop-target'],
@@ -295,7 +286,7 @@
       on:consider={handleDndConsider}
       on:finalize={handleDndFinalize}
     >
-      {#each filteredLinks as link (link.id)}
+      {#each links as link (link.id)}
         <div animate:flip={{ duration: flipDurationMs }}>
           <LinkCard
             {link}
@@ -306,16 +297,11 @@
         </div>
       {:else}
         <div class="empty-column">
-          {#if searchQuery}
-            <span>{t('newtab_no_results')}</span>
-          {:else}
-            <span>{t('newtab_drag_links_here')}</span>
-          {/if}
+          <span>{t('newtab_drag_links_here')}</span>
         </div>
-      {/each}
+           {/each}
     </div>
   </div>
-{/if}
 
 <style>
   .column {

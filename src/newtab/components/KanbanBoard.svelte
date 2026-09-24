@@ -4,7 +4,6 @@
   import { dndzone } from 'svelte-dnd-action';
   import { t } from '@lib/i18n';
   import type { Collection, Link, Workspace } from '@/lib/types';
-  import { INBOX_COLLECTION_ID } from '@/lib/types';
   import { linksStore } from '@/lib/stores/links';
   import { workspacesStore } from '@/lib/stores/workspaces';
   import { openLinkInNewTab, openLinkInCurrentTab } from '@/lib/tabs';
@@ -12,7 +11,6 @@
 
   export let collections: Collection[] = [];
   export let linksByCollection: Map<string, Link[]>;
-  export let searchQuery: string = '';
   export let workspaces: Workspace[] = [];
   export let currentWorkspaceId: string = '';
 
@@ -31,16 +29,6 @@
     links: linksByCollection.get(collection.id) ?? [],
   }));
 
-  // Filter out hidden columns (no matches in search)
-  $: visibleColumns = searchQuery
-    ? columnsWithLinks.filter(col => {
-        const hasMatches = col.links.some(link =>
-          link.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          link.url.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        return hasMatches || col.id === INBOX_COLLECTION_ID;
-      })
-    : columnsWithLinks;
 
   function handleColumnDndConsider(e: CustomEvent): void {
     columnsWithLinks = e.detail.items;
@@ -130,7 +118,6 @@
         <Column
           collection={column}
           links={column.links}
-          {searchQuery}
           {workspaces}
           {currentWorkspaceId}
           on:openLink={handleOpenLink}
@@ -146,16 +133,6 @@
     {/each}
   </div>
 
-  {#if searchQuery && visibleColumns.length === 0}
-    <div class="no-results">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/>
-        <path d="M21 21l-4.35-4.35"/>
-        <path d="M8 8l6 6M14 8l-6 6"/>
-      </svg>
-      <p>{t('newtab_no_links_found', searchQuery)}</p>
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -202,22 +179,4 @@
     align-self: stretch;
   }
 
-  .no-results {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-4);
-    flex: 1;
-    color: var(--text-tertiary);
-  }
-
-  .no-results svg {
-    opacity: 0.4;
-  }
-
-  .no-results p {
-    margin: 0;
-    font-size: 0.9375rem;
-  }
 </style>

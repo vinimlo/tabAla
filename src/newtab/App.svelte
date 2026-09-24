@@ -24,7 +24,6 @@
 
   let mounted = false;
   let onboardingDismissed = false;
-  let searchQuery = '';
   let errorMessage: string | null = null;
   let successMessage: string | null = null;
   let showSettings = false;
@@ -49,10 +48,6 @@
     ]);
     setTimeout(() => mounted = true, 50);
   });
-
-  function handleSearch(event: CustomEvent<string>): void {
-    searchQuery = event.detail;
-  }
 
   async function handleCreateCollection(event: CustomEvent<string>): Promise<void> {
     const name = event.detail;
@@ -172,7 +167,6 @@
     }
 
     if (event.key === 'Escape') {
-      searchQuery = '';
       showSettings = false;
       showCreateCollection = false;
       linkToRemove = null;
@@ -221,8 +215,7 @@
       </div>
     {:else}
       <QuickActionsBar
-        {searchQuery}
-        on:search={handleSearch}
+        on:openSearch={() => (showSearch = true)}
         on:openSettings={() => showSettings = true}
         on:newCollection={() => showCreateCollection = true}
       />
@@ -230,7 +223,6 @@
       <KanbanBoard
         {collections}
         linksByCollection={$linksByCollection}
-        {searchQuery}
         workspaces={$workspacesStore.workspaces}
         currentWorkspaceId={$workspacesStore.activeWorkspaceId}
         on:removeLink={handleRemoveLink}

@@ -747,5 +747,9 @@
   },
   "kind_page": {
     "message": "Page"
+  },
+
+  "search_open_placeholder": {
+    "message": "Search all links"
   }
 }

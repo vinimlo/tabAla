@@ -19,6 +19,10 @@ The extension stores **only** data that the user explicitly chooses to save:
 
 All data is stored **exclusively** in `chrome.storage.local`, within the user's browser. No data is sent to external servers.
 
+## Topic search (on-device translation)
+
+When the user turns on topic search, the text typed in TabAla's search is translated into English by Chrome's built-in translator, which runs on the user's own computer. Only the search text goes to that local translator; saved links do not. Nothing is sent to external servers. The option is off by default and can be turned off at any time in Settings.
+
 ## Data not collected
 
 The extension **does not collect**:

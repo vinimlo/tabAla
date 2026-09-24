@@ -19,6 +19,10 @@ A extensão armazena **apenas** dados que o usuário escolhe salvar explicitamen
 
 Todos esses dados ficam armazenados **exclusivamente** no `chrome.storage.local`, no navegador do usuário. Nenhum dado é enviado para servidores externos.
 
+## Busca por assunto (tradução no próprio computador)
+
+Quando o usuário ativa a busca por assunto, o texto digitado na busca do TabAla é traduzido para o inglês pelo tradutor embutido no Chrome, que roda no próprio computador. Só o texto da busca vai para esse tradutor local; os links salvos não. Nada é enviado para servidores externos. A opção vem desligada e pode ser desligada a qualquer momento em Configurações.
+
 ## Dados não coletados
 
 A extensão **não coleta**:

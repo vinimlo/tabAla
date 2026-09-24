@@ -65,6 +65,7 @@ interface Link {
   collectionId: string;
   createdAt: number;
   order?: number;   // posição manual na coleção (arrastar)
+  tags?: string[];   // assunto (opcional; o motor pontua, nada preenche por enquanto)
 }
 
 interface Collection {
@@ -80,6 +81,7 @@ interface Collection {
 - **Links órfãos**: Links de coleções excluídas vão para Inbox
 - **Unicidade**: Mesmo URL pode existir em múltiplas coleções
 - **Ordenação**: posição manual na coleção (arrastar grava `order`); links sem posição, como os recém-salvos, ficam no topo por data. Mover sem arrastar (`moveLink`) tira a posição
+- **Busca**: painel ⌘K em todos os workspaces (src/lib/search); a busca por assunto traduz a consulta para o inglês com o Translator do Chrome e busca a original e a traduzida juntas (src/lib/ai/translator.ts)
 
 ## Comandos
 

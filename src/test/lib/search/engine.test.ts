@@ -114,8 +114,36 @@ describe('search', () => {
     expect(search(index, ['hermes'])).toEqual(search(index, 'hermes'));
   });
 
-  it('adds up the kind words of every phrasing', () => {
-    expect(ids(search(index, ['hermes', 'video hermes']).results)).toEqual(['hermes-video']);
+  it('takes kind filters from the typed phrasing', () => {
+    expect(ids(search(index, ['video hermes', 'hermes']).results)).toEqual(['hermes-video']);
+  });
+
+  describe('kind words that would hide what was typed', () => {
+    const wallpaper = createMockLink({ id: 'wallpaper', title: 'Papel de parede minimalista', url: 'https://design.example/papel-de-parede', collectionId: 'inbox', createdAt: 7 });
+    const vidcomp = createMockLink({ id: 'vidcomp', title: 'Video compression explained', url: 'https://blog.example/video-compression', collectionId: 'inbox', createdAt: 8 });
+    const extra = buildIndex([...links, wallpaper, vidcomp], collections, workspaces);
+
+    it('never filters by a kind word that only the translation has', () => {
+      expect(ids(search(extra, ['papel', 'paper']).results)).toEqual(['wallpaper']);
+    });
+
+    it('reads kind words as plain words when the filter would leave nothing', () => {
+      expect(ids(search(extra, 'video compression').results)).toEqual(['vidcomp']);
+    });
+
+    it('keeps a kind chip strict', () => {
+      expect(search(extra, 'compression', { kinds: ['video'] }).results).toEqual([]);
+    });
+  });
+
+  it('tolerates malformed tags from an imported file', () => {
+    const odd = [
+      createMockLink({ id: 'str', title: 'Odd one', collectionId: 'inbox', tags: 'foo' as unknown as string[] }),
+      createMockLink({ id: 'mixed', title: 'Mixed one', collectionId: 'inbox', tags: [1, null, 'ia', 'ia'] as unknown as string[] }),
+    ];
+    const [hit] = search(buildIndex(odd, collections, workspaces), 'ia ').results;
+    expect(hit.link.id).toBe('mixed');
+    expect(hit.tags).toEqual(['ia']);
   });
 
   it('keeps the best score of a link among the phrasings', () => {

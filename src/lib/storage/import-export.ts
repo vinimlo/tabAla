@@ -138,6 +138,9 @@ export function validateExportFile(data: unknown): TabAlaExportFile {
     if (l.order !== undefined && !Number.isFinite(l.order)) {
       throw new Error(`Invalid link at index ${i}: invalid order`);
     }
+    if (l.tags !== undefined && (!Array.isArray(l.tags) || !l.tags.every((tag) => typeof tag === 'string'))) {
+      throw new Error(`Invalid link at index ${i}: invalid tags`);
+    }
   }
 
   return obj as TabAlaExportFile;

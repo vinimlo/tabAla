@@ -161,9 +161,9 @@
                 <span class="hit-kind">{t(KIND_LABEL_KEYS[hit.kind])}</span>
                 <span class="hit-domain">{extractDomain(hit.link.url).replace(/^www\./, '')}</span>
               </span>
-              {#if hit.link.tags !== undefined && hit.link.tags.length > 0}
+              {#if hit.tags.length > 0}
                 <span class="hit-tags">
-                  {#each hit.link.tags as tag (tag)}
+                  {#each hit.tags as tag (tag)}
                     <span class="hit-tag" class:matched={hit.matchedTags.includes(tag)}>{tag}</span>
                   {/each}
                 </span>

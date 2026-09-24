@@ -4,7 +4,7 @@
  */
 import type { Collection, Link, Workspace } from '@/lib/types';
 import { linkKind, type LinkKind } from '@/lib/link-kind';
-import { parseQuery, tokenize, type Token } from './text';
+import { parseQuery, tokenize, type ParsedQuery, type Token } from './text';
 
 type Field = 'title' | 'tags' | 'domain' | 'collection' | 'workspace' | 'path';
 
@@ -50,6 +50,8 @@ export interface SearchHit {
   /** Undefined for Inbox links, which show in every workspace. */
   workspaceId?: string;
   workspaceName?: string;
+  /** The link's tags, cleaned (unique, non-empty texts). */
+  tags: string[];
   matchedTags: string[];
 }
 
@@ -90,6 +92,20 @@ function urlTokens(url: string): { domain: Token[]; path: Token[] } {
   }
 }
 
+/** Stored tags may come from an imported file: keep unique, non-empty texts. */
+function cleanTags(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const tags: string[] = [];
+  for (const tag of value) {
+    if (typeof tag === 'string' && tag.trim() !== '' && !tags.includes(tag)) {
+      tags.push(tag);
+    }
+  }
+  return tags;
+}
+
 export function buildIndex(
   links: Link[],
   collections: Collection[],
@@ -106,7 +122,7 @@ export function buildIndex(
       : undefined;
     const collectionName = collection !== undefined ? names.collection(collection) : '';
     const workspaceName = workspace !== undefined ? names.workspace(workspace) : undefined;
-    const tags = (link.tags ?? []).map((tag) => ({ tag, tokens: tokenize(tag) }));
+    const tags = cleanTags(link.tags).map((tag) => ({ tag, tokens: tokenize(tag) }));
     const { domain, path } = urlTokens(link.url);
 
     return {
@@ -222,6 +238,7 @@ function toHit({ entry, score, matchedTags }: Scored): SearchHit {
     collectionName: entry.collectionName,
     workspaceId: entry.workspaceId,
     workspaceName: entry.workspaceName,
+    tags: entry.tags.map((t) => t.tag),
     matchedTags,
   };
 }
@@ -238,16 +255,8 @@ function countKinds(items: Scored[]): Partial<Record<LinkKind, number>> {
   return counts;
 }
 
-/**
- * Searches one query, or several phrasings of the same query (the original
- * and its translation): a link is a result when it matches every term of
- * any phrasing, with its best score among them.
- */
-export function search(index: SearchIndex, query: string | string[], options: SearchOptions = {}): SearchResult {
-  const phrasings = (typeof query === 'string' ? [query] : query).map(parseQuery);
-  const kinds = [...new Set([...phrasings.flatMap((p) => p.kinds), ...(options.kinds ?? [])])];
+function run(index: SearchIndex, phrasings: ParsedQuery[], kinds: LinkKind[], limit: number): SearchResult {
   const termLists = phrasings.map((p) => p.terms).filter((terms) => terms.length > 0);
-  const limit = options.limit ?? 50;
   const passesKinds = (s: Scored): boolean => kinds.length === 0 || kinds.includes(s.entry.kind);
 
   if (termLists.length === 0) {
@@ -275,4 +284,27 @@ export function search(index: SearchIndex, query: string | string[], options: Se
       .map(toHit);
 
   return { results, partial, kinds, kindCounts: countKinds(full.length > 0 ? full : some) };
+}
+
+/**
+ * Searches one query, or several phrasings of the same query (the typed one
+ * first, then its translation): a link is a result when it matches every
+ * term of any phrasing, with its best score among them.
+ *
+ * Kind filters come from the typed phrasing and the chips only, so a
+ * translation never hides what was typed. When the typed kind words leave
+ * nothing at all, they are read again as plain words ("video compression").
+ */
+export function search(index: SearchIndex, query: string | string[], options: SearchOptions = {}): SearchResult {
+  const queries = typeof query === 'string' ? [query] : query;
+  const limit = options.limit ?? 50;
+  const chips = options.kinds ?? [];
+  const phrasings = queries.map((q) => parseQuery(q));
+  const typedKinds = phrasings.length > 0 ? phrasings[0].kinds : [];
+
+  const result = run(index, phrasings, [...new Set([...typedKinds, ...chips])], limit);
+  if (typedKinds.length > 0 && result.results.length === 0 && result.partial.length === 0) {
+    return run(index, queries.map((q) => parseQuery(q, { kindWords: false })), chips, limit);
+  }
+  return result;
 }

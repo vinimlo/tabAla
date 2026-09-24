@@ -42,7 +42,7 @@ interface Link {
 }
 ```
 
-Campo opcional que o motor já pontua (peso 2,5), sem nenhum código que o preencha nesta versão. Fica porque não custa nada e é o caminho medido para 56% (§9) se um dia valer somar tags.
+Campo opcional que o motor já pontua (peso 2,5), sem nenhum código que o preencha nesta versão. O import aceita `tags` só como lista de textos, e o motor ignora qualquer outro valor que já esteja gravado. Fica porque não custa nada e é o caminho medido para 56% (§9) se um dia valer somar tags.
 
 ### 4.2 Tipo do link
 
@@ -112,6 +112,8 @@ Na consulta, viram filtro de tipo e saem dos termos. São comparadas depois da n
 
 Nomes de site (github, youtube) **não** são palavras de tipo: casam pelo campo domínio, então "github" traz repositórios e PRs.
 
+Se as palavras de tipo da consulta deixarem a busca sem resultado nem parcial, elas voltam a valer como palavras comuns: "video compression" acha o post com esse título, mesmo fora do YouTube. Os chips continuam estritos.
+
 Chips no painel também ligam filtros de tipo. Vários tipos selecionados combinam por OU.
 
 ### 6.3 Pontuação
@@ -132,7 +134,7 @@ Pontuação do link = soma dos termos. **Resultados:** links em que todos os ter
 
 ### 6.5 Várias formas da mesma consulta
 
-`search(index, consultas: string[])` junta formas da mesma consulta (original e traduzida): um link é resultado se casar com todos os termos de **alguma** forma, com a maior pontuação entre elas; as palavras de tipo de todas as formas se somam; "Parciais" só aparecem quando nenhuma forma tem resultado completo.
+`search(index, consultas: string[])` junta formas da mesma consulta (original e traduzida): um link é resultado se casar com todos os termos de **alguma** forma, com a maior pontuação entre elas; as palavras de tipo valem só da forma digitada (a tradução nunca cria filtro: "papel" → "paper" não esconde o link de papel de parede); "Parciais" só aparecem quando nenhuma forma tem resultado completo.
 
 ## 7. Interface
 

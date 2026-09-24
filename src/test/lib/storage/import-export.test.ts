@@ -147,6 +147,14 @@ describe('validateExportFile', () => {
     expect(() => validateExportFile(invalidFile)).toThrow('missing or invalid order');
   });
 
+  it('rejects tags that are not a list of texts', () => {
+    const notList = exportFile({ links: [{ ...createMockLink({ id: 'l1' }), tags: 'ia' as unknown as string[] }] });
+    const notTexts = exportFile({ links: [{ ...createMockLink({ id: 'l1' }), tags: [1] as unknown as string[] }] });
+
+    expect(() => validateExportFile(notList)).toThrow('Invalid link at index 0');
+    expect(() => validateExportFile(notTexts)).toThrow('Invalid link at index 0');
+  });
+
   it('rejects a link whose position is not a number', () => {
     const file = exportFile({
       links: [{ ...createMockLink({ id: 'link-1' }), order: '2' as unknown as number }],

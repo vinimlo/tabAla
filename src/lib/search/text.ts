@@ -58,16 +58,17 @@ export interface ParsedQuery {
 /**
  * Splits a query into search terms and kind filters. The last word, while
  * still being typed (no trailing space), is never dropped as a stopword:
- * "de" on its way to "desafio" already searches by prefix.
+ * "de" on its way to "desafio" already searches by prefix. With
+ * kindWords: false, kind words stay as plain terms.
  */
-export function parseQuery(query: string): ParsedQuery {
+export function parseQuery(query: string, { kindWords = true }: { kindWords?: boolean } = {}): ParsedQuery {
   const words = normalizeWords(query);
   const stillTyping = !/\s$/.test(query);
   const terms: Token[] = [];
   const kinds = new Set<LinkKind>();
 
   words.forEach((word, i) => {
-    const kind = KIND_WORDS[word];
+    const kind = kindWords ? KIND_WORDS[word] : undefined;
     if (kind !== undefined) {
       kinds.add(kind);
       return;

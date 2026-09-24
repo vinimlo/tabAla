@@ -12,7 +12,9 @@ import {
   INBOX_COLLECTION_ID,
   DEFAULT_WORKSPACE_ID,
   WORKSPACE_COLORS,
+  WORKSPACE_LIMIT,
 } from '../types';
+import { t } from '../i18n';
 import {
   getLinks,
   saveLinks,
@@ -21,7 +23,7 @@ import {
   getWorkspaces,
   saveWorkspaces,
 } from './data-access';
-import { withDataLock } from './core';
+import { StorageError, withDataLock } from './core';
 import { ensureInbox } from './collections';
 import { ensureDefaultWorkspace } from './workspaces';
 
@@ -138,6 +140,27 @@ export function validateExportFile(data: unknown): TabAlaExportFile {
   return obj as TabAlaExportFile;
 }
 
+/** Items whose id is neither stored nor repeated earlier in the file. */
+function newItems<T extends { id: string }>(items: T[], existingIds: Set<string>): T[] {
+  const seen = new Set(existingIds);
+  return items.filter((item) => {
+    if (seen.has(item.id)) {
+      return false;
+    }
+    seen.add(item.id);
+    return true;
+  });
+}
+
+function assertWithinWorkspaceLimit(existing: number, incoming: number): void {
+  if (existing + incoming > WORKSPACE_LIMIT) {
+    throw new StorageError(
+      t('import_error_workspace_limit', incoming, existing, WORKSPACE_LIMIT),
+      'INVALID_VALUE'
+    );
+  }
+}
+
 /**
  * Calculates what would be imported without modifying storage.
  * Returns counts and warnings about data issues.
@@ -154,16 +177,18 @@ export async function previewImport(file: TabAlaExportFile): Promise<ImportPrevi
   const existingLinkIds = new Set(existingLinks.map((l) => l.id));
 
   // Count new items (IDs that don't exist)
-  const newWorkspaces = file.workspaces.filter((w) => !existingWorkspaceIds.has(w.id));
-  const newCollections = file.collections.filter((c) => !existingCollectionIds.has(c.id));
-  const newLinks = file.links.filter((l) => !existingLinkIds.has(l.id));
+  const newWorkspaces = newItems(file.workspaces, existingWorkspaceIds);
+  const newCollections = newItems(file.collections, existingCollectionIds);
+  const newLinks = newItems(file.links, existingLinkIds);
+
+  assertWithinWorkspaceLimit(existingWorkspaces.length, newWorkspaces.length);
 
   const warnings: string[] = [];
 
   // Count invalid URLs
   const invalidUrls = newLinks.filter((l) => !isValidUrl(l.url)).length;
   if (invalidUrls > 0) {
-    warnings.push(`${invalidUrls} links with invalid URLs will be skipped`);
+    warnings.push(t('import_warning_invalid_urls', invalidUrls));
   }
 
   // Count orphan collections (workspace doesn't exist and won't be imported)
@@ -175,7 +200,7 @@ export async function previewImport(file: TabAlaExportFile): Promise<ImportPrevi
     (c) => c.workspaceId && !allWorkspaceIds.has(c.workspaceId)
   ).length;
   if (orphanCollections > 0) {
-    warnings.push(`${orphanCollections} collections will be moved to General workspace`);
+    warnings.push(t('import_warning_orphan_collections', orphanCollections));
   }
 
   // Count orphan links (collection doesn't exist and won't be imported)
@@ -187,7 +212,7 @@ export async function previewImport(file: TabAlaExportFile): Promise<ImportPrevi
     (l) => !allCollectionIds.has(l.collectionId)
   ).length;
   if (orphanLinks > 0) {
-    warnings.push(`${orphanLinks} links will be moved to Inbox`);
+    warnings.push(t('import_warning_orphan_links', orphanLinks));
   }
 
   return {
@@ -217,12 +242,11 @@ export async function executeImport(file: TabAlaExportFile): Promise<ImportResul
       const existingLinkIds = new Set(existingLinks.map((l) => l.id));
 
       // 2. Process workspaces (first, since collections depend on them)
-      const newWorkspaces: Workspace[] = [];
-      for (const workspace of file.workspaces) {
-        if (existingWorkspaceIds.has(workspace.id)) {
-          continue; // Skip duplicates
-        }
+      const incomingWorkspaces = newItems(file.workspaces, existingWorkspaceIds);
+      assertWithinWorkspaceLimit(existingWorkspaces.length, incomingWorkspaces.length);
 
+      const newWorkspaces: Workspace[] = [];
+      for (const workspace of incomingWorkspaces) {
         // Validate color, fallback to first available
         let color = workspace.color;
         if (!isValidHexColor(color)) {
@@ -240,11 +264,7 @@ export async function executeImport(file: TabAlaExportFile): Promise<ImportResul
       const validWorkspaceIds = new Set(mergedWorkspaces.map((w) => w.id));
       const newCollections: Collection[] = [];
 
-      for (const collection of file.collections) {
-        if (existingCollectionIds.has(collection.id)) {
-          continue; // Skip duplicates
-        }
-
+      for (const collection of newItems(file.collections, existingCollectionIds)) {
         // Validate workspace reference
         let workspaceId = collection.workspaceId;
         if (workspaceId && !validWorkspaceIds.has(workspaceId)) {
@@ -262,11 +282,7 @@ export async function executeImport(file: TabAlaExportFile): Promise<ImportResul
       const validCollectionIds = new Set(mergedCollections.map((c) => c.id));
       const newLinks: Link[] = [];
 
-      for (const link of file.links) {
-        if (existingLinkIds.has(link.id)) {
-          continue; // Skip duplicates
-        }
-
+      for (const link of newItems(file.links, existingLinkIds)) {
         // Validate URL
         if (!isValidUrl(link.url)) {
           continue; // Skip invalid URLs

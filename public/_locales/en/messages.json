@@ -673,6 +673,14 @@
   "export_success": {
     "message": "Backup exported successfully"
   },
+  "import_error_workspace_limit": {
+    "message": "This file brings $1 new workspaces. With the $2 you already have, that goes past the limit of $3.",
+    "placeholders": {
+      "incoming": { "content": "$1" },
+      "existing": { "content": "$2" },
+      "limit": { "content": "$3" }
+    }
+  },
   "import_warning_invalid_urls": {
     "message": "$1 links with invalid URLs will be skipped",
     "placeholders": {

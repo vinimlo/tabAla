@@ -23,6 +23,41 @@ vi.mock('@/lib/storage/data-access');
 vi.mock('@/lib/storage/collections');
 vi.mock('@/lib/storage/workspaces');
 
+/** Renders "key:sub1:sub2" so tests see which message and which numbers were used. */
+function renderMessage(key: string, substitutions?: string | (string | number)[]): string {
+  return [key, ...[substitutions ?? []].flat()].join(':');
+}
+
+function exportFile(parts: Partial<TabAlaExportFile>): TabAlaExportFile {
+  return {
+    version: '1.0',
+    exportedAt: Date.now(),
+    source: 'tabala',
+    workspaces: [],
+    collections: [],
+    links: [],
+    ...parts,
+  };
+}
+
+function workspaces(count: number, prefix = 'ws'): ReturnType<typeof createMockWorkspace>[] {
+  return Array.from({ length: count }, (_, i) =>
+    createMockWorkspace({ id: `${prefix}-${i}`, name: `${prefix} ${i}`, order: i })
+  );
+}
+
+function mockExisting(existing: {
+  workspaces?: ReturnType<typeof createMockWorkspace>[];
+  collections?: ReturnType<typeof createMockCollection>[];
+}): void {
+  vi.mocked(dataAccess.getWorkspaces).mockResolvedValue(existing.workspaces ?? []);
+  vi.mocked(dataAccess.getCollections).mockResolvedValue(existing.collections ?? []);
+  vi.mocked(dataAccess.getLinks).mockResolvedValue([]);
+  vi.mocked(dataAccess.saveWorkspaces).mockResolvedValue();
+  vi.mocked(dataAccess.saveCollections).mockResolvedValue();
+  vi.mocked(dataAccess.saveLinks).mockResolvedValue();
+}
+
 describe('validateExportFile', () => {
   it('should accept a valid export file', () => {
     const validFile: TabAlaExportFile = {
@@ -130,6 +165,32 @@ describe('validateExportFile', () => {
 describe('previewImport', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(chrome.i18n.getMessage).mockImplementation(renderMessage);
+  });
+
+  it('refuses a file that would take the workspaces past the limit', async () => {
+    mockExisting({ workspaces: workspaces(11) });
+
+    const file = exportFile({ workspaces: workspaces(2, 'new') });
+
+    await expect(previewImport(file)).rejects.toThrow('import_error_workspace_limit:2:11:12');
+  });
+
+  it('accepts a file that fills the workspace limit exactly', async () => {
+    mockExisting({ workspaces: workspaces(10) });
+
+    const preview = await previewImport(exportFile({ workspaces: workspaces(2, 'new') }));
+
+    expect(preview.workspaces).toBe(2);
+  });
+
+  it('counts an item repeated inside the file once', async () => {
+    mockExisting({ collections: [createMockCollection({ id: 'col-1' })] });
+
+    const repeated = createMockLink({ id: 'dup', url: 'https://dup.example', collectionId: 'col-1' });
+    const preview = await previewImport(exportFile({ links: [repeated, { ...repeated }] }));
+
+    expect(preview.links).toBe(1);
   });
 
   it('should count new items correctly', async () => {
@@ -189,7 +250,7 @@ describe('previewImport', () => {
     const preview = await previewImport(file);
 
     expect(preview.links).toBe(1); // only valid link counted
-    expect(preview.warnings).toContain('2 links with invalid URLs will be skipped');
+    expect(preview.warnings).toContain('import_warning_invalid_urls:2');
   });
 
   it('should warn about orphan collections', async () => {
@@ -211,7 +272,7 @@ describe('previewImport', () => {
 
     const preview = await previewImport(file);
 
-    expect(preview.warnings).toContain('2 collections will be moved to General workspace');
+    expect(preview.warnings).toContain('import_warning_orphan_collections:2');
   });
 
   it('should warn about orphan links', async () => {
@@ -232,13 +293,46 @@ describe('previewImport', () => {
 
     const preview = await previewImport(file);
 
-    expect(preview.warnings).toContain('1 links will be moved to Inbox');
+    expect(preview.warnings).toContain('import_warning_orphan_links:1');
   });
 });
 
 describe('executeImport', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(chrome.i18n.getMessage).mockImplementation(renderMessage);
+  });
+
+  it('writes nothing when the file would take the workspaces past the limit', async () => {
+    mockExisting({ workspaces: workspaces(11) });
+
+    const result = await executeImport(exportFile({
+      workspaces: workspaces(2, 'new'),
+      links: [createMockLink({ id: 'link-1', collectionId: INBOX_COLLECTION_ID })],
+    }));
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('import_error_workspace_limit:2:11:12');
+    expect(vi.mocked(dataAccess.saveWorkspaces)).not.toHaveBeenCalled();
+    expect(vi.mocked(dataAccess.saveLinks)).not.toHaveBeenCalled();
+  });
+
+  it('imports an item repeated inside the file once', async () => {
+    mockExisting({});
+
+    const ws = createMockWorkspace({ id: 'ws-dup' });
+    const col = createMockCollection({ id: 'col-dup', workspaceId: 'ws-dup' });
+    const link = createMockLink({ id: 'link-dup', collectionId: 'col-dup' });
+    const result = await executeImport(exportFile({
+      workspaces: [ws, { ...ws }],
+      collections: [col, { ...col }],
+      links: [link, { ...link }],
+    }));
+
+    expect(result.imported).toEqual({ workspaces: 1, collections: 1, links: 1 });
+    expect(vi.mocked(dataAccess.saveWorkspaces).mock.calls[0][0].map((w) => w.id)).toEqual(['ws-dup']);
+    expect(vi.mocked(dataAccess.saveCollections).mock.calls[0][0].map((c) => c.id)).toEqual(['col-dup']);
+    expect(vi.mocked(dataAccess.saveLinks).mock.calls[0][0].map((l) => l.id)).toEqual(['link-dup']);
   });
 
   it('should merge workspaces correctly', async () => {

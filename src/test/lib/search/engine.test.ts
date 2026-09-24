@@ -100,6 +100,30 @@ describe('search', () => {
     expect(ids(search(translated, 'caixa').results)).toEqual(['mckinsey']);
   });
 
+  it('treats a link as a result when it fully matches any phrasing', () => {
+    const result = search(index, ['hermes lesson', 'the bitter lesson']);
+    expect(ids(result.results)).toEqual(['bitter']);
+    expect(result.partial).toEqual([]);
+  });
+
+  it('keeps the original phrasing working when the other one is wrong', () => {
+    expect(ids(search(index, ['mckinsey', 'opener']).results)).toEqual(['mckinsey']);
+  });
+
+  it('gives a single phrasing in a list the same result as a plain query', () => {
+    expect(search(index, ['hermes'])).toEqual(search(index, 'hermes'));
+  });
+
+  it('adds up the kind words of every phrasing', () => {
+    expect(ids(search(index, ['hermes', 'video hermes']).results)).toEqual(['hermes-video']);
+  });
+
+  it('keeps the best score of a link among the phrasings', () => {
+    const [hit] = search(index, ['incompleteideas', 'bitter']).results;
+    expect(hit.link.id).toBe('bitter');
+    expect(hit.score).toBe(3);
+  });
+
   it('limits the number of results', () => {
     expect(search(index, 'hermes', { limit: 1 }).results).toHaveLength(1);
   });

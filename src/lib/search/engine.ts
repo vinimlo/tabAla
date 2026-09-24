@@ -73,6 +73,8 @@ interface Scored {
   entry: Entry;
   score: number;
   matched: number;
+  /** Matched every term of its phrasing. */
+  full: boolean;
   matchedTags: string[];
 }
 
@@ -194,7 +196,22 @@ function scoreEntry(entry: Entry, terms: Token[]): Scored {
     }
   }
 
-  return { entry, score, matched, matchedTags: [...matchedTags] };
+  return { entry, score, matched, full: matched === terms.length, matchedTags: [...matchedTags] };
+}
+
+/** Best reading of a link among the phrasings: a full match wins, then the higher score. */
+function bestOf(candidates: Scored[]): Scored {
+  return candidates.reduce((best, candidate) => {
+    if (candidate.full !== best.full) {
+      return candidate.full ? candidate : best;
+    }
+    if (candidate.full) {
+      return candidate.score > best.score ? candidate : best;
+    }
+    return candidate.matched > best.matched || (candidate.matched === best.matched && candidate.score > best.score)
+      ? candidate
+      : best;
+  });
 }
 
 function toHit({ entry, score, matchedTags }: Scored): SearchHit {
@@ -221,22 +238,28 @@ function countKinds(items: Scored[]): Partial<Record<LinkKind, number>> {
   return counts;
 }
 
-export function search(index: SearchIndex, query: string, options: SearchOptions = {}): SearchResult {
-  const parsed = parseQuery(query);
-  const kinds = [...new Set([...parsed.kinds, ...(options.kinds ?? [])])];
+/**
+ * Searches one query, or several phrasings of the same query (the original
+ * and its translation): a link is a result when it matches every term of
+ * any phrasing, with its best score among them.
+ */
+export function search(index: SearchIndex, query: string | string[], options: SearchOptions = {}): SearchResult {
+  const phrasings = (typeof query === 'string' ? [query] : query).map(parseQuery);
+  const kinds = [...new Set([...phrasings.flatMap((p) => p.kinds), ...(options.kinds ?? [])])];
+  const termLists = phrasings.map((p) => p.terms).filter((terms) => terms.length > 0);
   const limit = options.limit ?? 50;
   const passesKinds = (s: Scored): boolean => kinds.length === 0 || kinds.includes(s.entry.kind);
 
-  if (parsed.terms.length === 0) {
-    const all: Scored[] = index.entries.map((entry) => ({ entry, score: 0, matched: 0, matchedTags: [] }));
+  if (termLists.length === 0) {
+    const all: Scored[] = index.entries.map((entry) => ({ entry, score: 0, matched: 0, full: false, matchedTags: [] }));
     const results = kinds.length === 0
       ? []
       : all.filter(passesKinds).sort(newestFirst).slice(0, limit).map(toHit);
     return { results, partial: [], kinds, kindCounts: countKinds(all) };
   }
 
-  const scored = index.entries.map((entry) => scoreEntry(entry, parsed.terms));
-  const full = scored.filter((s) => s.matched === parsed.terms.length);
+  const scored = index.entries.map((entry) => bestOf(termLists.map((terms) => scoreEntry(entry, terms))));
+  const full = scored.filter((s) => s.full);
   const results = full
     .filter(passesKinds)
     .sort((a, b) => b.score - a.score || newestFirst(a, b))

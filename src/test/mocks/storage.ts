@@ -9,6 +9,8 @@ export function createStorageMock(): Record<string, unknown> {
   return {
     getLinks: vi.fn(() => Promise.resolve([])),
     saveLinks: vi.fn(() => Promise.resolve()),
+    insertLink: vi.fn(() => Promise.resolve()),
+    removeLink: vi.fn(() => Promise.resolve({ success: true })),
     getCollections: vi.fn(() => Promise.resolve([])),
     saveCollections: vi.fn(() => Promise.resolve()),
     initializeInbox: vi.fn(() => Promise.resolve()),

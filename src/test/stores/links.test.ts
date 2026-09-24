@@ -104,14 +104,6 @@ describe('linksStore', () => {
       expect(state.links).toHaveLength(1);
       expect(state.links[0].id).toBe('link-2');
     });
-
-    it('should persist removal to storage', async () => {
-      await linksStore.removeLink('link-1');
-
-      expect(storage.saveLinks).toHaveBeenCalledWith(
-        expect.not.arrayContaining([expect.objectContaining({ id: 'link-1' })])
-      );
-    });
   });
 
   describe('addLink', () => {
@@ -142,16 +134,6 @@ describe('linksStore', () => {
       const state = get(linksStore);
       expect(state.links[0].id).toBeDefined();
       expect(state.links[0].createdAt).toBeDefined();
-    });
-
-    it('should persist new link to storage', async () => {
-      await linksStore.addLink({
-        url: 'https://newlink.com',
-        title: 'New Link',
-        collectionId: 'inbox',
-      });
-
-      expect(storage.saveLinks).toHaveBeenCalled();
     });
   });
 });

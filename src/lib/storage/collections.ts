@@ -8,7 +8,7 @@ import {
 import { validateCollectionName } from '../validation';
 import { t } from '../i18n';
 import type { OperationResult, CreateCollectionInput } from './core';
-import { StorageError, getErrorMessage } from './core';
+import { StorageError, getErrorMessage, withDataLock } from './core';
 import { getLinks, saveLinks, getCollections, saveCollections } from './data-access';
 
 export function createInboxCollection(): InboxCollection {
@@ -21,8 +21,8 @@ export function createInboxCollection(): InboxCollection {
   };
 }
 
-/** Ensures the Inbox collection exists in storage. */
-export async function initializeInbox(): Promise<void> {
+/** Unlocked: for callers that already hold the data lock (e.g. import). */
+export async function ensureInbox(): Promise<void> {
   const collections = await getCollections();
   const hasInbox = collections.some((c) => c.id === INBOX_COLLECTION_ID);
 
@@ -32,30 +32,38 @@ export async function initializeInbox(): Promise<void> {
   }
 }
 
+/** Ensures the Inbox collection exists in storage. */
+export async function initializeInbox(): Promise<void> {
+  await withDataLock(ensureInbox);
+}
+
 export async function createCollection(input: CreateCollectionInput): Promise<Collection> {
   const trimmedName = input.name.trim();
-  const existingCollections = await getCollections();
 
-  const validation = validateCollectionName(trimmedName, '', existingCollections);
-  if (!validation.valid) {
-    throw new StorageError(
-      validation.error ?? 'Invalid collection name',
-      'INVALID_VALUE'
-    );
-  }
+  return withDataLock(async () => {
+    const existingCollections = await getCollections();
 
-  const newCollection: Collection = {
-    id: crypto.randomUUID(),
-    name: trimmedName,
-    order: calculateNextOrder(existingCollections),
-    createdAt: Date.now(),
-    color: input.color,
-    workspaceId: input.workspaceId ?? DEFAULT_WORKSPACE_ID,
-  };
+    const validation = validateCollectionName(trimmedName, '', existingCollections);
+    if (!validation.valid) {
+      throw new StorageError(
+        validation.error ?? 'Invalid collection name',
+        'INVALID_VALUE'
+      );
+    }
 
-  await saveCollections([...existingCollections, newCollection]);
+    const newCollection: Collection = {
+      id: crypto.randomUUID(),
+      name: trimmedName,
+      order: calculateNextOrder(existingCollections),
+      createdAt: Date.now(),
+      color: input.color,
+      workspaceId: input.workspaceId ?? DEFAULT_WORKSPACE_ID,
+    };
 
-  return newCollection;
+    await saveCollections([...existingCollections, newCollection]);
+
+    return newCollection;
+  });
 }
 
 export async function renameCollection(
@@ -63,19 +71,21 @@ export async function renameCollection(
   newName: string
 ): Promise<OperationResult> {
   try {
-    const collections = await getCollections();
+    return await withDataLock(async () => {
+      const collections = await getCollections();
 
-    if (!collections.some((c) => c.id === collectionId)) {
-      return { success: false, error: t('storage_collection_not_found') };
-    }
+      if (!collections.some((c) => c.id === collectionId)) {
+        return { success: false, error: t('storage_collection_not_found') };
+      }
 
-    const updatedCollections = collections.map((c) =>
-      c.id === collectionId ? { ...c, name: newName } : c
-    );
+      const updatedCollections = collections.map((c) =>
+        c.id === collectionId ? { ...c, name: newName } : c
+      );
 
-    await saveCollections(updatedCollections);
+      await saveCollections(updatedCollections);
 
-    return { success: true };
+      return { success: true };
+    });
   } catch (error) {
     console.error('Failed to rename collection:', error);
     return {
@@ -94,33 +104,37 @@ export async function removeCollection(collectionId: string): Promise<void> {
     );
   }
 
-  const [collections, links] = await Promise.all([getCollections(), getLinks()]);
+  await withDataLock(async () => {
+    const [collections, links] = await Promise.all([getCollections(), getLinks()]);
 
-  const updatedCollections = collections.filter((c) => c.id !== collectionId);
-  const updatedLinks = links.map((link) =>
-    link.collectionId === collectionId
-      ? { ...link, collectionId: INBOX_COLLECTION_ID }
-      : link
-  );
+    const updatedCollections = collections.filter((c) => c.id !== collectionId);
+    const updatedLinks = links.map((link) =>
+      link.collectionId === collectionId
+        ? { ...link, collectionId: INBOX_COLLECTION_ID }
+        : link
+    );
 
-  await Promise.all([saveCollections(updatedCollections), saveLinks(updatedLinks)]);
+    await Promise.all([saveCollections(updatedCollections), saveLinks(updatedLinks)]);
+  });
 }
 
 export async function updateCollectionOrder(
   orderedCollections: Collection[]
 ): Promise<OperationResult> {
   try {
-    const allCollections = await getCollections();
-    const reorderedIds = new Map(orderedCollections.map((c, i) => [c.id, i]));
+    return await withDataLock(async () => {
+      const allCollections = await getCollections();
+      const reorderedIds = new Map(orderedCollections.map((c, i) => [c.id, i]));
 
-    const merged = allCollections.map((c) => {
-      const newOrder = reorderedIds.get(c.id);
-      return newOrder !== undefined ? { ...c, order: newOrder } : c;
+      const merged = allCollections.map((c) => {
+        const newOrder = reorderedIds.get(c.id);
+        return newOrder !== undefined ? { ...c, order: newOrder } : c;
+      });
+
+      await saveCollections(merged);
+
+      return { success: true };
     });
-
-    await saveCollections(merged);
-
-    return { success: true };
   } catch (error) {
     console.error('Failed to update collection order:', error);
     return {

@@ -2,8 +2,16 @@ import type { Link } from '../types';
 import { INBOX_COLLECTION_ID } from '../types';
 import { t } from '../i18n';
 import type { OperationResult, RemoveLinkResult, AddLinkInput } from './core';
-import { getErrorMessage } from './core';
-import { getLinks, saveLinks, getCollections, saveCollections } from './data-access';
+import { getErrorMessage, withDataLock } from './core';
+import { getLinks, saveLinks, getCollections } from './data-access';
+
+/** Prepends a link built by the caller (e.g. an optimistic store update). */
+export async function insertLink(link: Link): Promise<void> {
+  await withDataLock(async () => {
+    const links = await getLinks();
+    await saveLinks([link, ...links]);
+  });
+}
 
 export async function addLink(input: AddLinkInput): Promise<Link> {
   const newLink: Link = {
@@ -15,38 +23,24 @@ export async function addLink(input: AddLinkInput): Promise<Link> {
     createdAt: Date.now(),
   };
 
-  const links = await getLinks();
-  await saveLinks([newLink, ...links]);
+  await insertLink(newLink);
 
   return newLink;
 }
 
-/** Removes a link and cleans up the collection if it becomes empty. */
+/** Removes a link. Its collection stays, even when it ends up empty. */
 export async function removeLink(linkId: string): Promise<RemoveLinkResult> {
   try {
-    const links = await getLinks();
-    const linkIndex = links.findIndex((link) => link.id === linkId);
+    return await withDataLock(async () => {
+      const links = await getLinks();
 
-    if (linkIndex === -1) {
-      return { success: false, error: t('storage_link_not_found') };
-    }
+      if (!links.some((link) => link.id === linkId)) {
+        return { success: false, error: t('storage_link_not_found') };
+      }
 
-    const { collectionId } = links[linkIndex];
-    const updatedLinks = links.filter((link) => link.id !== linkId);
-    await saveLinks(updatedLinks);
-
-    const hasRemainingLinks = updatedLinks.some(
-      (link) => link.collectionId === collectionId
-    );
-
-    let collectionRemoved = false;
-    if (!hasRemainingLinks && collectionId !== INBOX_COLLECTION_ID) {
-      const collections = await getCollections();
-      await saveCollections(collections.filter((c) => c.id !== collectionId));
-      collectionRemoved = true;
-    }
-
-    return { success: true, collectionRemoved };
+      await saveLinks(links.filter((link) => link.id !== linkId));
+      return { success: true };
+    });
   } catch (error) {
     console.error('Failed to remove link from storage:', error);
     return {
@@ -58,20 +52,22 @@ export async function removeLink(linkId: string): Promise<RemoveLinkResult> {
 
 /** Reassigns links whose collectionId doesn't match any existing collection to Inbox. */
 export async function recoverOrphanedLinks(): Promise<number> {
-  const [links, collections] = await Promise.all([getLinks(), getCollections()]);
-  const collectionIds = new Set(collections.map((c) => c.id));
+  return withDataLock(async () => {
+    const [links, collections] = await Promise.all([getLinks(), getCollections()]);
+    const collectionIds = new Set(collections.map((c) => c.id));
 
-  const orphaned = links.filter((l) => !collectionIds.has(l.collectionId));
-  if (orphaned.length === 0) {
-    return 0;
-  }
+    const orphaned = links.filter((l) => !collectionIds.has(l.collectionId));
+    if (orphaned.length === 0) {
+      return 0;
+    }
 
-  const updatedLinks = links.map((l) =>
-    collectionIds.has(l.collectionId) ? l : { ...l, collectionId: INBOX_COLLECTION_ID }
-  );
+    const updatedLinks = links.map((l) =>
+      collectionIds.has(l.collectionId) ? l : { ...l, collectionId: INBOX_COLLECTION_ID }
+    );
 
-  await saveLinks(updatedLinks);
-  return orphaned.length;
+    await saveLinks(updatedLinks);
+    return orphaned.length;
+  });
 }
 
 export async function moveLink(
@@ -79,25 +75,27 @@ export async function moveLink(
   toCollectionId: string
 ): Promise<OperationResult> {
   try {
-    const links = await getLinks();
+    return await withDataLock(async () => {
+      const links = await getLinks();
 
-    if (!links.some((link) => link.id === linkId)) {
-      return { success: false, error: t('storage_link_not_found') };
-    }
+      if (!links.some((link) => link.id === linkId)) {
+        return { success: false, error: t('storage_link_not_found') };
+      }
 
-    const collections = await getCollections();
+      const collections = await getCollections();
 
-    if (!collections.some((c) => c.id === toCollectionId)) {
-      return { success: false, error: t('storage_target_collection_not_found') };
-    }
+      if (!collections.some((c) => c.id === toCollectionId)) {
+        return { success: false, error: t('storage_target_collection_not_found') };
+      }
 
-    const updatedLinks = links.map((link) =>
-      link.id === linkId ? { ...link, collectionId: toCollectionId } : link
-    );
+      const updatedLinks = links.map((link) =>
+        link.id === linkId ? { ...link, collectionId: toCollectionId } : link
+      );
 
-    await saveLinks(updatedLinks);
+      await saveLinks(updatedLinks);
 
-    return { success: true };
+      return { success: true };
+    });
   } catch (error) {
     console.error('Failed to move link:', error);
     return {

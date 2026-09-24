@@ -2,8 +2,9 @@ import { writable, derived, get, type Writable } from 'svelte/store';
 import { type Link, type Collection, INBOX_COLLECTION_ID } from '@/lib/types';
 import {
   getLinks,
-  saveLinks,
   getCollections,
+  insertLink,
+  removeLink as storageRemoveLink,
   initializeInbox,
   removeCollection as storageRemoveCollection,
   createCollection as storageCreateCollection,
@@ -25,7 +26,7 @@ interface LinksState {
   error: string | null;
   isAdding: boolean;
   isRemoving: Set<string>;
-  pendingLocalUpdate: boolean; // Flag to ignore storage.watch() during local operations
+  pendingLocalUpdate: boolean; // Set by optimisticUpdate while a local operation persists
 }
 
 /**
@@ -64,14 +65,11 @@ function createLinksStore(): Writable<LinksState> & {
   });
   const { subscribe, set, update } = store;
 
-  // Watch for storage changes from other contexts (popup <-> newtab)
+  // Storage is the source of truth: apply every change, including ones from
+  // other contexts (popup <-> newtab) that land while a local write is in flight.
   storage.watch((changes) => {
     if (changes.links?.newValue !== undefined || changes.collections?.newValue !== undefined) {
       update((state) => {
-        // Ignore storage updates triggered by our own local operations
-        if (state.pendingLocalUpdate) {
-          return state;
-        }
         const newLinks = (changes.links?.newValue as Link[]) ?? state.links;
         return {
           ...state,
@@ -110,7 +108,6 @@ function createLinksStore(): Writable<LinksState> & {
       id: crypto.randomUUID(),
       createdAt: Date.now(),
     };
-    let linksToSave: Link[] = [];
 
     await optimisticUpdate(
       store,
@@ -118,14 +115,13 @@ function createLinksStore(): Writable<LinksState> & {
         if (state.isAdding) {
           return null;
         }
-        linksToSave = [newLink, ...state.links];
         return {
-          updated: { ...state, links: linksToSave, isAdding: true },
+          updated: { ...state, links: [newLink, ...state.links], isAdding: true },
           rollback: { links: state.links } as Partial<LinksState>,
         };
       },
       async () => {
-        await saveLinks(linksToSave);
+        await insertLink(newLink);
         return null;
       },
       'Failed to save link',
@@ -134,8 +130,6 @@ function createLinksStore(): Writable<LinksState> & {
   }
 
   async function removeLink(id: string): Promise<void> {
-    let linksToSave: Link[] = [];
-
     await optimisticUpdate(
       store,
       (state) => {
@@ -144,19 +138,19 @@ function createLinksStore(): Writable<LinksState> & {
           return null;
         }
         const removedLink = state.links.find((l) => l.id === id);
-        linksToSave = state.links.filter((l) => l.id !== id);
+        const remaining = state.links.filter((l) => l.id !== id);
         const newIsRemoving = new Set(state.isRemoving);
         newIsRemoving.add(id);
         return {
-          updated: { ...state, links: linksToSave, isRemoving: newIsRemoving },
+          updated: { ...state, links: remaining, isRemoving: newIsRemoving },
           rollback: removedLink
-            ? { links: [...linksToSave, removedLink].sort((a, b) => b.createdAt - a.createdAt) } as Partial<LinksState>
+            ? { links: [...remaining, removedLink].sort((a, b) => b.createdAt - a.createdAt) } as Partial<LinksState>
             : {},
         };
       },
       async () => {
-        await saveLinks(linksToSave);
-        return null;
+        const result = await storageRemoveLink(id);
+        return result.success ? null : (result.error ?? 'Failed to remove link');
       },
       'Failed to remove link',
       (state) => {

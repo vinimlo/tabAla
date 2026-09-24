@@ -16,7 +16,7 @@ import {
 } from '../validation';
 import { t } from '../i18n';
 import type { OperationResult } from './core';
-import { StorageError, getErrorMessage } from './core';
+import { StorageError, getErrorMessage, withDataLock } from './core';
 import { getWorkspaces, saveWorkspaces, getCollections, saveCollections } from './data-access';
 
 function throwIfInvalid(result: ValidationResult, fallback: string): void {
@@ -36,8 +36,8 @@ export function createDefaultWorkspace(): Workspace {
   };
 }
 
-/** Ensures the default workspace exists in storage. */
-export async function initializeDefaultWorkspace(): Promise<void> {
+/** Unlocked: for callers that already hold the data lock (e.g. import). */
+export async function ensureDefaultWorkspace(): Promise<void> {
   const workspaces = await getWorkspaces();
   const hasDefault = workspaces.some((w) => w.id === DEFAULT_WORKSPACE_ID);
 
@@ -47,30 +47,38 @@ export async function initializeDefaultWorkspace(): Promise<void> {
   }
 }
 
+/** Ensures the default workspace exists in storage. */
+export async function initializeDefaultWorkspace(): Promise<void> {
+  await withDataLock(ensureDefaultWorkspace);
+}
+
 export async function createWorkspace(input: CreateWorkspaceInput): Promise<Workspace> {
   const trimmedName = input.name.trim();
   const trimmedDescription = input.description?.trim();
-  const existingWorkspaces = await getWorkspaces();
 
-  throwIfInvalid(validateWorkspaceLimit(existingWorkspaces), 'Workspace limit reached');
-  throwIfInvalid(validateWorkspaceName(trimmedName, '', existingWorkspaces), 'Invalid workspace name');
-  if (trimmedDescription) {
-    throwIfInvalid(validateWorkspaceDescription(trimmedDescription), 'Invalid workspace description');
-  }
-  throwIfInvalid(validateWorkspaceColor(input.color), 'Invalid workspace color');
+  return withDataLock(async () => {
+    const existingWorkspaces = await getWorkspaces();
 
-  const newWorkspace: Workspace = {
-    id: crypto.randomUUID(),
-    name: trimmedName,
-    description: trimmedDescription,
-    color: input.color,
-    order: calculateNextOrder(existingWorkspaces),
-    createdAt: Date.now(),
-  };
+    throwIfInvalid(validateWorkspaceLimit(existingWorkspaces), 'Workspace limit reached');
+    throwIfInvalid(validateWorkspaceName(trimmedName, '', existingWorkspaces), 'Invalid workspace name');
+    if (trimmedDescription) {
+      throwIfInvalid(validateWorkspaceDescription(trimmedDescription), 'Invalid workspace description');
+    }
+    throwIfInvalid(validateWorkspaceColor(input.color), 'Invalid workspace color');
 
-  await saveWorkspaces([...existingWorkspaces, newWorkspace]);
+    const newWorkspace: Workspace = {
+      id: crypto.randomUUID(),
+      name: trimmedName,
+      description: trimmedDescription,
+      color: input.color,
+      order: calculateNextOrder(existingWorkspaces),
+      createdAt: Date.now(),
+    };
 
-  return newWorkspace;
+    await saveWorkspaces([...existingWorkspaces, newWorkspace]);
+
+    return newWorkspace;
+  });
 }
 
 export async function updateWorkspace(
@@ -78,50 +86,52 @@ export async function updateWorkspace(
   updates: Partial<Omit<Workspace, 'id' | 'createdAt' | 'isDefault'>>
 ): Promise<OperationResult> {
   try {
-    const workspaces = await getWorkspaces();
-    const workspace = workspaces.find((w) => w.id === id);
+    return await withDataLock(async () => {
+      const workspaces = await getWorkspaces();
+      const workspace = workspaces.find((w) => w.id === id);
 
-    if (!workspace) {
-      return { success: false, error: t('storage_workspace_not_found') };
-    }
-
-    if (updates.name !== undefined) {
-      const trimmedName = updates.name.trim();
-
-      if (workspace.isDefault === true || workspace.id === DEFAULT_WORKSPACE_ID) {
-        return { success: false, error: t('validation_workspace_default_rename') };
+      if (!workspace) {
+        return { success: false, error: t('storage_workspace_not_found') };
       }
 
-      const nameValidation = validateWorkspaceName(trimmedName, id, workspaces);
-      if (!nameValidation.valid) {
-        return { success: false, error: nameValidation.error };
+      if (updates.name !== undefined) {
+        const trimmedName = updates.name.trim();
+
+        if (workspace.isDefault === true || workspace.id === DEFAULT_WORKSPACE_ID) {
+          return { success: false, error: t('validation_workspace_default_rename') };
+        }
+
+        const nameValidation = validateWorkspaceName(trimmedName, id, workspaces);
+        if (!nameValidation.valid) {
+          return { success: false, error: nameValidation.error };
+        }
+        updates.name = trimmedName;
       }
-      updates.name = trimmedName;
-    }
 
-    if (updates.description !== undefined) {
-      const trimmedDescription = updates.description.trim();
-      const descValidation = validateWorkspaceDescription(trimmedDescription);
-      if (!descValidation.valid) {
-        return { success: false, error: descValidation.error };
+      if (updates.description !== undefined) {
+        const trimmedDescription = updates.description.trim();
+        const descValidation = validateWorkspaceDescription(trimmedDescription);
+        if (!descValidation.valid) {
+          return { success: false, error: descValidation.error };
+        }
+        updates.description = trimmedDescription;
       }
-      updates.description = trimmedDescription;
-    }
 
-    if (updates.color !== undefined) {
-      const colorValidation = validateWorkspaceColor(updates.color);
-      if (!colorValidation.valid) {
-        return { success: false, error: colorValidation.error };
+      if (updates.color !== undefined) {
+        const colorValidation = validateWorkspaceColor(updates.color);
+        if (!colorValidation.valid) {
+          return { success: false, error: colorValidation.error };
+        }
       }
-    }
 
-    const updatedWorkspaces = workspaces.map((w) =>
-      w.id === id ? { ...w, ...updates } : w
-    );
+      const updatedWorkspaces = workspaces.map((w) =>
+        w.id === id ? { ...w, ...updates } : w
+      );
 
-    await saveWorkspaces(updatedWorkspaces);
+      await saveWorkspaces(updatedWorkspaces);
 
-    return { success: true };
+      return { success: true };
+    });
   } catch (error) {
     console.error('Failed to update workspace:', error);
     return {
@@ -134,23 +144,25 @@ export async function updateWorkspace(
 /** Collections belonging to the deleted workspace are moved to the default workspace. */
 export async function deleteWorkspace(id: string): Promise<OperationResult> {
   try {
-    const workspaces = await getWorkspaces();
+    return await withDataLock(async () => {
+      const workspaces = await getWorkspaces();
 
-    const validation = validateWorkspaceDeletion(id, workspaces);
-    if (!validation.valid) {
-      return { success: false, error: validation.error };
-    }
+      const validation = validateWorkspaceDeletion(id, workspaces);
+      if (!validation.valid) {
+        return { success: false, error: validation.error };
+      }
 
-    const collections = await getCollections();
+      const collections = await getCollections();
 
-    await Promise.all([
-      saveWorkspaces(workspaces.filter((w) => w.id !== id)),
-      saveCollections(collections.map((c) =>
-        c.workspaceId === id ? { ...c, workspaceId: DEFAULT_WORKSPACE_ID } : c
-      )),
-    ]);
+      await Promise.all([
+        saveWorkspaces(workspaces.filter((w) => w.id !== id)),
+        saveCollections(collections.map((c) =>
+          c.workspaceId === id ? { ...c, workspaceId: DEFAULT_WORKSPACE_ID } : c
+        )),
+      ]);
 
-    return { success: true };
+      return { success: true };
+    });
   } catch (error) {
     console.error('Failed to delete workspace:', error);
     return {
@@ -164,17 +176,19 @@ export async function updateWorkspaceOrder(
   orderedWorkspaces: Workspace[]
 ): Promise<OperationResult> {
   try {
-    const allWorkspaces = await getWorkspaces();
-    const reorderedIds = new Map(orderedWorkspaces.map((w, i) => [w.id, i]));
+    return await withDataLock(async () => {
+      const allWorkspaces = await getWorkspaces();
+      const reorderedIds = new Map(orderedWorkspaces.map((w, i) => [w.id, i]));
 
-    const merged = allWorkspaces.map((w) => {
-      const newOrder = reorderedIds.get(w.id);
-      return newOrder !== undefined ? { ...w, order: newOrder } : w;
+      const merged = allWorkspaces.map((w) => {
+        const newOrder = reorderedIds.get(w.id);
+        return newOrder !== undefined ? { ...w, order: newOrder } : w;
+      });
+
+      await saveWorkspaces(merged);
+
+      return { success: true };
     });
-
-    await saveWorkspaces(merged);
-
-    return { success: true };
   } catch (error) {
     console.error('Failed to update workspace order:', error);
     return {
@@ -194,30 +208,32 @@ export async function moveCollectionToWorkspace(
   workspaceId: string
 ): Promise<OperationResult> {
   try {
-    if (collectionId === INBOX_COLLECTION_ID) {
-      return { success: false, error: t('storage_inbox_cannot_move') };
-    }
+    return await withDataLock(async () => {
+      if (collectionId === INBOX_COLLECTION_ID) {
+        return { success: false, error: t('storage_inbox_cannot_move') };
+      }
 
-    const [collections, workspaces] = await Promise.all([
-      getCollections(),
-      getWorkspaces(),
-    ]);
+      const [collections, workspaces] = await Promise.all([
+        getCollections(),
+        getWorkspaces(),
+      ]);
 
-    if (!collections.some((c) => c.id === collectionId)) {
-      return { success: false, error: t('storage_collection_not_found') };
-    }
+      if (!collections.some((c) => c.id === collectionId)) {
+        return { success: false, error: t('storage_collection_not_found') };
+      }
 
-    if (!workspaces.some((w) => w.id === workspaceId)) {
-      return { success: false, error: t('storage_target_workspace_not_found') };
-    }
+      if (!workspaces.some((w) => w.id === workspaceId)) {
+        return { success: false, error: t('storage_target_workspace_not_found') };
+      }
 
-    const updatedCollections = collections.map((c) =>
-      c.id === collectionId ? { ...c, workspaceId } : c
-    );
+      const updatedCollections = collections.map((c) =>
+        c.id === collectionId ? { ...c, workspaceId } : c
+      );
 
-    await saveCollections(updatedCollections);
+      await saveCollections(updatedCollections);
 
-    return { success: true };
+      return { success: true };
+    });
   } catch (error) {
     console.error('Failed to move collection to workspace:', error);
     return {
@@ -229,19 +245,21 @@ export async function moveCollectionToWorkspace(
 
 /** Assigns existing unowned collections to the default workspace. */
 export async function migrateToWorkspaces(): Promise<void> {
-  const workspaces = await getWorkspaces();
+  await withDataLock(async () => {
+    const workspaces = await getWorkspaces();
 
-  if (workspaces.length > 0) {
-    return;
-  }
+    if (workspaces.length > 0) {
+      return;
+    }
 
-  const defaultWorkspace = createDefaultWorkspace();
-  await saveWorkspaces([defaultWorkspace]);
+    const defaultWorkspace = createDefaultWorkspace();
+    await saveWorkspaces([defaultWorkspace]);
 
-  const collections = await getCollections();
-  await saveCollections(
-    collections.map((c) =>
-      c.id === INBOX_COLLECTION_ID ? c : { ...c, workspaceId: DEFAULT_WORKSPACE_ID }
-    )
-  );
+    const collections = await getCollections();
+    await saveCollections(
+      collections.map((c) =>
+        c.id === INBOX_COLLECTION_ID ? c : { ...c, workspaceId: DEFAULT_WORKSPACE_ID }
+      )
+    );
+  });
 }

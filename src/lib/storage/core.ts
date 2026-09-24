@@ -32,7 +32,6 @@ export type StorageErrorCode =
 export interface RemoveLinkResult {
   success: boolean;
   error?: string;
-  collectionRemoved?: boolean;
 }
 
 export interface AddLinkInput {
@@ -50,6 +49,29 @@ export interface CreateCollectionInput {
 
 export function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
+}
+
+// Write lock
+
+const DATA_LOCK_NAME = 'tabala-data';
+let fallbackQueue: Promise<unknown> = Promise.resolve();
+
+/**
+ * Runs a read-modify-write while holding the data lock.
+ *
+ * Popup, new tab and service worker share the extension origin, so
+ * `navigator.locks` serializes their writes. Where Web Locks are missing
+ * (jsdom), a promise queue serializes writes within the context.
+ *
+ * Not reentrant: a locked function must never call another locked function.
+ */
+export async function withDataLock<T>(task: () => Promise<T>): Promise<T> {
+  if (typeof navigator !== 'undefined' && 'locks' in navigator) {
+    return await navigator.locks.request(DATA_LOCK_NAME, task);
+  }
+  const run = fallbackQueue.then(task);
+  fallbackQueue = run.catch(() => undefined);
+  return await run;
 }
 
 // Validation helpers

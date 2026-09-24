@@ -62,7 +62,7 @@ describe('removeLink', () => {
     expect(result.error).toBe('storage_link_not_found');
   });
 
-  it('should remove collection when last link is removed', async () => {
+  it('keeps the collection when its last link is removed', async () => {
     const collection = createMockCollection({ id: 'collection-1' });
     const link = createMockLink({ id: 'link-1', collectionId: 'collection-1' });
     await saveLinks([link]);
@@ -71,10 +71,9 @@ describe('removeLink', () => {
     const result = await removeLink('link-1');
 
     expect(result.success).toBe(true);
-    expect(result.collectionRemoved).toBe(true);
 
     const collections = await getCollections();
-    expect(collections).toHaveLength(0);
+    expect(collections.map((c) => c.id)).toEqual(['collection-1']);
   });
 
   it('should not remove collection when other links remain', async () => {
@@ -87,7 +86,6 @@ describe('removeLink', () => {
     const result = await removeLink('link-1');
 
     expect(result.success).toBe(true);
-    expect(result.collectionRemoved).toBe(false);
 
     const collections = await getCollections();
     expect(collections).toHaveLength(1);
@@ -102,7 +100,6 @@ describe('removeLink', () => {
     const result = await removeLink('link-1');
 
     expect(result.success).toBe(true);
-    expect(result.collectionRemoved).toBe(false);
 
     const collections = await getCollections();
     expect(collections).toHaveLength(1);
@@ -132,11 +129,9 @@ describe('removeLink', () => {
     const result = await removeLink('link-1');
 
     expect(result.success).toBe(true);
-    expect(result.collectionRemoved).toBe(true);
 
     const collections = await getCollections();
-    expect(collections).toHaveLength(1);
-    expect(collections[0].id).toBe('col-2');
+    expect(collections.map((c) => c.id)).toEqual(['col-1', 'col-2']);
 
     const links = await getLinks();
     expect(links).toHaveLength(1);

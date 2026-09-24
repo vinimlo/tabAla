@@ -21,8 +21,9 @@ import {
   getWorkspaces,
   saveWorkspaces,
 } from './data-access';
-import { initializeInbox } from './collections';
-import { initializeDefaultWorkspace } from './workspaces';
+import { withDataLock } from './core';
+import { ensureInbox } from './collections';
+import { ensureDefaultWorkspace } from './workspaces';
 
 export interface TabAlaExportFile {
   version: string;
@@ -203,93 +204,95 @@ export async function previewImport(file: TabAlaExportFile): Promise<ImportPrevi
  */
 export async function executeImport(file: TabAlaExportFile): Promise<ImportResult> {
   try {
-    // 1. Read current state
-    const [existingWorkspaces, existingCollections, existingLinks] = await Promise.all([
-      getWorkspaces(),
-      getCollections(),
-      getLinks(),
-    ]);
+    return await withDataLock(async () => {
+      // 1. Read current state
+      const [existingWorkspaces, existingCollections, existingLinks] = await Promise.all([
+        getWorkspaces(),
+        getCollections(),
+        getLinks(),
+      ]);
 
-    const existingWorkspaceIds = new Set(existingWorkspaces.map((w) => w.id));
-    const existingCollectionIds = new Set(existingCollections.map((c) => c.id));
-    const existingLinkIds = new Set(existingLinks.map((l) => l.id));
+      const existingWorkspaceIds = new Set(existingWorkspaces.map((w) => w.id));
+      const existingCollectionIds = new Set(existingCollections.map((c) => c.id));
+      const existingLinkIds = new Set(existingLinks.map((l) => l.id));
 
-    // 2. Process workspaces (first, since collections depend on them)
-    const newWorkspaces: Workspace[] = [];
-    for (const workspace of file.workspaces) {
-      if (existingWorkspaceIds.has(workspace.id)) {
-        continue; // Skip duplicates
+      // 2. Process workspaces (first, since collections depend on them)
+      const newWorkspaces: Workspace[] = [];
+      for (const workspace of file.workspaces) {
+        if (existingWorkspaceIds.has(workspace.id)) {
+          continue; // Skip duplicates
+        }
+
+        // Validate color, fallback to first available
+        let color = workspace.color;
+        if (!isValidHexColor(color)) {
+          color = WORKSPACE_COLORS[0];
+        }
+
+        newWorkspaces.push({ ...workspace, color });
       }
 
-      // Validate color, fallback to first available
-      let color = workspace.color;
-      if (!isValidHexColor(color)) {
-        color = WORKSPACE_COLORS[0];
+      const mergedWorkspaces = [...existingWorkspaces, ...newWorkspaces];
+      await saveWorkspaces(mergedWorkspaces);
+      await ensureDefaultWorkspace();
+
+      // 3. Process collections (second, since links depend on them)
+      const validWorkspaceIds = new Set(mergedWorkspaces.map((w) => w.id));
+      const newCollections: Collection[] = [];
+
+      for (const collection of file.collections) {
+        if (existingCollectionIds.has(collection.id)) {
+          continue; // Skip duplicates
+        }
+
+        // Validate workspace reference
+        let workspaceId = collection.workspaceId;
+        if (workspaceId && !validWorkspaceIds.has(workspaceId)) {
+          workspaceId = DEFAULT_WORKSPACE_ID; // Fallback to default
+        }
+
+        newCollections.push({ ...collection, workspaceId });
       }
 
-      newWorkspaces.push({ ...workspace, color });
-    }
+      const mergedCollections = [...existingCollections, ...newCollections];
+      await saveCollections(mergedCollections);
+      await ensureInbox();
 
-    const mergedWorkspaces = [...existingWorkspaces, ...newWorkspaces];
-    await saveWorkspaces(mergedWorkspaces);
-    await initializeDefaultWorkspace(); // Ensure default exists
+      // 4. Process links (last)
+      const validCollectionIds = new Set(mergedCollections.map((c) => c.id));
+      const newLinks: Link[] = [];
 
-    // 3. Process collections (second, since links depend on them)
-    const validWorkspaceIds = new Set(mergedWorkspaces.map((w) => w.id));
-    const newCollections: Collection[] = [];
+      for (const link of file.links) {
+        if (existingLinkIds.has(link.id)) {
+          continue; // Skip duplicates
+        }
 
-    for (const collection of file.collections) {
-      if (existingCollectionIds.has(collection.id)) {
-        continue; // Skip duplicates
+        // Validate URL
+        if (!isValidUrl(link.url)) {
+          continue; // Skip invalid URLs
+        }
+
+        // Validate collection reference
+        let collectionId = link.collectionId;
+        if (!validCollectionIds.has(collectionId)) {
+          collectionId = INBOX_COLLECTION_ID; // Fallback to Inbox
+        }
+
+        newLinks.push({ ...link, collectionId });
       }
 
-      // Validate workspace reference
-      let workspaceId = collection.workspaceId;
-      if (workspaceId && !validWorkspaceIds.has(workspaceId)) {
-        workspaceId = DEFAULT_WORKSPACE_ID; // Fallback to default
-      }
+      const mergedLinks = [...existingLinks, ...newLinks];
+      await saveLinks(mergedLinks);
 
-      newCollections.push({ ...collection, workspaceId });
-    }
-
-    const mergedCollections = [...existingCollections, ...newCollections];
-    await saveCollections(mergedCollections);
-    await initializeInbox(); // Ensure Inbox exists
-
-    // 4. Process links (last)
-    const validCollectionIds = new Set(mergedCollections.map((c) => c.id));
-    const newLinks: Link[] = [];
-
-    for (const link of file.links) {
-      if (existingLinkIds.has(link.id)) {
-        continue; // Skip duplicates
-      }
-
-      // Validate URL
-      if (!isValidUrl(link.url)) {
-        continue; // Skip invalid URLs
-      }
-
-      // Validate collection reference
-      let collectionId = link.collectionId;
-      if (!validCollectionIds.has(collectionId)) {
-        collectionId = INBOX_COLLECTION_ID; // Fallback to Inbox
-      }
-
-      newLinks.push({ ...link, collectionId });
-    }
-
-    const mergedLinks = [...existingLinks, ...newLinks];
-    await saveLinks(mergedLinks);
-
-    return {
-      success: true,
-      imported: {
-        workspaces: newWorkspaces.length,
-        collections: newCollections.length,
-        links: newLinks.length,
-      },
-    };
+      return {
+        success: true,
+        imported: {
+          workspaces: newWorkspaces.length,
+          collections: newCollections.length,
+          links: newLinks.length,
+        },
+      };
+    });
   } catch (error) {
     console.error('Import failed:', error);
     return {

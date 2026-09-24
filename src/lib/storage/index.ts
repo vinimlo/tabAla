@@ -10,6 +10,7 @@ export {
   type RemoveLinkResult,
   type AddLinkInput,
   type CreateCollectionInput,
+  withDataLock,
 } from './core';
 
 // Data access: low-level getters/setters
@@ -38,6 +39,7 @@ export {
 // Links
 export {
   addLink,
+  insertLink,
   removeLink,
   moveLink,
   recoverOrphanedLinks,

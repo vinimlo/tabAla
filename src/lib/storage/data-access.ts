@@ -1,6 +1,6 @@
 import type { Link, Collection, Settings, Workspace } from '../types';
 import { INBOX_COLLECTION_ID, DEFAULT_SETTINGS } from '../types';
-import { storage } from './core';
+import { storage, withDataLock } from './core';
 
 export async function getLinks(): Promise<Link[]> {
   const links = await storage.get<Link[]>('links');
@@ -47,8 +47,10 @@ export async function saveSettings(settings: Settings): Promise<void> {
 
 /** Merges partial updates into existing settings. */
 export async function updateSettings(updates: Partial<Settings>): Promise<Settings> {
-  const current = await getSettings();
-  const updated = { ...current, ...updates };
-  await saveSettings(updated);
-  return updated;
+  return withDataLock(async () => {
+    const current = await getSettings();
+    const updated = { ...current, ...updates };
+    await saveSettings(updated);
+    return updated;
+  });
 }

@@ -4,6 +4,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { clearMockStorage } from '../setup';
 import {
+  addLink,
+  insertLink,
   removeLink,
   getLinks,
   getCollections,
@@ -18,6 +20,37 @@ import {
 import type { Settings } from '@/lib/types';
 import { DEFAULT_SETTINGS } from '@/lib/types';
 import { createMockLink, createMockCollection } from '../factories';
+
+describe('saving a link', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    clearMockStorage();
+  });
+
+  it.each([
+    ['a script URL', 'javascript:alert(1)'],
+    ['a browser page', 'chrome://settings'],
+    ['a missing URL', undefined],
+  ])('refuses %s', async (_label, url) => {
+    const link = createMockLink({ id: 'bad', url: url as string, collectionId: 'inbox' });
+
+    await expect(insertLink(link)).rejects.toThrow();
+    expect(await getLinks()).toEqual([]);
+  });
+
+  it('refuses a link without a title', async () => {
+    const link = createMockLink({ id: 'bad', title: undefined as unknown as string });
+
+    await expect(insertLink(link)).rejects.toThrow();
+    expect(await getLinks()).toEqual([]);
+  });
+
+  it('saves a local file link', async () => {
+    await addLink({ url: 'file:///Users/me/notes.html', title: 'Notes' });
+
+    expect((await getLinks()).map((l) => l.url)).toEqual(['file:///Users/me/notes.html']);
+  });
+});
 
 describe('removeLink', () => {
   beforeEach(() => {

@@ -1,12 +1,18 @@
 import type { Link } from '../types';
-import { INBOX_COLLECTION_ID } from '../types';
+import { INBOX_COLLECTION_ID, isValidUrl } from '../types';
 import { t } from '../i18n';
 import type { OperationResult, RemoveLinkResult, AddLinkInput } from './core';
-import { getErrorMessage, withDataLock } from './core';
+import { StorageError, getErrorMessage, withDataLock } from './core';
 import { getLinks, saveLinks, getCollections } from './data-access';
 
-/** Prepends a link built by the caller (e.g. an optimistic store update). */
+/**
+ * Prepends a link built by the caller (e.g. an optimistic store update).
+ * Every save path ends here, including tabs dropped from outside the extension.
+ */
 export async function insertLink(link: Link): Promise<void> {
+  if (!isValidUrl(link.url) || typeof link.title !== 'string') {
+    throw new StorageError(t('error_tab_invalid_url'), 'INVALID_VALUE');
+  }
   await withDataLock(async () => {
     const links = await getLinks();
     await saveLinks([link, ...links]);

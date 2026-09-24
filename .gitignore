@@ -200,3 +200,4 @@ scripts/screenshots/dist/
 
 # Relatórios
 *.lcov
+.eval/

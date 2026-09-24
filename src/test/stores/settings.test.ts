@@ -28,6 +28,15 @@ describe('settingsStore', () => {
     vi.restoreAllMocks();
   });
 
+  describe('setTopicSearch', () => {
+    it('saves the choice and shows it', async () => {
+      await settingsStore.setTopicSearch(true);
+
+      expect(vi.mocked(storage.updateSettings)).toHaveBeenCalledWith({ topicSearch: true });
+      expect(get(settingsStore).settings.topicSearch).toBe(true);
+    });
+  });
+
   describe('initial state', () => {
     it('should have loading: true, settings: DEFAULT_SETTINGS, error: null', () => {
       settingsStore.set(INITIAL_STORE_STATE);
@@ -45,6 +54,7 @@ describe('settingsStore', () => {
         newtabEnabled: false,
         onboardingCompleted: true,
         theme: 'dark',
+        topicSearch: false,
       };
       vi.mocked(storage.getSettings).mockResolvedValue(customSettings);
 

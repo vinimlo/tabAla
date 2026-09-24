@@ -10,8 +10,10 @@ import { render, screen, cleanup, waitFor, act, fireEvent } from '@testing-libra
 import App from '@/popup/App.svelte';
 import { linksStore } from '@/lib/stores/links';
 import { workspacesStore } from '@/lib/stores/workspaces';
+import { settingsStore } from '@/lib/stores/settings';
+import { chromeMock } from '../setup';
 import type { Link } from '@/lib/types';
-import { DEFAULT_WORKSPACE_ID } from '@/lib/types';
+import { DEFAULT_WORKSPACE_ID, DEFAULT_SETTINGS } from '@/lib/types';
 import { createMockLink, createMockWorkspace } from '../factories';
 const { createStorageMock } = await vi.hoisted(() => import('../mocks/storage'));
 
@@ -110,6 +112,30 @@ describe('App Component', () => {
 
     await fireEvent.keyDown(input, { key: 'Enter' });
     expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'https://cp.example/dijkstra', active: true });
+  });
+
+  it('also searches the English translation when topic search is on', async () => {
+    chromeMock.i18n.getUILanguage.mockReturnValue('pt-BR');
+    (globalThis as Record<string, unknown>).Translator = {
+      availability: vi.fn(() => Promise.resolve('available')),
+      create: vi.fn(() => Promise.resolve({ translate: vi.fn(() => Promise.resolve('knapsack')), destroy: vi.fn() })),
+    };
+    setStoreState({});
+    render(App);
+    await waitFor(() => {
+      expect(screen.getByText('TabAla')).toBeInTheDocument();
+    });
+    linksStore.set({
+      ...DEFAULT_LINKS_STATE,
+      links: [createMockLink({ id: 'k', title: 'Knapsack tutorial', url: 'https://cp.example/k', collectionId: 'inbox' })],
+    });
+    settingsStore.set({ settings: { ...DEFAULT_SETTINGS, topicSearch: true }, loading: false, error: null, pendingLocalUpdate: false });
+
+    await fireEvent.input(screen.getByPlaceholderText('popup_search_placeholder'), { target: { value: 'mochila' } });
+
+    expect(await screen.findByText('Knapsack tutorial')).toBeInTheDocument();
+    delete (globalThis as Record<string, unknown>).Translator;
+    chromeMock.i18n.getUILanguage.mockReturnValue('en');
   });
 
   it('should have main element', () => {

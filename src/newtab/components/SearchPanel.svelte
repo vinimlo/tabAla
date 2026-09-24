@@ -6,12 +6,30 @@
   import { buildIndex, search, type SearchHit } from '@/lib/search/engine';
   import { displayNames, hitPath, KIND_LABEL_KEYS } from '@/lib/search/labels';
   import { extractDomain } from '@/lib/tabs';
+  import type { TranslateQuery } from '@/lib/ai/translator';
 
   export let links: Link[] = [];
   export let collections: Collection[] = [];
   export let workspaces: Workspace[] = [];
   /** Shown with "nothing found" when topic search is off but available. */
   export let topicSearchHint = false;
+  /** Translates the query into English; null keeps the search in the typed language. */
+  export let translate: TranslateQuery | null = null;
+
+  let translatedQuery: string | null = null;
+
+  async function requestTranslation(current: string, translator: TranslateQuery | null): Promise<void> {
+    translatedQuery = null;
+    if (translator === null || current.trim() === '') {
+      return;
+    }
+    const translated = await translator(current);
+    if (current === query) {
+      translatedQuery = translated;
+    }
+  }
+
+  $: void requestTranslation(query, translate);
 
   const dispatch = createEventDispatcher<{
     open: Link;
@@ -26,7 +44,7 @@
   let input: HTMLInputElement;
 
   $: index = buildIndex(links, collections, workspaces, displayNames);
-  $: result = search(index, query, { kinds: selectedKinds });
+  $: result = search(index, translatedQuery === null ? query : [query, translatedQuery], { kinds: selectedKinds });
   $: showingPartial = result.results.length === 0 && result.partial.length > 0;
   $: hits = showingPartial ? result.partial : result.results;
   $: chipKinds = LINK_KINDS.filter(

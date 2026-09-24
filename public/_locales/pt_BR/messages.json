@@ -755,5 +755,35 @@
 
   "popup_search_placeholder": {
     "message": "Buscar links"
+  },
+
+  "topic_search_title": {
+    "message": "Busca por assunto"
+  },
+  "topic_search_description": {
+    "message": "Traduz suas buscas para o inglês neste computador, com o tradutor embutido do Chrome, para achar também links com título em inglês. Nada sai do seu navegador."
+  },
+  "topic_search_unavailable": {
+    "message": "Indisponível neste computador"
+  },
+  "topic_search_enable": {
+    "message": "Ativar"
+  },
+  "topic_search_enable_failed": {
+    "message": "Não foi possível ativar a busca por assunto"
+  },
+  "topic_search_downloading": {
+    "message": "Baixando o pacote de idioma… $1%",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "topic_search_downloading_wait": {
+    "message": "Baixando o pacote de idioma…"
+  },
+  "topic_search_toggle_label": {
+    "message": "Ligar ou desligar a busca por assunto"
   }
 }

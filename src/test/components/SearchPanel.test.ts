@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import SearchPanel from '@/newtab/components/SearchPanel.svelte';
 import { createMockCollection, createMockLink, createMockWorkspace } from '../factories';
 
@@ -27,6 +28,35 @@ async function type(input: HTMLElement, value: string): Promise<void> {
 }
 
 describe('SearchPanel', () => {
+  const knapsack = createMockLink({
+    id: 'knapsack', title: 'Knapsack tutorial', url: 'https://cp.example/knapsack', collectionId: 'inbox', createdAt: 9,
+  });
+
+  it('adds the translated query to the search when it arrives', async () => {
+    const translate = vi.fn((query: string) =>
+      Promise.resolve(query.startsWith('problema da mochila') ? 'knapsack' : null));
+    const { input } = setup({ links: [...links, knapsack], translate });
+
+    await type(input, 'problema da mochila');
+
+    expect(await screen.findByText('Knapsack tutorial')).toBeInTheDocument();
+  });
+
+  it('ignores a translation that arrives after the query changed', async () => {
+    let release: (value: string) => void = () => {};
+    const translate = vi.fn((query: string) =>
+      (query === 'mochila' ? new Promise<string>((resolve) => { release = resolve; }) : Promise.resolve(null)));
+    const { input } = setup({ links: [...links, knapsack], translate });
+
+    await type(input, 'mochila');
+    await type(input, 'hermes');
+    release('knapsack');
+    await tick();
+
+    expect(screen.queryByText('Knapsack tutorial')).toBeNull();
+    expect(screen.getAllByRole('option')).toHaveLength(2);
+  });
+
   it('lists matches from any workspace with their path', async () => {
     const { input } = setup();
     await type(input, 'hermes');

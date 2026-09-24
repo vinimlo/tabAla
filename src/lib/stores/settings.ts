@@ -32,6 +32,7 @@ function createSettingsStore(): Writable<SettingsState> & {
   updateSettings: (updates: Partial<Settings>) => Promise<void>;
   setNewtabEnabled: (enabled: boolean) => Promise<void>;
   setTheme: (theme: ThemePreference) => Promise<void>;
+  setTopicSearch: (enabled: boolean) => Promise<void>;
 } {
   const { subscribe, set, update: storeUpdate } = writable<SettingsState>({
     settings: { ...DEFAULT_SETTINGS },
@@ -114,6 +115,10 @@ function createSettingsStore(): Writable<SettingsState> & {
     await updateSettingsStore({ theme });
   }
 
+  async function setTopicSearch(enabled: boolean): Promise<void> {
+    await updateSettingsStore({ topicSearch: enabled });
+  }
+
   return {
     subscribe,
     set,
@@ -122,6 +127,7 @@ function createSettingsStore(): Writable<SettingsState> & {
     updateSettings: updateSettingsStore,
     setNewtabEnabled,
     setTheme,
+    setTopicSearch,
   };
 }
 

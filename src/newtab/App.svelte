@@ -21,6 +21,7 @@
   import SearchPanel from './components/SearchPanel.svelte';
   import { opensSearch } from './shortcuts';
   import { revealLink, workspaceForLink } from './reveal';
+  import { createQueryTranslator, getTranslationAvailability } from '@/lib/ai/translator';
 
   let mounted = false;
   let onboardingDismissed = false;
@@ -32,6 +33,8 @@
   let sidebarExpanded = false;
   let collectionFromGroup: { name: string; tabs: BrowserTab[] } | null = null;
   let showSearch = false;
+  const translateQuery = createQueryTranslator();
+  let translationAvailable = false;
 
   $: showOnboarding = !onboardingDismissed && !$settingsStore.loading && !$settingsStore.settings.onboardingCompleted;
   $: loading = $linksStore.loading || $workspacesStore.loading;
@@ -47,6 +50,7 @@
       settingsStore.load(),
     ]);
     setTimeout(() => mounted = true, 50);
+    translationAvailable = (await getTranslationAvailability()) !== 'unavailable';
   });
 
   async function handleCreateCollection(event: CustomEvent<string>): Promise<void> {
@@ -276,6 +280,8 @@
     links={$linksStore.links}
     collections={$linksStore.collections}
     workspaces={$workspacesStore.workspaces}
+    translate={$settingsStore.settings.topicSearch ? translateQuery : null}
+    topicSearchHint={translationAvailable && !$settingsStore.settings.topicSearch}
     on:open={handleSearchOpen}
     on:openInNewTab={handleSearchOpenInNewTab}
     on:reveal={handleSearchReveal}

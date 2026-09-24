@@ -14,6 +14,7 @@
   import WorkspaceSelect from './components/WorkspaceSelect.svelte';
   import { buildIndex, search } from '@/lib/search/engine';
   import { displayNames, hitPath } from '@/lib/search/labels';
+  import { createQueryTranslator } from '@/lib/ai/translator';
 
   let mounted = false;
   let selectedCollectionId = INBOX_COLLECTION_ID;
@@ -23,8 +24,25 @@
   let successMessage: string | null = null;
   let linkToRemove: Link | null = null;
   let query = '';
+  const translateQuery = createQueryTranslator();
+  let translatedQuery: string | null = null;
+
+  async function requestTranslation(current: string, enabled: boolean): Promise<void> {
+    translatedQuery = null;
+    if (!enabled || current.trim() === '') {
+      return;
+    }
+    const translated = await translateQuery(current);
+    if (current === query) {
+      translatedQuery = translated;
+    }
+  }
+
+  $: void requestTranslation(query, $settingsStore.settings.topicSearch);
   $: searchIndex = buildIndex($linksStore.links, $linksStore.collections, $workspacesStore.workspaces, displayNames);
-  $: found = query.trim() === '' ? null : search(searchIndex, query, { limit: 8 });
+  $: found = query.trim() === ''
+    ? null
+    : search(searchIndex, translatedQuery === null ? query : [query, translatedQuery], { limit: 8 });
   $: searchHits = found === null ? [] : (found.results.length > 0 ? found.results : found.partial);
 
   function handleSearchKeydown(event: KeyboardEvent): void {

@@ -755,5 +755,35 @@
 
   "popup_search_placeholder": {
     "message": "Search links"
+  },
+
+  "topic_search_title": {
+    "message": "Topic search"
+  },
+  "topic_search_description": {
+    "message": "Translates your searches into English on this computer, with Chrome's built-in translator, so they also find links with English titles. Nothing leaves your browser."
+  },
+  "topic_search_unavailable": {
+    "message": "Not available on this computer"
+  },
+  "topic_search_enable": {
+    "message": "Enable"
+  },
+  "topic_search_enable_failed": {
+    "message": "Could not enable topic search"
+  },
+  "topic_search_downloading": {
+    "message": "Downloading the language pack… $1%",
+    "placeholders": {
+      "percent": {
+        "content": "$1"
+      }
+    }
+  },
+  "topic_search_downloading_wait": {
+    "message": "Downloading the language pack…"
+  },
+  "topic_search_toggle_label": {
+    "message": "Turn topic search on or off"
   }
 }

@@ -85,12 +85,15 @@ export interface Settings {
   onboardingCompleted: boolean;
   /** User's preferred color theme. Defaults to system preference. */
   theme: ThemePreference;
+  /** Also search the English translation of each query (Chrome's on-device translator). */
+  topicSearch: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   newtabEnabled: true,
   onboardingCompleted: false,
   theme: 'system',
+  topicSearch: false,
 };
 
 // Workspace types

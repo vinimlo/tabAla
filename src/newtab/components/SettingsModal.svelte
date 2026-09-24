@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import { t } from '@lib/i18n';
   import { settingsStore } from '@/lib/stores/settings';
@@ -11,6 +11,12 @@
     exportData,
     downloadExport,
   } from '@/lib/storage';
+  import {
+    downloadTranslation,
+    getTranslationAvailability,
+    topicSearchView,
+    type ModelAvailability,
+  } from '@/lib/ai/translator';
   import ConfirmDialog from '@/shared/components/ConfirmDialog.svelte';
   import Toast from '@/shared/components/Toast.svelte';
 
@@ -19,6 +25,35 @@
   }>();
 
   $: settings = $settingsStore.settings;
+
+  let availability: ModelAvailability = 'unavailable';
+  let downloadProgress: number | null = null;
+
+  onMount(async () => {
+    availability = await getTranslationAvailability();
+  });
+
+  $: topicView = topicSearchView(availability, downloadProgress);
+
+  async function handleEnableTopicSearch(): Promise<void> {
+    downloadProgress = 0;
+    try {
+      await downloadTranslation((fraction) => {
+        downloadProgress = fraction;
+      });
+      availability = 'available';
+      await settingsStore.setTopicSearch(true);
+    } catch (error) {
+      console.error('Could not enable topic search:', error);
+      showToastMessage(t('topic_search_enable_failed'), 'error');
+    } finally {
+      downloadProgress = null;
+    }
+  }
+
+  async function toggleTopicSearch(): Promise<void> {
+    await settingsStore.setTopicSearch(!settings.topicSearch);
+  }
 
   let fileInput: HTMLInputElement;
   let showConfirmDialog = false;
@@ -274,6 +309,41 @@
             <span class="toggle-thumb"></span>
           </span>
         </button>
+      </div>
+
+      <div class="setting-divider"></div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">{t('topic_search_title')}</span>
+          <span class="setting-description">{t('topic_search_description')}</span>
+        </div>
+        {#if topicView === 'unavailable'}
+          <span class="setting-status">{t('topic_search_unavailable')}</span>
+        {:else if topicView === 'downloading'}
+          <span class="setting-status">
+            {downloadProgress === null
+              ? t('topic_search_downloading_wait')
+              : t('topic_search_downloading', Math.round(downloadProgress * 100))}
+          </span>
+        {:else if topicView === 'enable'}
+          <button type="button" class="btn-action" on:click={handleEnableTopicSearch}>
+            {t('topic_search_enable')}
+          </button>
+        {:else}
+          <button
+            type="button"
+            class="toggle"
+            class:active={settings.topicSearch}
+            on:click={toggleTopicSearch}
+            aria-pressed={settings.topicSearch}
+            aria-label={t('topic_search_toggle_label')}
+          >
+            <span class="toggle-track">
+              <span class="toggle-thumb"></span>
+            </span>
+          </button>
+        {/if}
       </div>
 
       <div class="setting-divider"></div>
@@ -782,5 +852,12 @@
     .btn-action:hover {
       transform: none;
     }
+  }
+
+  .setting-status {
+    flex-shrink: 0;
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
   }
 </style>

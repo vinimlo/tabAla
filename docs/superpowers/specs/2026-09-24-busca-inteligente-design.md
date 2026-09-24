@@ -79,7 +79,7 @@ O espaço de recomendação (spec futura) reaproveita `linkKind`.
 
 Uma sessão por execução (`LanguageModel.create`) com instrução de sistema e lotes de **5 links** por `prompt()`:
 
-- **Sistema** (~80 tokens): "Você etiqueta links salvos num organizador de abas. Para cada link (título, site, coleção e workspace), devolva de 3 a 6 tags curtas sobre o assunto, em português e em inglês, em minúsculas. Não use o nome do site nem palavras genéricas como link, página, artigo, vídeo."
+- **Sistema** (~80 tokens, em inglês, que o modelo aceita em qualquer configuração de idioma): "You tag saved links in a tab organizer. For each link (title, site, collection and workspace), return 3 to 6 short subject tags, in Portuguese and in English, lowercase. Do not use the site name or generic words like link, page, article, video." Sem suporte a português, o trecho vira "in English".
 - **Usuário** (~30 tokens por link): `1. título: <título> | site: <domínio> | coleção: <coleção> (<workspace>)`.
 - **Saída** restrita por JSON Schema (`responseConstraint`), ~25 tokens por link:
 
@@ -95,7 +95,7 @@ Uma sessão por execução (`LanguageModel.create`) com instrução de sistema e
 
 ### 5.3 Gravação
 
-`setLinkTags(linkId, tags, { onlyIfUntagged })` em `storage/links.ts`, dentro de `withDataLock`, lendo o storage na hora:
+`setLinkTags(updates: { [linkId]: tags }, { onlyIfUntagged })` em `storage/links.ts`: um lote inteiro numa única gravação dentro de `withDataLock`, lendo o storage na hora e devolvendo os ids gravados. Link que não existe mais é ignorado, nunca recriado.
 
 - Etiquetador: `onlyIfUntagged: true` — grava só se o link ainda existir e continuar sem tags. Uma edição manual feita no meio do lote nunca é sobrescrita.
 - Edição manual: `onlyIfUntagged: false`.
@@ -108,7 +108,7 @@ Uma sessão por execução (`LanguageModel.create`) com instrução de sistema e
   - `downloadable`: botão "Ativar" — o clique é o gesto que o Chrome exige para baixar; mostra progresso via `monitor` / `downloadprogress`;
   - `downloading`: progresso;
   - `available`: interruptor ligado/desligado e "N de M links etiquetados".
-- Desligar para o etiquetador; as tags existentes ficam e continuam valendo na busca.
+- Desligar para o etiquetador antes do próximo lote; as tags existentes ficam e continuam valendo na busca.
 
 ### 5.5 Falhas
 
@@ -126,11 +126,11 @@ Código puro em `src/lib/search/`, sem dependência nova.
 - `stem(token)` dos dois lados: termina em `es` e tem 6+ letras → tira `es`; senão termina em `s` (não `ss`) e tem 4+ letras → tira `s`. Ex.: `agentes`→`agent`, `agents`→`agent`, `processos`→`processo`.
 - Cada token guarda duas formas: a normalizada (para o prefixo) e o radical (para igualdade e erro de digitação).
 - Palavras vazias (pt/en) saem da consulta: `a, o, as, os, de, da, do, das, dos, e, em, no, na, sobre, aquele, aquela, que, um, uma, para, com, the, of, about, an, and, for, on, in, to, with`.
-- **Palavra em digitação:** o último token da consulta, sem espaço depois, é sempre um termo comum — nunca palavra vazia nem palavra de tipo (§6.2). Assim "de" a caminho de "desafio" já busca por prefixo, e "docs" a caminho de "docsify" não vira filtro.
+- **Palavra em digitação:** o último token da consulta, sem espaço depois, nunca é descartado como palavra vazia. Assim "de" a caminho de "desafio" já busca por prefixo. Palavras de tipo (§6.2) valem mesmo na última posição: "vídeo" sozinho lista os vídeos, e as colisões durante a digitação caem quase sempre no mesmo tipo ("repo" a caminho de "repositorio", "video" a caminho de "videos").
 
 ### 6.2 Palavras de tipo
 
-Na consulta, viram filtro de tipo e saem dos termos. São comparadas depois da normalização e antes do radical, só como palavra inteira (ver "palavra em digitação" em §6.1):
+Na consulta, viram filtro de tipo e saem dos termos. São comparadas depois da normalização e antes do radical, só como palavra inteira:
 
 | Palavras | Tipo |
 |---|---|

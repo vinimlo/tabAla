@@ -19,7 +19,7 @@
   import type { Link } from '@/lib/types';
   import { openLinkInCurrentTab, openLinkInNewTab } from '@/lib/tabs';
   import SearchPanel from './components/SearchPanel.svelte';
-  import { opensSearch } from './shortcuts';
+  import { dashboardShortcut } from './shortcuts';
   import { revealLink, workspaceForLink } from './reveal';
   import { createQueryTranslator, getTranslationAvailability } from '@/lib/ai/translator';
 
@@ -156,38 +156,27 @@
     await revealLink(link.id);
   }
 
-  function isInputFocused(): boolean {
-    const tag = document.activeElement?.tagName;
-    return tag === 'INPUT' || tag === 'TEXTAREA';
-  }
-
   function handleKeydown(event: KeyboardEvent): void {
     if (showOnboarding) { return; }
 
-    if (opensSearch(event)) {
-      event.preventDefault();
-      showSearch = true;
-      return;
-    }
-
-    if (event.key === 'Escape') {
+    const action = dashboardShortcut(event, showSearch);
+    if (action === 'closeAll') {
       showSettings = false;
       showCreateCollection = false;
       linkToRemove = null;
       collectionFromGroup = null;
       return;
     }
-
-    // Shortcuts below are ignored when typing in an input
-    if (isInputFocused() || event.ctrlKey || event.metaKey) {
-      return;
+    if (action !== null) {
+      event.preventDefault();
     }
-
-    if (event.key === 'n') {
-      event.preventDefault();
+    if (action === 'openSearch') {
+      showSearch = true;
+    } else if (action === 'closeSearch') {
+      showSearch = false;
+    } else if (action === 'newCollection') {
       showCreateCollection = true;
-    } else if (event.key === 't') {
-      event.preventDefault();
+    } else if (action === 'toggleSidebar') {
       sidebarExpanded = !sidebarExpanded;
     }
   }

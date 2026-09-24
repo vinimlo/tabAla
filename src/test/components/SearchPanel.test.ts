@@ -90,6 +90,16 @@ describe('SearchPanel', () => {
     expect(handlers.open).not.toHaveBeenCalled();
   });
 
+  it('keeps the typing focus in the search field when chips and results are clicked', async () => {
+    const { input } = setup();
+    await type(input, 'hermes');
+    const chip = screen.getByRole('button', { name: /kind_video/, pressed: false });
+    const firstResult = screen.getAllByRole('option')[0].querySelector('button') as HTMLElement;
+
+    expect(await fireEvent.mouseDown(chip)).toBe(false);
+    expect(await fireEvent.mouseDown(firstResult)).toBe(false);
+  });
+
   it('closes with Escape', async () => {
     const { input, handlers } = setup();
     await fireEvent.keyDown(input, { key: 'Escape' });

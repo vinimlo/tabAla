@@ -126,6 +126,7 @@
             class="kind-chip"
             class:active={selectedKinds.includes(kind)}
             aria-pressed={selectedKinds.includes(kind)}
+            on:mousedown|preventDefault
             on:click={() => toggleKind(kind)}
           >
             {t(KIND_LABEL_KEYS[kind])}
@@ -146,6 +147,7 @@
             type="button"
             class="hit"
             tabindex="-1"
+            on:mousedown|preventDefault
             on:click={(event) => choose(hit, event)}
             on:mousemove={() => (activeIndex = i)}
           >

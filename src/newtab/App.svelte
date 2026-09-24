@@ -16,6 +16,11 @@
   import SettingsModal from './components/SettingsModal.svelte';
   import CreateCollectionModal from '@/shared/components/CreateCollectionModal.svelte';
   import OnboardingWizard from './components/OnboardingWizard.svelte';
+  import type { Link } from '@/lib/types';
+  import { openLinkInCurrentTab, openLinkInNewTab } from '@/lib/tabs';
+  import SearchPanel from './components/SearchPanel.svelte';
+  import { opensSearch } from './shortcuts';
+  import { revealLink, workspaceForLink } from './reveal';
 
   let mounted = false;
   let onboardingDismissed = false;
@@ -27,6 +32,7 @@
   let linkToRemove: { id: string; title: string } | null = null;
   let sidebarExpanded = false;
   let collectionFromGroup: { name: string; tabs: BrowserTab[] } | null = null;
+  let showSearch = false;
 
   $: showOnboarding = !onboardingDismissed && !$settingsStore.loading && !$settingsStore.settings.onboardingCompleted;
   $: loading = $linksStore.loading || $workspacesStore.loading;
@@ -127,6 +133,30 @@
     }
   }
 
+  async function handleSearchOpen(event: CustomEvent<Link>): Promise<void> {
+    showSearch = false;
+    const result = await openLinkInCurrentTab(event.detail.url);
+    if (!result.success) {
+      errorMessage = result.error ?? t('error_open_link_failed');
+    }
+  }
+
+  async function handleSearchOpenInNewTab(event: CustomEvent<Link>): Promise<void> {
+    const result = await openLinkInNewTab(event.detail.url);
+    if (!result.success) {
+      errorMessage = result.error ?? t('error_open_link_failed');
+    }
+  }
+
+  async function handleSearchReveal(event: CustomEvent<Link>): Promise<void> {
+    showSearch = false;
+    const link = event.detail;
+    workspacesStore.setActiveWorkspace(
+      workspaceForLink(link, $linksStore.collections, $workspacesStore.activeWorkspaceId)
+    );
+    await revealLink(link.id);
+  }
+
   function isInputFocused(): boolean {
     const tag = document.activeElement?.tagName;
     return tag === 'INPUT' || tag === 'TEXTAREA';
@@ -135,9 +165,9 @@
   function handleKeydown(event: KeyboardEvent): void {
     if (showOnboarding) { return; }
 
-    if (event.key === '/' || (event.ctrlKey && event.key === 'k')) {
+    if (opensSearch(event)) {
       event.preventDefault();
-      document.querySelector<HTMLInputElement>('[data-search-input]')?.focus();
+      showSearch = true;
       return;
     }
 
@@ -247,6 +277,18 @@
 
 {#if showOnboarding}
   <OnboardingWizard on:close={() => onboardingDismissed = true} />
+{/if}
+
+{#if showSearch}
+  <SearchPanel
+    links={$linksStore.links}
+    collections={$linksStore.collections}
+    workspaces={$workspacesStore.workspaces}
+    on:open={handleSearchOpen}
+    on:openInNewTab={handleSearchOpenInNewTab}
+    on:reveal={handleSearchReveal}
+    on:close={() => (showSearch = false)}
+  />
 {/if}
 
 <style>

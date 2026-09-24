@@ -698,5 +698,54 @@
     "placeholders": {
       "count": { "content": "$1" }
     }
+  },
+
+  "search_placeholder": {
+    "message": "Buscar em todos os workspaces…"
+  },
+  "search_dialog_label": {
+    "message": "Buscar links"
+  },
+  "search_partial": {
+    "message": "Parciais"
+  },
+  "search_empty": {
+    "message": "Nada encontrado"
+  },
+  "search_hint_keys": {
+    "message": "↑↓ navega · Enter abre · ⌘Enter aba nova · ⇧Enter mostra no quadro · Esc fecha"
+  },
+  "search_enable_topic_hint": {
+    "message": "Ative a busca por assunto em Configurações para achar links pelo tema"
+  },
+  "kind_video": {
+    "message": "Vídeo"
+  },
+  "kind_paper": {
+    "message": "Paper"
+  },
+  "kind_repo": {
+    "message": "Repositório"
+  },
+  "kind_code_change": {
+    "message": "PR/Issue"
+  },
+  "kind_docs": {
+    "message": "Docs"
+  },
+  "kind_exercise": {
+    "message": "Exercício"
+  },
+  "kind_social": {
+    "message": "Post"
+  },
+  "kind_search": {
+    "message": "Busca"
+  },
+  "kind_file": {
+    "message": "Arquivo local"
+  },
+  "kind_page": {
+    "message": "Página"
   }
 }

@@ -38,6 +38,7 @@
 
 <div
   class="link-card"
+  data-link-id={link.id}
   on:click={handleOpen}
   on:keydown={handleKeydown}
   role="button"
@@ -88,6 +89,11 @@
 </div>
 
 <style>
+  .link-card:global(.revealed) {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+  }
+
   .link-card {
     position: relative;
     display: flex;

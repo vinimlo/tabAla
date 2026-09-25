@@ -16,7 +16,8 @@
   import OnboardingWizard from './components/OnboardingWizard.svelte';
   import type { Collection, Link } from '@/lib/types';
   import { openLinkInCurrentTab, openLinkInNewTab } from '@/lib/tabs';
-  import SearchPanel from './components/SearchPanel.svelte';
+  import CommandPalette from './components/CommandPalette.svelte';
+  import { buildCommands, type CommandAction } from './commands';
   import AppHeader from './components/AppHeader.svelte';
   import { pendingSummary } from './header';
   import { cardMeta, type CardMeta } from './card-meta';
@@ -46,6 +47,7 @@
   let collectionFromGroup: { name: string; tabs: BrowserTab[] } | null = null;
   let showSearch = false;
   let showTriage = false;
+  let innerWidth = 1440;
   const translateQuery = createQueryTranslator();
   let translationAvailable = false;
   /** Moves to the new day when the page is shown again or the clock passes midnight. */
@@ -89,6 +91,59 @@
     effort: queue.effortOf(link),
     now,
   })]));
+
+  /** The theme on screen ("system" resolved). */
+  function currentTheme(): 'light' | 'dark' {
+    return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  }
+
+  $: commands = showSearch
+    ? buildCommands({
+      triageCount: queue.triage.length,
+      sessionActive: false,
+      view,
+      workspaces: $workspacesStore.workspaces
+        .filter((workspace) => workspace.id !== $workspacesStore.activeWorkspaceId)
+        .map((workspace) => ({ id: workspace.id, name: getWorkspaceDisplayName(workspace) })),
+      theme: currentTheme(),
+      showNow: $settingsStore.settings.showNextUp,
+    })
+    : [];
+
+  async function handleCommand(event: CustomEvent<CommandAction>): Promise<void> {
+    showSearch = false;
+    const action = event.detail;
+    if (action.type === 'triage') {
+      showTriage = true;
+    } else if (action.type === 'startSession' || action.type === 'endSession') {
+      // Task 13 starts and ends sessions; until then the command opens Focus.
+      await openFocus(null);
+    } else if (action.type === 'view') {
+      if (action.view === 'focus') {
+        await openFocus(null);
+      } else {
+        view = 'board';
+      }
+    } else if (action.type === 'newCollection') {
+      showCreateCollection = true;
+    } else if (action.type === 'workspace') {
+      workspacesStore.setActiveWorkspace(action.id);
+      view = 'board';
+    } else if (action.type === 'theme') {
+      await settingsStore.setTheme(action.theme);
+    } else if (action.type === 'toggleNow') {
+      await settingsStore.setShowNextUp(action.show);
+    } else {
+      showSettings = true;
+    }
+  }
+
+  async function handleMove(event: CustomEvent<{ link: Link; collectionId: string }>): Promise<void> {
+    const { link, collectionId } = event.detail;
+    await linksStore.moveLink(link.id, collectionId);
+    const target = $linksStore.collections.find((collection) => collection.id === collectionId);
+    successMessage = t('success_link_moved', target === undefined ? '' : getCollectionDisplayName(target));
+  }
   $: nextUpOnScreen = stripOnScreen({
     loading: loading || $settingsStore.loading || $activityStore.loading,
     visible,
@@ -364,7 +419,7 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window on:keydown={handleKeydown} bind:innerWidth />
 
 <main class="dashboard">
   <WorkspaceRail
@@ -504,15 +559,25 @@
 {/if}
 
 {#if showSearch}
-  <SearchPanel
+  <CommandPalette
     links={$linksStore.links}
     collections={$linksStore.collections}
     workspaces={$workspacesStore.workspaces}
     translate={$settingsStore.settings.topicSearch ? translateQuery : null}
     topicSearchHint={translationAvailable && !$settingsStore.settings.topicSearch}
+    {queue}
+    activity={$activityStore.activity}
+    {commands}
+    wide={innerWidth >= 900}
     on:open={handleSearchOpen}
     on:openInNewTab={handleSearchOpenInNewTab}
     on:reveal={handleSearchReveal}
+    on:complete={handleComplete}
+    on:restore={handleRestore}
+    on:snooze={handleSnooze}
+    on:discard={handleDiscard}
+    on:move={handleMove}
+    on:command={handleCommand}
     on:close={() => (showSearch = false)}
   />
 {/if}

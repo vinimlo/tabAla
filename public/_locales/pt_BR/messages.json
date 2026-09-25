@@ -572,12 +572,6 @@
   "search_partial": {
     "message": "Parciais"
   },
-  "search_empty": {
-    "message": "Nada encontrado"
-  },
-  "search_hint_keys": {
-    "message": "↑↓ navega · Enter abre · ⌘Enter aba nova · ⇧Enter mostra no quadro · Esc fecha"
-  },
   "search_enable_topic_hint": {
     "message": "Ative a busca por assunto em Configurações para achar links pelo tema"
   },
@@ -964,9 +958,6 @@
         "content": "$1"
       }
     }
-  },
-  "search_completed_badge": {
-    "message": "concluído"
   },
   "settings_nextup_title": {
     "message": "Agora na nova aba"
@@ -1381,5 +1372,107 @@
   },
   "palette_action_move": {
     "message": "Mover para…"
+  },
+
+  "search_scope_all": {
+    "message": "Todos os workspaces"
+  },
+  "palette_all": {
+    "message": "Tudo"
+  },
+  "palette_group_recent": {
+    "message": "Abertos recentemente"
+  },
+  "palette_group_actions": {
+    "message": "Ações"
+  },
+  "palette_empty": {
+    "message": "Nada encontrado para “$1”.",
+    "placeholders": {
+      "query": {
+        "content": "$1"
+      }
+    }
+  },
+  "palette_key_navigate": {
+    "message": "navegar"
+  },
+  "palette_key_open": {
+    "message": "abrir"
+  },
+  "palette_key_new_tab": {
+    "message": "nova aba"
+  },
+  "palette_key_complete": {
+    "message": "concluir"
+  },
+  "palette_key_actions": {
+    "message": "ações do link"
+  },
+  "palette_key_close": {
+    "message": "fechar"
+  },
+  "palette_preview_label": {
+    "message": "Detalhes do link"
+  },
+  "palette_fact_collection": {
+    "message": "Coleção"
+  },
+  "palette_fact_kind": {
+    "message": "Tipo"
+  },
+  "palette_fact_saved": {
+    "message": "Salvo"
+  },
+  "palette_fact_opened": {
+    "message": "Aberto"
+  },
+  "palette_never": {
+    "message": "nunca"
+  },
+  "palette_kind_effort": {
+    "message": "$1, uns $2 min",
+    "placeholders": {
+      "kind": {
+        "content": "$1"
+      },
+      "minutes": {
+        "content": "$2"
+      }
+    }
+  },
+  "palette_move_placeholder": {
+    "message": "Mover “$1” para…",
+    "placeholders": {
+      "title": {
+        "content": "$1"
+      }
+    }
+  },
+  "palette_move_empty": {
+    "message": "Nenhuma coleção encontrada."
+  },
+  "palette_completed_on": {
+    "message": "Concluído em $1",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "success_link_moved": {
+    "message": "Movido para $1",
+    "placeholders": {
+      "collection": {
+        "content": "$1"
+      }
+    }
+  },
+
+  "search_empty": {
+    "message": "Nada encontrado"
+  },
+  "search_completed_badge": {
+    "message": "concluído"
   }
 }

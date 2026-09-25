@@ -20,14 +20,20 @@ function tab(overrides: Partial<TabInfo> = {}): TabInfo {
 function setup(snapshot: Partial<Snapshot> = {}, focused = 10) {
   let clock = new Date(2026, 8, 25, 10).getTime();
   let visit: Visit | null = null;
+  let focusedId: number | null = focused;
+  let unseen: number[] = [];
   const tabs: TabInfo[] = [];
   const deps = {
     now: (): number => clock,
     snapshot: vi.fn(() => Promise.resolve({ links: [saved, done], collections: [collection], activity: {}, learn: true, ...snapshot })),
     getVisit: vi.fn(() => Promise.resolve(visit)),
     setVisit: vi.fn((next: Visit | null) => { visit = next; return Promise.resolve(); }),
+    getUnseen: vi.fn(() => Promise.resolve(unseen)),
+    setUnseen: vi.fn((tabIds: number[]) => { unseen = tabIds; return Promise.resolve(); }),
+    allTabs: vi.fn(() => Promise.resolve([...tabs])),
+    focusedWindow: vi.fn(() => Promise.resolve(focusedId)),
     activeTab: vi.fn((windowId: number) => Promise.resolve(tabs.find((t) => t.windowId === windowId && t.active) ?? null)),
-    isWindowFocused: vi.fn((windowId: number) => Promise.resolve(windowId === focused)),
+    isWindowFocused: vi.fn((windowId: number) => Promise.resolve(windowId === focusedId)),
     setBadge: vi.fn(() => Promise.resolve()),
     recordOpen: vi.fn(() => Promise.resolve()),
     recordVisit: vi.fn(() => Promise.resolve()),
@@ -38,6 +44,7 @@ function setup(snapshot: Partial<Snapshot> = {}, focused = 10) {
     tracker: createTracker(deps),
     advance: (ms: number): void => { clock += ms; },
     visit: (): Visit | null => visit,
+    focus: (windowId: number | null): void => { focusedId = windowId; },
   };
 }
 
@@ -149,6 +156,72 @@ describe('tracker', () => {
     await createTracker(deps).tabRemoved(1);
 
     expect(deps.recordVisit).toHaveBeenCalledWith(['l1'], 6 * MIN, { l1: 5 * MIN }, expect.any(Number));
+  });
+
+  it('a tab activated in a background window does not end the visit being read', async () => {
+    const { tracker, deps, visit } = setup();
+    await tracker.tabUpdated(tab(), true);
+
+    await tracker.tabActivated(tab({ id: 7, windowId: 20, url: 'https://other.example/' }));
+
+    expect(deps.recordVisit).not.toHaveBeenCalled();
+    expect(visit()?.tabId).toBe(1);
+  });
+
+  it('moving to the same page in another window counts the time once and follows the user', async () => {
+    const { tracker, deps, tabs, advance, visit, focus } = setup();
+    await tracker.tabUpdated(tab(), true);
+    advance(5 * MIN);
+
+    focus(20);
+    tabs.push(tab({ id: 2, windowId: 20 }));
+    await tracker.windowFocused(20);
+
+    expect(deps.recordVisit).toHaveBeenCalledTimes(1);
+    expect(deps.recordVisit).toHaveBeenCalledWith(['l1'], 5 * MIN, null, expect.any(Number));
+    expect(visit()?.tabId).toBe(2);
+  });
+
+  it('a page loaded in the background counts as opened only when the user looks at it, once', async () => {
+    const { tracker, deps } = setup();
+
+    await tracker.tabUpdated(tab({ active: false }), true);
+    expect(deps.recordOpen).not.toHaveBeenCalled();
+
+    await tracker.tabActivated(tab());
+    await tracker.tabActivated(tab({ id: 2, url: 'https://other.example/' }));
+    await tracker.tabActivated(tab());
+
+    expect(deps.recordOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it('refresh marks every open tab and clears the marks of links no longer pending', async () => {
+    const { tracker, deps, tabs } = setup();
+    tabs.push(tab(), tab({ id: 2, active: false, url: 'https://example.com/done' }), tab({ id: 3, incognito: true }));
+
+    await tracker.refresh();
+
+    expect(deps.setBadge).toHaveBeenCalledWith(1, '•');
+    expect(deps.setBadge).toHaveBeenCalledWith(2, '');
+    expect(deps.setBadge).not.toHaveBeenCalledWith(3, expect.anything());
+  });
+
+  it('refresh starts timing the page that was just saved', async () => {
+    const { tracker, tabs, visit } = setup();
+    tabs.push(tab());
+
+    await tracker.refresh();
+
+    expect(visit()?.tabId).toBe(1);
+  });
+
+  it('refresh with learning off clears every mark', async () => {
+    const { tracker, deps, tabs } = setup({ learn: false });
+    tabs.push(tab());
+
+    await tracker.refresh();
+
+    expect(deps.setBadge).toHaveBeenCalledWith(1, '');
   });
 
   it('handles events one at a time', async () => {

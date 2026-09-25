@@ -2,6 +2,7 @@
  * Service worker tests.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { chromeMock } from '../setup';
 const { createStorageMock } = await vi.hoisted(() => import('../mocks/storage'));
 
 vi.mock('@/lib/storage', () => createStorageMock());
@@ -103,6 +104,26 @@ describe('service-worker', () => {
     for (const event of [chrome.tabs.onUpdated, chrome.tabs.onActivated, chrome.tabs.onRemoved, chrome.windows.onFocusChanged]) {
       expect(vi.mocked(event.addListener)).toHaveBeenCalledTimes(1);
     }
+  });
+
+  it('re-marks open tabs when saved links change, and on browser start', async () => {
+    const storage = await import('@/lib/storage');
+    vi.mocked(storage.getLinks).mockResolvedValue([
+      { id: 'l1', url: 'https://example.com/post', title: 'Post', collectionId: 'inbox', createdAt: 1 },
+    ]);
+    chromeMock.tabs.query.mockResolvedValue([
+      { id: 3, windowId: 10, url: 'https://example.com/post', active: false, incognito: false },
+    ] as never[]);
+    await loadServiceWorker();
+    const onChanged = chromeMock.storage.onChanged.addListener.mock.calls[0][0] as (
+      changes: Record<string, unknown>, area: string
+    ) => void;
+
+    onChanged({ links: { newValue: [] } }, 'local');
+    await vi.waitFor(() => expect(chrome.action.setBadgeText).toHaveBeenCalledWith({ tabId: 3, text: '•' }));
+
+    expect(chromeMock.runtime.onStartup.addListener).toHaveBeenCalledTimes(1);
+    chromeMock.tabs.query.mockImplementation(() => Promise.resolve([]));
   });
 
   it('records an open and marks the tab when a saved page finishes loading', async () => {

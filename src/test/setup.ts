@@ -97,6 +97,7 @@ const chromeMock = {
   windows: {
     WINDOW_ID_NONE: -1,
     get: vi.fn((windowId: number) => Promise.resolve({ id: windowId, focused: true })),
+    getLastFocused: vi.fn(() => Promise.resolve({ id: 10, focused: true })),
     onFocusChanged: {
       addListener: vi.fn(),
       removeListener: vi.fn(),
@@ -113,6 +114,10 @@ const chromeMock = {
     getURL: vi.fn((path: string) => `chrome-extension://test-extension-id/${path}`),
     sendMessage: vi.fn(() => Promise.resolve()),
     onMessage: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    },
+    onStartup: {
       addListener: vi.fn(),
       removeListener: vi.fn(),
     },

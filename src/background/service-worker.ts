@@ -2,6 +2,10 @@ import { initializeInbox } from '@/lib/storage';
 import { createTracker } from './activity';
 import { chromeDeps, toTabInfo } from './chrome-deps';
 
+// Learning from browsing (spec §8). Listeners are registered synchronously
+// at the top level so Chrome wakes this worker for them.
+const tracker = createTracker(chromeDeps);
+
 chrome.runtime.onInstalled.addListener((details) => {
   const reason = details.reason as string;
   if (reason === 'install' || reason === 'update') {
@@ -13,11 +17,21 @@ chrome.runtime.onInstalled.addListener((details) => {
       }
     })();
   }
+  // An install or update clears the tab badges.
+  void tracker.refresh();
 });
 
-// Learning from browsing (spec §8). Listeners are registered synchronously
-// at the top level so Chrome wakes this worker for them.
-const tracker = createTracker(chromeDeps);
+chrome.runtime.onStartup.addListener(() => {
+  void tracker.refresh();
+});
+
+// Completing, saving or discarding a link, or turning learning off, changes
+// which tabs carry the dot.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && ('links' in changes || 'collections' in changes || 'settings' in changes)) {
+    void tracker.refresh();
+  }
+});
 
 void chrome.action.setBadgeBackgroundColor({ color: '#E85D42' }).catch(() => undefined);
 

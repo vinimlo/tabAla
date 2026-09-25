@@ -36,6 +36,12 @@ export interface TrackerDeps {
   snapshot(): Promise<Snapshot>;
   getVisit(): Promise<Visit | null>;
   setVisit(visit: Visit | null): Promise<void>;
+  /** Tabs that loaded a saved page in the background and were not looked at yet. */
+  getUnseen(): Promise<number[]>;
+  setUnseen(tabIds: number[]): Promise<void>;
+  allTabs(): Promise<TabInfo[]>;
+  /** The focused browser window, or null when none has focus. */
+  focusedWindow(): Promise<number | null>;
   activeTab(windowId: number): Promise<TabInfo | null>;
   isWindowFocused(windowId: number): Promise<boolean>;
   setBadge(tabId: number, text: string): Promise<void>;
@@ -50,6 +56,8 @@ export interface Tracker {
   tabRemoved(tabId: number): Promise<void>;
   /** null: no browser window has focus. */
   windowFocused(windowId: number | null): Promise<void>;
+  /** Saved links or settings changed: re-mark every tab, and time the page in view. */
+  refresh(): Promise<void>;
 }
 
 type EndReason = 'switched' | 'blurred' | 'closed' | 'navigated';
@@ -122,12 +130,34 @@ export function createTracker(deps: TrackerDeps): Tracker {
     await deps.recordVisit(visit.linkIds, now - visit.startedAt, thresholds, now);
   }
 
+  /** A saved page loaded in a background tab (session restore, Cmd+click) is not an open yet. */
+  async function markUnseen(tabId: number): Promise<void> {
+    const unseen = await deps.getUnseen();
+    if (!unseen.includes(tabId)) {
+      await deps.setUnseen([...unseen, tabId]);
+    }
+  }
+
+  /** True once per background load, when the user first looks at that tab. */
+  async function takeUnseen(tabId: number): Promise<boolean> {
+    const unseen = await deps.getUnseen();
+    if (!unseen.includes(tabId)) {
+      return false;
+    }
+    await deps.setUnseen(unseen.filter((id) => id !== tabId));
+    return true;
+  }
+
   async function start(ctx: Context, tab: TabInfo): Promise<void> {
     const links = linksAt(ctx, tab.url);
     if (links.length === 0 || !tab.active || !(await deps.isWindowFocused(tab.windowId))) {
       return;
     }
-    await deps.setVisit({ tabId: tab.id, linkIds: links.map((l) => l.id), startedAt: deps.now() });
+    const ids = links.map((l) => l.id);
+    await deps.setVisit({ tabId: tab.id, linkIds: ids, startedAt: deps.now() });
+    if (await takeUnseen(tab.id)) {
+      await deps.recordOpen(ids, deps.now());
+    }
   }
 
   async function mark(ctx: Context | null, tab: TabInfo): Promise<void> {
@@ -150,7 +180,11 @@ export function createTracker(deps: TrackerDeps): Tracker {
       }
       const ids = linksAt(ctx, tab.url).map((l) => l.id);
       if (loaded && ids.length > 0) {
-        await deps.recordOpen(ids, deps.now());
+        if (tab.active && await deps.isWindowFocused(tab.windowId)) {
+          await deps.recordOpen(ids, deps.now());
+        } else {
+          await markUnseen(tab.id);
+        }
       }
       const visit = await deps.getVisit();
       if (visit !== null && visit.tabId === tab.id) {
@@ -165,7 +199,9 @@ export function createTracker(deps: TrackerDeps): Tracker {
     }),
 
     tabActivated: (tab) => serial(async () => {
-      if (tab.incognito) {
+      // A visit only lives in the focused window: a background window's tab
+      // switching (a tab closing itself, another extension) changes nothing.
+      if (tab.incognito || !(await deps.isWindowFocused(tab.windowId))) {
         return;
       }
       const ctx = await context();
@@ -180,6 +216,7 @@ export function createTracker(deps: TrackerDeps): Tracker {
     }),
 
     tabRemoved: (tabId) => serial(async () => {
+      await takeUnseen(tabId);
       const visit = await deps.getVisit();
       if (visit !== null && visit.tabId === tabId) {
         await end(await context(), 'closed');
@@ -193,6 +230,27 @@ export function createTracker(deps: TrackerDeps): Tracker {
         return;
       }
       const tab = await deps.activeTab(windowId);
+      if (tab !== null && !tab.incognito) {
+        await start(ctx, tab);
+      }
+    }),
+
+    refresh: () => serial(async () => {
+      const ctx = await context();
+      for (const tab of await deps.allTabs()) {
+        if (!tab.incognito) {
+          await mark(ctx, tab);
+        }
+      }
+      if (ctx === null) {
+        await end(null, 'navigated');
+        return;
+      }
+      if ((await deps.getVisit()) !== null) {
+        return;
+      }
+      const windowId = await deps.focusedWindow();
+      const tab = windowId === null ? null : await deps.activeTab(windowId);
       if (tab !== null && !tab.incognito) {
         await start(ctx, tab);
       }

@@ -5,6 +5,7 @@ import {
 } from '@/lib/storage';
 
 const VISIT_KEY = 'visit';
+const UNSEEN_KEY = 'unseen';
 
 export function toTabInfo(tab: chrome.tabs.Tab): TabInfo | null {
   if (tab.id === undefined) {
@@ -33,6 +34,32 @@ export const chromeDeps: TrackerDeps = {
       await chrome.storage.session.remove(VISIT_KEY);
     } else {
       await chrome.storage.session.set({ [VISIT_KEY]: visit });
+    }
+  },
+
+  async getUnseen() {
+    const stored = await chrome.storage.session.get(UNSEEN_KEY);
+    return (stored[UNSEEN_KEY] as number[] | undefined) ?? [];
+  },
+
+  async setUnseen(tabIds) {
+    await chrome.storage.session.set({ [UNSEEN_KEY]: tabIds });
+  },
+
+  async allTabs() {
+    const tabs = await chrome.tabs.query({});
+    return tabs.flatMap((tab) => {
+      const info = toTabInfo(tab);
+      return info === null ? [] : [info];
+    });
+  },
+
+  async focusedWindow() {
+    try {
+      const window = await chrome.windows.getLastFocused();
+      return window.focused && window.id !== undefined ? window.id : null;
+    } catch {
+      return null;
     }
   },
 

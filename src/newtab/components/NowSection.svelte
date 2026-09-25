@@ -4,6 +4,7 @@
   import { plural, t } from '@/lib/i18n';
   import type { Activity, Link } from '@/lib/types';
   import type { Queue } from '@/lib/recommend/engine';
+  import type { SessionView } from '@/lib/recommend/session';
   import { completedThisWeek, weekDots } from '@/lib/recommend/progress';
   import Button from '@/shared/components/ui/Button.svelte';
   import IconButton from '@/shared/components/ui/IconButton.svelte';
@@ -18,11 +19,15 @@
   export let now: number;
   export let collapsed = false;
   export let justCompleted: Link | null = null;
+  /** The Focus session in progress: Now follows its plan. */
+  export let session: SessionView | null = null;
 
   const dispatch = createEventDispatcher<{ toggleCollapsed: void; openTriage: void }>();
 
-  $: hero = queue.slots[0];
-  $: later = queue.slots.slice(1);
+  $: inSession = session !== null && session.current !== undefined;
+  $: hero = inSession && session !== null ? session.current : queue.slots[0];
+  $: later = inSession && session !== null ? session.next.slice(0, 2) : queue.slots.slice(1);
+  $: triageCount = inSession && session !== null ? session.triageLeft : queue.triage.length;
   $: dots = weekDots(links, now);
   $: weekText = plural(completedThisWeek(links, now), 'focus_week_one', 'focus_week_many');
 </script>
@@ -33,6 +38,9 @@
     <span class="toggle" class:collapsed>
       <IconButton icon="chevron-down" size="sm" label={t('now_toggle')} expanded={!collapsed} on:click={() => dispatch('toggleCollapsed')} />
     </span>
+    {#if inSession && session !== null}
+      <span class="position">{t('now_session_position', session.position, session.total)}</span>
+    {/if}
     {#if collapsed && hero !== undefined}
       <button type="button" class="summary" on:click={() => dispatch('toggleCollapsed')}>
         <strong>{t(ACTION_KEYS[hero.action])}</strong> {hero.link.title || hero.link.url}
@@ -78,12 +86,14 @@
         {/key}
         <NowLater
           recs={later}
-          triageCount={queue.triage.length}
+          {triageCount}
+          {inSession}
           {justCompleted}
           on:open
           on:complete
           on:openTriage
           on:openFocus
+          on:endSession
           on:undo
         />
       </div>
@@ -120,6 +130,11 @@
 
   .toggle.collapsed :global(svg) {
     transform: rotate(-90deg);
+  }
+
+  .position {
+    font-size: 12.5px;
+    color: var(--text-tertiary);
   }
 
   .summary {

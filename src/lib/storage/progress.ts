@@ -162,9 +162,9 @@ export async function recordShown(shownIds: string[], skippedIds: string[], queu
   });
 }
 
-/** Removes what the user did and the numbers; links stay. */
+/** Removes what the user did, the numbers and the session in progress; links stay. */
 export async function clearUsageData(): Promise<void> {
-  await withDataLock(() => storage.removeBatch(['activity', 'recoStats']));
+  await withDataLock(() => storage.removeBatch(['activity', 'recoStats', 'focusSession']));
 }
 
 // Browsing signals (phase 2, written by the service worker)

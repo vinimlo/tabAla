@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/svelte';
 import NowSection from '@/newtab/components/NowSection.svelte';
-import { buildQueue, type Queue } from '@/lib/recommend/engine';
+import { buildQueue, recommendation, type Queue, type Recommendation } from '@/lib/recommend/engine';
 import type { Link } from '@/lib/types';
 import { createMockCollection, createMockLink } from '../factories';
 
@@ -57,5 +57,14 @@ describe('NowSection', () => {
     await fireEvent.click(screen.getByRole('button', { name: 'now_toggle' }));
 
     expect(toggleCollapsed).toHaveBeenCalledTimes(1);
+  });
+  it('follows the session in progress', () => {
+    const rec = (link: Link): Recommendation => recommendation(link, collections[0], 'advance', { type: 'nextInColumn' }, 10);
+    const session = { current: rec(pages[1]), next: [rec(pages[2])], triageLeft: 0, done: 1, total: 3, position: 2, remainingMs: 600_000, elapsed: 0.5, timeUp: false, finished: false };
+    render(NowSection, { props: props(pages, { session }) });
+
+    expect(screen.getByText('now_session_position')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'now_later_session' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Page p2/ })).toBeInTheDocument();
   });
 });

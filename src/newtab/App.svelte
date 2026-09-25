@@ -29,6 +29,9 @@
   import { createQueryTranslator, getTranslationAvailability } from '@/lib/ai/translator';
   import NowSection from './components/NowSection.svelte';
   import TriageOverlay from './components/TriageOverlay.svelte';
+  import SessionPill from './components/SessionPill.svelte';
+  import { sessionStore } from '@/lib/stores/session';
+  import { sessionView, startSession, type SessionMinutes } from '@/lib/recommend/session';
   import FocusView from './components/FocusView.svelte';
   import { activityStore } from '@/lib/stores/activity';
   import * as progress from '@/lib/stores/progress';
@@ -79,6 +82,23 @@
     activity: $activityStore.activity,
     now,
   });
+
+  /** Ticks every 30 s while a session runs, for the time left. */
+  let clock = Date.now();
+  let clockTimer: ReturnType<typeof setInterval> | undefined;
+
+  $: session = $sessionStore.session;
+  $: currentSession = session === null ? null : sessionView(session, $linksStore.links, queue, $linksStore.collections, clock);
+
+  async function beginSession(minutes: SessionMinutes): Promise<void> {
+    clock = Date.now();
+    await sessionStore.start(startSession(queue, minutes, clock));
+    view = 'board';
+  }
+
+  async function endSession(): Promise<void> {
+    await sessionStore.end();
+  }
   $: triageReasons = new Map(queue.triage.map((item) => [item.link.id, item.reason]));
   $: collectionById = new Map($linksStore.collections.map((collection) => [collection.id, collection]));
   $: cardMetas = new Map($linksStore.links.map((link): [string, CardMeta] => [link.id, cardMeta({
@@ -100,7 +120,7 @@
   $: commands = showSearch
     ? buildCommands({
       triageCount: queue.triage.length,
-      sessionActive: false,
+      sessionActive: session !== null,
       view,
       workspaces: $workspacesStore.workspaces
         .filter((workspace) => workspace.id !== $workspacesStore.activeWorkspaceId)
@@ -115,9 +135,10 @@
     const action = event.detail;
     if (action.type === 'triage') {
       showTriage = true;
-    } else if (action.type === 'startSession' || action.type === 'endSession') {
-      // Task 13 starts and ends sessions; until then the command opens Focus.
-      await openFocus(null);
+    } else if (action.type === 'startSession') {
+      await beginSession(action.minutes);
+    } else if (action.type === 'endSession') {
+      await endSession();
     } else if (action.type === 'view') {
       if (action.view === 'focus') {
         await openFocus(null);
@@ -176,14 +197,21 @@
       linksStore.load(),
       settingsStore.load(),
       activityStore.load(),
+      sessionStore.load(),
     ]);
     refreshDay();
     document.addEventListener('visibilitychange', refreshDay);
     dayTimer = setInterval(refreshDay, 60_000);
+    clockTimer = setInterval(() => {
+      if (session !== null) {
+        clock = Date.now();
+      }
+    }, 30_000);
     translationAvailable = (await getTranslationAvailability()) !== 'unavailable';
   });
 
   onDestroy(() => {
+    clearInterval(clockTimer);
     clearTimeout(justCompletedTimer);
     document.removeEventListener('visibilitychange', refreshDay);
     clearInterval(dayTimer);
@@ -312,6 +340,9 @@
   async function handleComplete(event: CustomEvent<Link>): Promise<void> {
     await progress.completeLink(event.detail);
     successMessage = t('success_link_completed');
+    if (session !== null) {
+      await sessionStore.markCompleted(event.detail.id, true);
+    }
   }
 
   async function handleSnooze(event: CustomEvent<{ link: Link; until: number }>): Promise<void> {
@@ -336,12 +367,18 @@
     justCompleted = event.detail;
     clearTimeout(justCompletedTimer);
     justCompletedTimer = setTimeout(() => (justCompleted = null), 10_000);
+    if (session !== null) {
+      await sessionStore.markCompleted(event.detail.id, true);
+    }
   }
 
   async function handleUndoComplete(event: CustomEvent<Link>): Promise<void> {
     clearTimeout(justCompletedTimer);
     justCompleted = null;
     await progress.restoreLink(event.detail);
+    if (session !== null) {
+      await sessionStore.markCompleted(event.detail.id, false);
+    }
   }
 
   async function handleDiscard(event: CustomEvent<Link>): Promise<void> {
@@ -376,6 +413,9 @@
   async function handleRestore(event: CustomEvent<Link>): Promise<void> {
     await progress.restoreLink(event.detail);
     successMessage = t('success_link_restored');
+    if (session !== null) {
+      await sessionStore.markCompleted(event.detail.id, false);
+    }
   }
 
   async function handleCollectionFocus(event: CustomEvent<{ collection: Collection; value: boolean }>): Promise<void> {
@@ -457,7 +497,13 @@
         summary={view === 'board' ? summary : null}
         on:openSearch={() => (showSearch = true)}
         on:newCollection={() => (showCreateCollection = true)}
-      />
+      >
+        <svelte:fragment slot="session">
+          {#if currentSession !== null}
+            <SessionPill view={currentSession} on:open={() => openFocus(null)} on:dismiss={endSession} />
+          {/if}
+        </svelte:fragment>
+      </AppHeader>
 
       {#if view === 'focus'}
         <FocusView
@@ -474,6 +520,9 @@
           on:restore={handleRestore}
           on:collectionFocus={handleCollectionFocus}
           on:collectionReference={handleCollectionReference}
+          session={currentSession}
+          on:start={(e) => beginSession(e.detail)}
+          on:end={endSession}
           on:openTriage={() => (showTriage = true)}
         />
       {:else}
@@ -485,6 +534,7 @@
             {now}
             collapsed={$settingsStore.settings.nextUpCollapsed}
             {justCompleted}
+            session={currentSession}
             on:open={handleOpen}
             on:complete={handleNowComplete}
             on:snooze={handleSnooze}
@@ -493,6 +543,7 @@
             on:reveal={handleReveal}
             on:dismissAsk={handleDismissAsk}
             on:undo={handleUndoComplete}
+            on:endSession={endSession}
             on:toggleCollapsed={() => settingsStore.setNextUpCollapsed(!$settingsStore.settings.nextUpCollapsed)}
             on:openTriage={() => (showTriage = true)}
             on:openFocus={() => openFocus(null)}

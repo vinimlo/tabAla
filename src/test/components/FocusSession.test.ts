@@ -29,16 +29,6 @@ describe('FocusSession', () => {
     expect(screen.getByText('focus_session_budget')).toBeInTheDocument();
   });
 
-  it('opens the next link in a new tab', async () => {
-    const open = vi.fn();
-    render(FocusSession, { props: { queue: queueOf(pages) }, events: { open } });
-    await pick(1);
-
-    await fireEvent.click(screen.getByRole('button', { name: 'focus_session_next' }));
-
-    expect(open.mock.calls[0][0].detail).toEqual({ link: pages[0], newTab: true });
-  });
-
   it('completes a link from the list', async () => {
     const complete = vi.fn();
     render(FocusSession, { props: { queue: queueOf(pages) }, events: { complete } });
@@ -64,5 +54,32 @@ describe('FocusSession', () => {
     render(FocusSession, { props: { queue: queueOf([]) } });
     await pick(2);
     expect(screen.getByText('focus_session_empty')).toBeInTheDocument();
+  });
+});
+describe('FocusSession with a session', () => {
+  it('starts the planned session', async () => {
+    const start = vi.fn();
+    render(FocusSession, { props: { queue: queueOf(pages) }, events: { start } });
+    await pick(1);
+
+    await fireEvent.click(screen.getByRole('button', { name: 'focus_session_start' }));
+
+    expect(start.mock.calls[0][0].detail).toBe(30);
+  });
+
+  it('follows a running session: opens the current link and ends it', async () => {
+    const queue = queueOf(pages);
+    const view = { current: queue.slots[0], next: queue.slots.slice(1), triageLeft: 0, done: 0, total: 3, position: 1, remainingMs: 600_000, elapsed: 0.5, timeUp: false, finished: false };
+    const open = vi.fn();
+    const end = vi.fn();
+    render(FocusSession, { props: { queue, session: view }, events: { open, end } });
+
+    expect(screen.queryByRole('radiogroup')).toBeNull();
+    expect(screen.getByText(/focus_session_progress/)).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole('button', { name: 'focus_session_next' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'focus_session_end' }));
+
+    expect(open.mock.calls[0][0].detail).toEqual({ link: queue.slots[0].link, newTab: true });
+    expect(end).toHaveBeenCalledTimes(1);
   });
 });

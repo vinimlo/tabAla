@@ -1523,5 +1523,59 @@
   },
   "focus_completed_less": {
     "message": "Mostrar menos"
+  },
+
+  "session_title": {
+    "message": "Sessão"
+  },
+  "session_left": {
+    "message": "$1 min restantes",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "session_ended": {
+    "message": "Sessão encerrada: $1 de $2",
+    "placeholders": {
+      "done": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "session_dismiss": {
+    "message": "Fechar o resumo da sessão"
+  },
+  "focus_session_start": {
+    "message": "Começar sessão"
+  },
+  "focus_session_end": {
+    "message": "Encerrar"
+  },
+  "focus_session_progress": {
+    "message": "$1 de $2 feitos",
+    "placeholders": {
+      "done": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "now_session_position": {
+    "message": "$1 de $2 na sessão",
+    "placeholders": {
+      "position": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
   }
 }

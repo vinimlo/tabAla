@@ -3,6 +3,7 @@
   import { plural, t } from '@/lib/i18n';
   import type { Link, RecoStats, Workspace } from '@/lib/types';
   import type { Queue } from '@/lib/recommend/engine';
+  import type { SessionView } from '@/lib/recommend/session';
   import { addDays, shortDate, weekStart } from '@/lib/recommend/dates';
   import { completedByWeek, previousQueue, queueForecast } from '@/lib/recommend/progress';
   import FocusSession from './FocusSession.svelte';
@@ -15,6 +16,7 @@
   export let stats: RecoStats;
   export let now: number;
   export let workspaces: Workspace[] = [];
+  export let session: SessionView | null = null;
 
   const dispatch = createEventDispatcher<{ openTriage: void }>();
 
@@ -50,7 +52,7 @@
 
   <div class="focus-grid">
     <div class="focus-column">
-      <FocusSession {queue} on:open on:complete on:openTriage={() => dispatch('openTriage')} />
+      <FocusSession {queue} {session} on:open on:complete on:start on:end on:openTriage={() => dispatch('openTriage')} />
       <FocusTriagePanel items={queue.triage} on:openTriage={() => dispatch('openTriage')} />
     </div>
 

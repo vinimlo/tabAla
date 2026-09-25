@@ -2,8 +2,8 @@
   import { createEventDispatcher } from 'svelte';
   import { getCollectionDisplayName, plural, t } from '@/lib/i18n';
   import type { Link } from '@/lib/types';
-  import type { Queue } from '@/lib/recommend/engine';
-  import { buildSession, SESSION_OPTIONS, type SessionItem, type SessionMinutes } from '@/lib/recommend/session';
+  import type { Queue, Recommendation } from '@/lib/recommend/engine';
+  import { buildSession, SESSION_OPTIONS, type SessionItem, type SessionMinutes, type SessionView } from '@/lib/recommend/session';
   import Button from '@/shared/components/ui/Button.svelte';
   import Icon from '@/shared/components/ui/Icon.svelte';
   import IconButton from '@/shared/components/ui/IconButton.svelte';
@@ -12,15 +12,18 @@
   import { ACTION_KEYS, effortText } from '../next-up-labels';
 
   export let queue: Queue;
+  /** The session in progress; while it runs, the planner shows it. */
+  export let session: SessionView | null = null;
 
   const dispatch = createEventDispatcher<{
     open: { link: Link; newTab: boolean };
     complete: Link;
     openTriage: void;
+    start: SessionMinutes;
+    end: void;
   }>();
 
   let minutes: SessionMinutes | null = null;
-  let opened = new Set<string>();
   /** The sequence as chosen: opening a link must not reshuffle it. */
   let planned: SessionItem[] = [];
 
@@ -34,7 +37,7 @@
   });
   $: timeline = withStarts(items);
   $: plannedMinutes = timeline.reduce((sum, row) => sum + row.minutes, 0);
-  $: nextLink = items.flatMap((item) => (item.type === 'link' && !opened.has(item.rec.link.id) ? [item.rec.link] : []))[0];
+  $: running = session === null ? [] : [session.current, ...session.next].filter((rec): rec is Recommendation => rec !== undefined);
 
   /** The engine counts one minute for the triage step. */
   function stepMinutes(item: SessionItem): number {
@@ -60,12 +63,10 @@
   function choose(event: CustomEvent<string | number>): void {
     minutes = event.detail as SessionMinutes;
     planned = buildSession(queue, minutes);
-    opened = new Set();
   }
 
   /** The session keeps the Focus page: links open in a new tab. */
   function open(link: Link): void {
-    opened = new Set([...opened, link.id]);
     dispatch('open', { link, newTab: true });
   }
 </script>
@@ -73,57 +74,96 @@
 <section id="focus-session" class="focus-section" aria-labelledby="focus-session-title">
   <div class="focus-section-head">
     <h2 id="focus-session-title">{t('focus_session_title')}</h2>
-    <span class="question">{t('focus_session_pick')}</span>
-    <Segmented label={t('focus_session_pick')} {options} value={minutes} on:change={choose} />
+    {#if session === null}
+      <span class="question">{t('focus_session_pick')}</span>
+      <Segmented label={t('focus_session_pick')} {options} value={minutes} on:change={choose} />
+    {/if}
   </div>
 
-  {#if minutes !== null}
-    {#if items.length === 0}
-      <p class="focus-empty">{t('focus_session_empty')}</p>
-    {:else}
-      <ol class="timeline">
-        {#each timeline as row (row.item.type === 'link' ? row.item.rec.link.id : 'triage')}
-          <li class="step" class:opened={row.item.type === 'link' && opened.has(row.item.rec.link.id)}>
-            <span class="at">{t('focus_session_at', row.start)}</span>
-            {#if row.item.type === 'triage'}
-              <span class="triage-tile"><Icon name="alert" size={17} /></span>
-              <button type="button" class="what" on:click={() => dispatch('openTriage')}>
-                <span class="title">{plural(row.item.count, 'focus_session_triage_one', 'focus_session_triage_many')}</span>
-              </button>
-              <span class="min">{effortText(1)}</span>
-              <span></span>
-            {:else}
-              {@const rec = row.item.rec}
-              <LinkTile link={rec.link} size={36} />
-              <button type="button" class="what" on:click={() => open(rec.link)}>
-                <span class="do"><strong>{t(ACTION_KEYS[rec.action])}</strong> · {getCollectionDisplayName(rec.collection)}</span>
-                <span class="title">{rec.link.title || rec.link.url}</span>
-              </button>
-              <span class="min">
-                {effortText(rec.effort)}
-                {#if row.item.overBudget}<span class="over">{t('focus_session_over_budget')}</span>{/if}
-              </span>
-              <IconButton icon="check" size="sm" tone="success" label={t('progress_complete')} on:click={() => dispatch('complete', rec.link)} />
+  {#if session === null}
+    {#if minutes !== null}
+      {#if items.length === 0}
+        <p class="focus-empty">{t('focus_session_empty')}</p>
+      {:else}
+        <ol class="timeline">
+          {#each timeline as row (row.item.type === 'link' ? row.item.rec.link.id : 'triage')}
+            <li class="step">
+              <span class="at">{t('focus_session_at', row.start)}</span>
+              {#if row.item.type === 'triage'}
+                <span class="triage-tile"><Icon name="alert" size={17} /></span>
+                <button type="button" class="what" on:click={() => dispatch('openTriage')}>
+                  <span class="title">{plural(row.item.count, 'focus_session_triage_one', 'focus_session_triage_many')}</span>
+                </button>
+                <span class="min">{effortText(1)}</span>
+                <span></span>
+              {:else}
+                {@const rec = row.item.rec}
+                <LinkTile link={rec.link} size={36} />
+                <button type="button" class="what" on:click={() => open(rec.link)}>
+                  <span class="do"><strong>{t(ACTION_KEYS[rec.action])}</strong> · {getCollectionDisplayName(rec.collection)}</span>
+                  <span class="title">{rec.link.title || rec.link.url}</span>
+                </button>
+                <span class="min">
+                  {effortText(rec.effort)}
+                  {#if row.item.overBudget}<span class="over">{t('focus_session_over_budget')}</span>{/if}
+                </span>
+                <IconButton icon="check" size="sm" tone="success" label={t('progress_complete')} on:click={() => dispatch('complete', rec.link)} />
+              {/if}
+            </li>
+          {/each}
+        </ol>
+  
+        <div class="budget">
+          <span class="bar" aria-hidden="true">
+            {#each timeline as row, i (i)}
+              <i class={tone(row.item)} style:flex-grow={row.minutes}></i>
+            {/each}
+            {#if plannedMinutes < minutes}
+              <i class="rest" style:flex-grow={minutes - plannedMinutes}></i>
             {/if}
+          </span>
+          <span class="label">{t('focus_session_budget', plannedMinutes, minutes)}</span>
+          <Button variant="primary" on:click={() => minutes !== null && dispatch('start', minutes)}>{t('focus_session_start')}</Button>
+        </div>
+      {/if}
+    {/if}
+  {:else}
+      <ol class="timeline">
+        {#if session.triageLeft > 0}
+          <li class="step">
+            <span class="at"></span>
+            <span class="triage-tile"><Icon name="alert" size={17} /></span>
+            <button type="button" class="what" on:click={() => dispatch('openTriage')}>
+                <span class="title">{plural(session.triageLeft, 'focus_session_triage_one', 'focus_session_triage_many')}</span>
+            </button>
+            <span class="min">{effortText(1)}</span>
+            <span></span>
+          </li>
+        {/if}
+        {#each running as rec, i (rec.link.id)}
+          <li class="step" class:current={i === 0}>
+            <span class="at">{i === 0 ? t('now_title') : ''}</span>
+            <LinkTile link={rec.link} size={36} />
+            <button type="button" class="what" on:click={() => dispatch('open', { link: rec.link, newTab: true })}>
+              <span class="do"><strong>{t(ACTION_KEYS[rec.action])}</strong> · {getCollectionDisplayName(rec.collection)}</span>
+              <span class="title">{rec.link.title || rec.link.url}</span>
+            </button>
+            <span class="min">{effortText(rec.effort)}</span>
+            <IconButton icon="check" size="sm" tone="success" label={t('progress_complete')} on:click={() => dispatch('complete', rec.link)} />
           </li>
         {/each}
       </ol>
-
       <div class="budget">
         <span class="bar" aria-hidden="true">
-          {#each timeline as row, i (i)}
-            <i class={tone(row.item)} style:flex-grow={row.minutes}></i>
-          {/each}
-          {#if plannedMinutes < minutes}
-            <i class="rest" style:flex-grow={minutes - plannedMinutes}></i>
-          {/if}
+          <i class="accent" style:flex-grow={session.elapsed}></i>
+          <i class="rest" style:flex-grow={1 - session.elapsed}></i>
         </span>
-        <span class="label">{t('focus_session_budget', plannedMinutes, minutes)}</span>
-        {#if nextLink !== undefined}
-          <Button variant="primary" on:click={() => nextLink !== undefined && open(nextLink)}>{t('focus_session_next')}</Button>
+        <span class="label">{t('focus_session_progress', session.done, session.total)} · {t('session_left', Math.ceil(session.remainingMs / 60_000))}</span>
+        <Button on:click={() => dispatch('end')}>{t('focus_session_end')}</Button>
+        {#if running[0] !== undefined}
+          <Button variant="primary" on:click={() => running[0] !== undefined && dispatch('open', { link: running[0].link, newTab: true })}>{t('focus_session_next')}</Button>
         {/if}
       </div>
-    {/if}
   {/if}
 </section>
 
@@ -146,10 +186,6 @@
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-2) 0;
-  }
-
-  .step.opened .title {
-    color: var(--text-secondary);
   }
 
   .at {
@@ -261,5 +297,13 @@
     font-size: 12.5px;
     color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
+  }
+
+  .step.current .title {
+    font-weight: 600;
+  }
+
+  .step.current .at {
+    color: var(--accent-ink);
   }
 </style>

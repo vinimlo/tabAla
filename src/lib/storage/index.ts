@@ -88,3 +88,12 @@ export {
   clearAsks,
   type ActivityEvent,
 } from './progress';
+
+// Focus session in progress
+export {
+  SESSION_KEY,
+  getFocusSession,
+  saveFocusSession,
+  clearFocusSession,
+  markSessionCompletion,
+} from './session';

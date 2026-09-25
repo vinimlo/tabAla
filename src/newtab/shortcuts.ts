@@ -13,15 +13,22 @@ export function opensSearch(event: KeyboardEvent): boolean {
   return event.key === '/' && !event.metaKey && !event.ctrlKey && !isEditable(event.target);
 }
 
-export type DashboardAction = 'openSearch' | 'closeSearch' | 'closeAll' | 'newCollection' | 'toggleSidebar' | null;
+export type DashboardAction =
+  | 'openSearch'
+  | 'closeLayer'
+  | 'closeAll'
+  | 'newCollection'
+  | 'toggleSidebar'
+  | 'toggleFocus'
+  | null;
 
 /**
- * Dashboard keyboard shortcuts. While the search panel is open only Esc acts
- * (closing it), so single-letter shortcuts never fire under the panel.
+ * Dashboard keyboard shortcuts. While a layer (search, triage) is open only
+ * Esc acts, closing it, so single-letter shortcuts never fire under it.
  */
-export function dashboardShortcut(event: KeyboardEvent, searchOpen: boolean): DashboardAction {
-  if (searchOpen) {
-    return event.key === 'Escape' ? 'closeSearch' : null;
+export function dashboardShortcut(event: KeyboardEvent, layerOpen: boolean): DashboardAction {
+  if (layerOpen) {
+    return event.key === 'Escape' ? 'closeLayer' : null;
   }
   if (opensSearch(event)) {
     return 'openSearch';
@@ -29,11 +36,14 @@ export function dashboardShortcut(event: KeyboardEvent, searchOpen: boolean): Da
   if (event.key === 'Escape') {
     return 'closeAll';
   }
-  if (isEditable(event.target) || event.ctrlKey || event.metaKey) {
+  if (isEditable(event.target) || event.ctrlKey || event.metaKey || event.altKey) {
     return null;
   }
   if (event.key === 'n') {
     return 'newCollection';
   }
-  return event.key === 't' ? 'toggleSidebar' : null;
+  if (event.key === 't') {
+    return 'toggleSidebar';
+  }
+  return event.key === 'f' ? 'toggleFocus' : null;
 }

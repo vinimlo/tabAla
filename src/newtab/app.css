@@ -14,8 +14,6 @@
 
   /* Tabs panel */
   --sidebar-width: 320px;
-  /* Collapsed tabs column, until the rail takes over (Task 5) */
-  --sidebar-collapsed-width: 52px;
   --sidebar-transition: var(--duration-normal) var(--ease-out);
 }
 

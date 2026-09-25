@@ -7,6 +7,8 @@
   import TabItem from './TabItem.svelte';
 
   export let expanded = false;
+  /** Open tabs in this window, for the badge on the rail. */
+  export let count = 0;
 
   const dispatch = createEventDispatcher<{
     saveTab: BrowserTab;
@@ -19,10 +21,9 @@
     ungrouped: [],
   };
   let loading = true;
-  let totalTabs = 0;
   let cleanupListeners: (() => void) | null = null;
 
-  $: totalTabs =
+  $: count =
     organizedTabs.pinned.length +
     organizedTabs.ungrouped.length +
     Array.from(organizedTabs.groups.values()).reduce((sum, g) => sum + g.tabs.length, 0);
@@ -111,7 +112,7 @@
     <header class="sidebar-header">
       <h2 class="sidebar-title">
         {t('tabs_sidebar_title')}
-        <span class="tab-count">{totalTabs}</span>
+        <span class="tab-count">{count}</span>
       </h2>
       <button
         type="button"
@@ -186,28 +187,13 @@
           </TabSection>
         {/if}
 
-        {#if totalTabs === 0}
+        {#if count === 0}
           <div class="empty-state">
             <span>{t('tabs_sidebar_no_tabs')}</span>
           </div>
         {/if}
       {/if}
     </div>
-  {:else}
-    <button
-      type="button"
-      class="sidebar-collapsed"
-      on:click={toggleSidebar}
-      aria-label={t('tabs_sidebar_open')}
-    >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <path d="M9 3v18"/>
-      </svg>
-      {#if totalTabs > 0}
-        <span class="badge">{totalTabs}</span>
-      {/if}
-    </button>
   {/if}
 </aside>
 
@@ -215,10 +201,9 @@
   .sidebar {
     display: flex;
     flex-direction: column;
-    width: var(--sidebar-collapsed-width);
+    width: 0;
     height: 100%;
     background: var(--surface-elevated);
-    border-right: 1px solid var(--border-subtle);
     transition: width var(--sidebar-transition);
     flex-shrink: 0;
     overflow: hidden;
@@ -226,6 +211,7 @@
 
   .sidebar.expanded {
     width: var(--sidebar-width);
+    border-right: 1px solid var(--border-subtle);
   }
 
   .sidebar-header {
@@ -289,45 +275,6 @@
     flex: 1;
     overflow-y: auto;
     padding: var(--space-2);
-  }
-
-  .sidebar-collapsed {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    gap: var(--space-2);
-    width: 100%;
-    height: 100%;
-    padding: var(--space-3) 0;
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .sidebar-collapsed:hover {
-    background: var(--surface-overlay);
-    color: var(--text-primary);
-  }
-
-  .sidebar-collapsed:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: -2px;
-  }
-
-  .badge {
-    font-family: var(--font-mono);
-    font-size: var(--text-xs);
-    font-weight: 600;
-    color: var(--text-primary);
-    background: var(--accent-primary);
-    padding: 2px 8px;
-    border-radius: var(--radius-full);
-    min-width: 24px;
-    text-align: center;
-    box-shadow: 0 2px 8px var(--accent-glow);
   }
 
   .loading-state,

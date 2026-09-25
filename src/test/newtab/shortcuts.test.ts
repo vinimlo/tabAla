@@ -28,7 +28,7 @@ describe('dashboardShortcut', () => {
   const input = document.createElement('input');
 
   it.each([
-    ['Esc closes the open search, wherever the focus is', 'closeSearch', true, keydown({ key: 'Escape' })],
+    ['Esc closes the open layer, wherever the focus is', 'closeLayer', true, keydown({ key: 'Escape' })],
     ['n does nothing while the search is open', null, true, keydown({ key: 'n' })],
     ['t does nothing while the search is open', null, true, keydown({ key: 't' })],
     ['Cmd+K does nothing while the search is open', null, true, keydown({ key: 'k', metaKey: true })],
@@ -39,8 +39,12 @@ describe('dashboardShortcut', () => {
     ['n on the page creates a collection', 'newCollection', false, keydown({ key: 'n' })],
     ['n typed in a field does nothing', null, false, keydown({ key: 'n' }, input)],
     ['t on the page toggles the tabs sidebar', 'toggleSidebar', false, keydown({ key: 't' })],
+    ['f on the page toggles Focus', 'toggleFocus', false, keydown({ key: 'f' })],
+    ['f typed in a field does nothing', null, false, keydown({ key: 'f' }, input)],
+    ['Ctrl+F is left to the browser', null, false, keydown({ key: 'f', ctrlKey: true })],
+    ['f does nothing while a layer is open', null, true, keydown({ key: 'f' })],
     ['Cmd+N is left to the browser', null, false, keydown({ key: 'n', metaKey: true })],
-  ] as const)('%s -> %s', (_label, expected, searchOpen, event) => {
-    expect(dashboardShortcut(event, searchOpen)).toBe(expected);
+  ] as const)('%s -> %s', (_label, expected, layerOpen, event) => {
+    expect(dashboardShortcut(event, layerOpen)).toBe(expected);
   });
 });

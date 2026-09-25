@@ -274,7 +274,7 @@
     "message": "Limpar busca"
   },
   "newtab_new_collection": {
-    "message": "Nova Coleção"
+    "message": "Nova coleção"
   },
   "newtab_no_results": {
     "message": "Nenhum resultado"
@@ -319,7 +319,7 @@
   },
 
   "tabs_sidebar_title": {
-    "message": "Abas Abertas"
+    "message": "Abas abertas"
   },
   "tabs_sidebar_close": {
     "message": "Fechar sidebar"
@@ -348,37 +348,6 @@
 
   "tab_close": {
     "message": "Fechar aba"
-  },
-
-  "statusbar_links_one": {
-    "message": "$1 link",
-    "placeholders": {
-      "count": { "content": "$1" }
-    }
-  },
-  "statusbar_links_many": {
-    "message": "$1 links",
-    "placeholders": {
-      "count": { "content": "$1" }
-    }
-  },
-  "statusbar_collections_one": {
-    "message": "$1 coleção",
-    "placeholders": {
-      "count": { "content": "$1" }
-    }
-  },
-  "statusbar_collections_many": {
-    "message": "$1 coleções",
-    "placeholders": {
-      "count": { "content": "$1" }
-    }
-  },
-  "statusbar_last_saved": {
-    "message": "Último salvo: $1",
-    "placeholders": {
-      "time": { "content": "$1" }
-    }
   },
 
   "time_now": {
@@ -701,7 +670,7 @@
   },
 
   "search_placeholder": {
-    "message": "Buscar em todos os workspaces…"
+    "message": "Buscar links ou digitar um comando"
   },
   "search_dialog_label": {
     "message": "Buscar links"
@@ -753,7 +722,7 @@
   },
 
   "search_open_placeholder": {
-    "message": "Buscar em todos os links"
+    "message": "Buscar links ou digitar um comando"
   },
 
   "popup_search_placeholder": {
@@ -1193,5 +1162,34 @@
   },
   "settings_learn_toggle_label": {
     "message": "Ligar ou desligar o aprendizado com o que eu abro"
+  },
+
+  "nav_board": {
+    "message": "Início"
+  },
+  "header_nothing_pending": {
+    "message": "Nada pendente"
+  },
+  "header_pending_links_one": {
+    "message": "1 pendente"
+  },
+  "header_pending_links_many": {
+    "message": "$1 pendentes",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "header_pending_in_one": {
+    "message": "em 1 coleção"
+  },
+  "header_pending_in_many": {
+    "message": "em $1 coleções",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
   }
 }

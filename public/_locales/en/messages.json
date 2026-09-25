@@ -274,7 +274,7 @@
     "message": "Clear search"
   },
   "newtab_new_collection": {
-    "message": "New Collection"
+    "message": "New collection"
   },
   "newtab_no_results": {
     "message": "No results"
@@ -319,7 +319,7 @@
   },
 
   "tabs_sidebar_title": {
-    "message": "Open Tabs"
+    "message": "Open tabs"
   },
   "tabs_sidebar_close": {
     "message": "Close sidebar"
@@ -348,37 +348,6 @@
 
   "tab_close": {
     "message": "Close tab"
-  },
-
-  "statusbar_links_one": {
-    "message": "$1 link",
-    "placeholders": {
-      "count": { "content": "$1" }
-    }
-  },
-  "statusbar_links_many": {
-    "message": "$1 links",
-    "placeholders": {
-      "count": { "content": "$1" }
-    }
-  },
-  "statusbar_collections_one": {
-    "message": "$1 collection",
-    "placeholders": {
-      "count": { "content": "$1" }
-    }
-  },
-  "statusbar_collections_many": {
-    "message": "$1 collections",
-    "placeholders": {
-      "count": { "content": "$1" }
-    }
-  },
-  "statusbar_last_saved": {
-    "message": "Last saved: $1",
-    "placeholders": {
-      "time": { "content": "$1" }
-    }
   },
 
   "time_now": {
@@ -701,7 +670,7 @@
   },
 
   "search_placeholder": {
-    "message": "Search every workspace…"
+    "message": "Search links or type a command"
   },
   "search_dialog_label": {
     "message": "Search links"
@@ -753,7 +722,7 @@
   },
 
   "search_open_placeholder": {
-    "message": "Search all links"
+    "message": "Search links or type a command"
   },
 
   "popup_search_placeholder": {
@@ -1193,5 +1162,34 @@
   },
   "settings_learn_toggle_label": {
     "message": "Turn learning from browsing on or off"
+  },
+
+  "nav_board": {
+    "message": "Board"
+  },
+  "header_nothing_pending": {
+    "message": "Nothing pending"
+  },
+  "header_pending_links_one": {
+    "message": "1 pending"
+  },
+  "header_pending_links_many": {
+    "message": "$1 pending",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "header_pending_in_one": {
+    "message": "in 1 collection"
+  },
+  "header_pending_in_many": {
+    "message": "in $1 collections",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
   }
 }

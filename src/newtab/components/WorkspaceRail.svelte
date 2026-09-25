@@ -8,16 +8,24 @@
   import { workspacesStore } from '@/lib/stores/workspaces';
   import WorkspaceRailItem from './WorkspaceRailItem.svelte';
   import WorkspaceModal from '@/shared/components/WorkspaceModal.svelte';
+  import Icon from '@/shared/components/ui/Icon.svelte';
 
   const dispatch = createEventDispatcher<{
     error: string;
     success: string;
     focus: void;
     board: void;
+    toggleTabs: void;
+    openSettings: void;
   }>();
 
-  /** The Focus space is showing instead of a workspace board. */
-  export let focusActive = false;
+  /** What the main area shows. */
+  export let view: 'board' | 'focus' = 'board';
+  /** The tabs panel is open. */
+  export let tabsOpen = false;
+  /** Open tabs in this window. */
+  export let tabCount = 0;
+
 
   let showCreateModal = false;
   let editingWorkspace: Workspace | null = null;
@@ -157,18 +165,43 @@
 </script>
 
 <nav class="workspace-rail" aria-label={t('workspace_title')}>
+  <span class="mark" aria-hidden="true"><Icon name="logo" size={18} /></span>
+
   <button
     type="button"
-    class="focus-entry"
-    class:active={focusActive}
-    on:click={() => dispatch('focus')}
-    aria-label={t('focus_open')}
-    aria-pressed={focusActive}
-    title={t('focus_title')}
+    class="nav"
+    class:active={view === 'board'}
+    aria-pressed={view === 'board'}
+    aria-label={t('nav_board')}
+    title={t('nav_board')}
+    on:click={() => dispatch('board')}
   >
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-      <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
-    </svg>
+    <Icon name="board" size={20} />
+  </button>
+  <button
+    type="button"
+    class="nav"
+    class:active={view === 'focus'}
+    aria-pressed={view === 'focus'}
+    aria-label={t('focus_open')}
+    title={t('focus_title')}
+    on:click={() => dispatch('focus')}
+  >
+    <Icon name="target" size={20} />
+  </button>
+  <button
+    type="button"
+    class="nav"
+    class:active={tabsOpen}
+    aria-expanded={tabsOpen}
+    aria-label={t('tabs_sidebar_title')}
+    title={t('tabs_sidebar_title')}
+    on:click={() => dispatch('toggleTabs')}
+  >
+    <Icon name="tabs" size={20} />
+    {#if tabCount > 0}
+      <span class="badge" aria-hidden="true">{tabCount}</span>
+    {/if}
   </button>
 
   <div class="rail-divider"></div>
@@ -188,15 +221,13 @@
       >
         <WorkspaceRailItem
           {workspace}
-          isActive={!focusActive && activeWorkspaceId === workspace.id}
+          isActive={view === 'board' && activeWorkspaceId === workspace.id}
           on:select={handleSelectWorkspace}
           on:contextmenu={handleContextMenu}
         />
       </div>
     {/each}
   </div>
-
-  <div class="rail-divider"></div>
 
   <button
     type="button"
@@ -206,9 +237,19 @@
     disabled={isLimitReached}
     title={isLimitReached ? t('workspace_limit_reached') : t('workspace_create_new')}
   >
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 5v14M5 12h14"/>
-    </svg>
+    <Icon name="plus" size={16} />
+  </button>
+
+  <span class="rail-spacer"></span>
+
+  <button
+    type="button"
+    class="nav"
+    aria-label={t('popup_settings')}
+    title={t('popup_settings')}
+    on:click={() => dispatch('openSettings')}
+  >
+    <Icon name="gear" size={20} />
   </button>
 </nav>
 
@@ -250,43 +291,78 @@
 {/if}
 
 <style>
-  .focus-entry {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .mark {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    margin: 4px 0 var(--space-3);
+    border-radius: 9px;
+    background: var(--accent-primary);
+    color: var(--text-on-accent);
+    box-shadow: 0 6px 16px -6px var(--accent-glow);
+    flex-shrink: 0;
+  }
+
+  .nav {
+    position: relative;
+    display: grid;
+    place-items: center;
     width: 40px;
     height: 40px;
-    margin-bottom: var(--space-2);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
+    padding: 0;
+    border: none;
+    border-radius: 12px;
     background: transparent;
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
     cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
+    flex-shrink: 0;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
   }
 
-  .focus-entry:hover {
+  .nav:hover {
+    background: var(--state-hover);
     color: var(--text-primary);
-    border-color: var(--border-default);
   }
 
-  .focus-entry.active {
-    color: var(--accent-primary);
-    border-color: var(--accent-primary);
-    background: var(--accent-soft);
+  .nav.active {
+    background: var(--surface-overlay);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-lift);
+  }
+
+  .badge {
+    position: absolute;
+    top: 4px;
+    right: 2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    background: var(--surface-overlay);
+    color: var(--text-secondary);
+    font: 700 10px / 14px var(--font-body);
+    text-align: center;
+  }
+
+  .rail-spacer {
+    flex: 1;
   }
 
   .workspace-rail {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 64px;
-    min-width: 64px;
+    width: 68px;
+    min-width: 68px;
     height: 100%;
-    padding: var(--space-3) var(--space-1);
-    background: var(--surface-elevated);
+    padding: var(--space-4) var(--space-1) var(--space-3);
+    background: var(--surface-base);
     border-right: 1px solid var(--border-subtle);
-    gap: var(--space-2);
+    gap: 6px;
     overflow: visible;
   }
 
@@ -294,7 +370,8 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-    flex: 1;
+    flex: 0 1 auto;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: visible;
     scrollbar-width: none;
@@ -328,9 +405,9 @@
     width: 36px;
     height: 36px;
     padding: 0;
-    background: var(--surface-overlay);
+    background: transparent;
     border: 1px dashed var(--border-default);
-    border-radius: var(--radius-full);
+    border-radius: 11px;
     color: var(--text-tertiary);
     cursor: pointer;
     transition: all var(--duration-fast) var(--ease-out);
@@ -341,7 +418,6 @@
     background: var(--surface-subtle);
     border-color: var(--accent-primary);
     color: var(--accent-primary);
-    transform: scale(1.1);
   }
 
   .add-workspace-btn:disabled {
@@ -394,9 +470,6 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .add-workspace-btn:hover:not(:disabled) {
-      transform: none;
-    }
     .workspace-slot.drag-over {
       transform: none;
     }

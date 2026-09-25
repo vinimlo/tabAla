@@ -1,14 +1,12 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
-  import { t, getCollectionDisplayName } from '@lib/i18n';
+  import { t, getCollectionDisplayName, getWorkspaceDisplayName } from '@lib/i18n';
   import './app.css';
   import { linksStore, linksByCollection } from '@/lib/stores/links';
   import { settingsStore } from '@/lib/stores/settings';
   import { workspacesStore, collectionsByActiveWorkspace, activeWorkspace } from '@/lib/stores/workspaces';
   import type { BrowserTab, TabGroup } from '@/lib/tabs';
   import KanbanBoard from './components/KanbanBoard.svelte';
-  import QuickActionsBar from './components/QuickActionsBar.svelte';
-  import StatusBar from './components/StatusBar.svelte';
   import TabsSidebar from './components/TabsSidebar.svelte';
   import WorkspaceRail from './components/WorkspaceRail.svelte';
   import Toast from '@/shared/components/Toast.svelte';
@@ -19,6 +17,8 @@
   import type { Collection, Link } from '@/lib/types';
   import { openLinkInCurrentTab, openLinkInNewTab } from '@/lib/tabs';
   import SearchPanel from './components/SearchPanel.svelte';
+  import AppHeader from './components/AppHeader.svelte';
+  import { pendingSummary } from './header';
   import { dashboardShortcut } from './shortcuts';
   import { revealLink, workspaceForLink } from './reveal';
   import { createQueryTranslator, getTranslationAvailability } from '@/lib/ai/translator';
@@ -29,14 +29,15 @@
   import { buildQueue, type Queue } from '@/lib/recommend/engine';
   import { sameDayNow, shownReport, stripOnScreen } from './next-up-report';
 
-  let mounted = false;
   let onboardingDismissed = false;
   let errorMessage: string | null = null;
   let successMessage: string | null = null;
   let showSettings = false;
   let showCreateCollection = false;
   let linkToRemove: { id: string; title: string } | null = null;
-  let sidebarExpanded = false;
+  let tabsOpen = false;
+  /** Open tabs in this window, counted by the tabs panel for the rail badge. */
+  let openTabs = 0;
   let collectionFromGroup: { name: string; tabs: BrowserTab[] } | null = null;
   let showSearch = false;
   const translateQuery = createQueryTranslator();
@@ -61,8 +62,7 @@
   $: loading = $linksStore.loading || $workspacesStore.loading;
   $: error = $linksStore.error ?? $workspacesStore.error;
   $: collections = $collectionsByActiveWorkspace;
-  $: links = $linksStore.links;
-  $: boardLinks = links.filter((link) => link.completedAt === undefined);
+  $: summary = pendingSummary($linksStore.links, collections);
   $: currentWorkspace = $activeWorkspace;
 
   $: queue = buildQueue({
@@ -104,7 +104,6 @@
       settingsStore.load(),
       activityStore.load(),
     ]);
-    setTimeout(() => mounted = true, 50);
     refreshDay();
     document.addEventListener('visibilitychange', refreshDay);
     dayTimer = setInterval(refreshDay, 60_000);
@@ -312,29 +311,40 @@
     }
     if (action === 'openSearch') {
       showSearch = true;
-    } else if (action === 'closeSearch') {
+    } else if (action === 'closeLayer') {
       showSearch = false;
     } else if (action === 'newCollection') {
       showCreateCollection = true;
     } else if (action === 'toggleSidebar') {
-      sidebarExpanded = !sidebarExpanded;
+      tabsOpen = !tabsOpen;
+    } else if (action === 'toggleFocus') {
+      if (view === 'focus') {
+        view = 'board';
+      } else {
+        void openFocus(null);
+      }
     }
   }
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
 
-<main class="dashboard" class:mounted>
+<main class="dashboard">
   <WorkspaceRail
-    focusActive={view === 'focus'}
+    {view}
+    {tabsOpen}
+    tabCount={openTabs}
     on:focus={() => openFocus(null)}
     on:board={() => (view = 'board')}
+    on:toggleTabs={() => (tabsOpen = !tabsOpen)}
+    on:openSettings={() => (showSettings = true)}
     on:error={(e) => errorMessage = e.detail}
     on:success={(e) => successMessage = e.detail}
   />
 
   <TabsSidebar
-    bind:expanded={sidebarExpanded}
+    bind:expanded={tabsOpen}
+    bind:count={openTabs}
     on:createCollectionFromGroup={handleCreateCollectionFromGroup}
   />
 
@@ -350,10 +360,11 @@
         <button type="button" on:click={() => linksStore.load()}>{t('common_try_again')}</button>
       </div>
     {:else}
-      <QuickActionsBar
+      <AppHeader
+        title={view === 'board' ? (currentWorkspace !== undefined ? getWorkspaceDisplayName(currentWorkspace) : '') : null}
+        summary={view === 'board' ? summary : null}
         on:openSearch={() => (showSearch = true)}
-        on:openSettings={() => showSettings = true}
-        on:newCollection={() => showCreateCollection = true}
+        on:newCollection={() => (showCreateCollection = true)}
       />
 
       {#if view === 'focus'}
@@ -403,7 +414,6 @@
           on:tabDrop={handleTabDrop}
         />
 
-        <StatusBar links={boardLinks} {collections} workspace={currentWorkspace} />
       {/if}
     {/if}
   </div>
@@ -472,16 +482,6 @@
     height: 100vh;
     width: 100vw;
     background: var(--surface-base);
-    opacity: 0;
-    transform: translateY(4px);
-    transition:
-      opacity var(--duration-slow) var(--ease-out),
-      transform var(--duration-slow) var(--ease-out);
-  }
-
-  .dashboard.mounted {
-    opacity: 1;
-    transform: translateY(0);
   }
 
   .main-content {
@@ -490,25 +490,6 @@
     flex: 1;
     min-width: 0;
     height: 100%;
-    /* Stagger animation for children */
-    animation: contentFadeIn var(--duration-slow) var(--ease-out) forwards;
-    animation-delay: 100ms;
-    opacity: 0;
-  }
-
-  .dashboard.mounted .main-content {
-    opacity: 1;
-  }
-
-  @keyframes contentFadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
   }
 
   .loading {
@@ -590,14 +571,6 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .dashboard {
-      transform: none;
-      transition: opacity var(--duration-normal) var(--ease-out);
-    }
-    .main-content {
-      animation: none;
-      opacity: 1;
-    }
     .spinner {
       animation: none;
     }

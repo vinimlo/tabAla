@@ -3,7 +3,7 @@
   import { plural, t } from '@/lib/i18n';
   import type { Link } from '@/lib/types';
   import type { Queue } from '@/lib/recommend/engine';
-  import { buildSession, SESSION_OPTIONS, type SessionMinutes } from '@/lib/recommend/session';
+  import { buildSession, SESSION_OPTIONS, type SessionItem, type SessionMinutes } from '@/lib/recommend/session';
   import { ACTION_KEYS, effortText } from '../next-up-labels';
 
   export let queue: Queue;
@@ -16,12 +16,21 @@
 
   let minutes: SessionMinutes | null = null;
   let opened = new Set<string>();
+  /** The sequence as chosen: opening a link must not reshuffle it. */
+  let planned: SessionItem[] = [];
 
-  $: items = minutes === null ? [] : buildSession(queue, minutes);
+  $: eligible = new Set(queue.fronts.flatMap((front) => front.eligible.map((link) => link.id)));
+  $: items = planned.flatMap((item): SessionItem[] => {
+    if (item.type === 'triage') {
+      return queue.triage.length === 0 ? [] : [{ type: 'triage', count: Math.min(item.count, queue.triage.length) }];
+    }
+    return eligible.has(item.rec.link.id) ? [item] : [];
+  });
   $: nextLink = items.flatMap((item) => (item.type === 'link' && !opened.has(item.rec.link.id) ? [item.rec.link] : []))[0];
 
   function choose(option: SessionMinutes): void {
     minutes = option;
+    planned = buildSession(queue, option);
     opened = new Set();
   }
 

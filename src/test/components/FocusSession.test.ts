@@ -5,7 +5,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/svelte';
 import FocusSession from '@/newtab/components/FocusSession.svelte';
 import { buildQueue, type Queue } from '@/lib/recommend/engine';
-import type { Link } from '@/lib/types';
+import { EMPTY_ACTIVITY, type Link } from '@/lib/types';
 import { createMockCollection, createMockLink } from '../factories';
 
 const DAY = 86_400_000;
@@ -36,6 +36,24 @@ describe('FocusSession', () => {
 
     const opened = open.mock.calls.map((call) => (call[0] as CustomEvent<{ link: Link; newTab: boolean }>).detail);
     expect(opened.map((detail) => [detail.link.id, detail.newTab])).toEqual([['p1', true], ['p2', true]]);
+  });
+
+  it('keeps its order while links are opened, and drops the ones completed', async () => {
+    const { rerender } = render(FocusSession, { props: { queue: queueOf(pages) } });
+    await pick(1);
+    const titles = (): string[] => screen.getAllByRole('listitem').map((item) => item.textContent ?? '');
+
+    const opened = { p2: { ...EMPTY_ACTIVITY, opens: 1, lastOpenedAt: now } };
+    await rerender({ queue: buildQueue({ links: pages, collections, activity: opened, now }) });
+    expect(titles()).toEqual([
+      expect.stringContaining('Page p1'),
+      expect.stringContaining('Page p2'),
+      expect.stringContaining('Page p3'),
+    ]);
+
+    const completed = pages.map((page) => (page.id === 'p1' ? { ...page, completedAt: now } : page));
+    await rerender({ queue: buildQueue({ links: completed, collections, activity: opened, now }) });
+    expect(titles()).toEqual([expect.stringContaining('Page p2'), expect.stringContaining('Page p3')]);
   });
 
   it('completes a link from the list', async () => {

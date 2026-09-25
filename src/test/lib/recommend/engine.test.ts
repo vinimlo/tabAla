@@ -48,7 +48,7 @@ describe('buildQueue', () => {
     expect(queue.size).toBe(2);
   });
 
-  it('advances the front with more completions this week, then the one closest to empty', () => {
+  it('advances the front with more completions this week, then the one with most left to do', () => {
     const links = [
       ...['b1', 'b2', 'b3', 'b4', 'b5'].map((id) => link(id, 'big')),
       ...['s1', 's2'].map((id) => link(id, 'small')),
@@ -60,8 +60,8 @@ describe('buildQueue', () => {
 
     expect(queue.slots.map((slot) => [slot.collection.id, slot.reason])).toEqual([
       ['busy', { type: 'momentum', count: 2 }],
-      ['small', { type: 'nearlyDone', remaining: 2 }],
       ['big', { type: 'nextInColumn' }],
+      ['small', { type: 'nearlyDone', remaining: 2 }],
     ]);
   });
 

@@ -73,11 +73,14 @@ export function recommendation(link: Link, collection: Collection, role: SlotRol
   return { link, collection, role, reason, kind, action: linkAction(kind), effort: defaultEffort(kind) };
 }
 
-/** Focus first, then momentum, then fewer eligible links, then collection order. */
+/**
+ * Focus first, then momentum, then the front with most left to do (where
+ * links pile up), then collection order.
+ */
 function compareFronts(a: Front, b: Front): number {
   return Number(b.collection.focus === true) - Number(a.collection.focus === true)
     || b.momentum - a.momentum
-    || a.eligible.length - b.eligible.length
+    || b.eligible.length - a.eligible.length
     || a.collection.order - b.collection.order;
 }
 

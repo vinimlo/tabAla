@@ -162,7 +162,7 @@ A faixa mostra até 3 cards, cada um de uma frente diferente, preenchidos nesta 
 2. **Avançar**, que ocupa as vagas que sobrarem além de Retomar. A ordem é:
    1. `focus` primeiro;
    2. depois **momento**, o número de concluídos da coleção nos últimos 7 dias, em ordem decrescente;
-   3. depois as que têm menos elegíveis, o que põe na frente as quase zeradas;
+   3. depois as que têm **mais** elegíveis, onde os links se acumulam (decidido em 2026-09-25 depois do ensaio com os dados reais: com "menos elegíveis", as três vagas eram coleções de um link só e as sessões ficavam curtas);
    4. por fim a menor `order` de coleção.
 
    Motivo exibido, pelo primeiro que se aplicar: "Foco fixado"; "3 concluídos esta semana", se o momento for maior que 0; "Faltam 2 para zerar", com 3 elegíveis ou menos; senão, "Próximo da coluna".

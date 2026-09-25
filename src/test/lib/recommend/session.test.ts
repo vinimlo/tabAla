@@ -30,8 +30,9 @@ describe('buildSession', () => {
   });
 
   it('fills the time with the next links of the best front, then the second', () => {
-    const links = [page('a1', 'a'), page('a2', 'a'), page('a3', 'a'), page('b1', 'b'), page('b2', 'b')];
-    expect(session(links, [col('a', 1), col('b', 2)], 30)).toEqual(['b1', 'b2', 'a1']);
+    const links = [page('a1', 'a'), page('a2', 'a'), page('b1', 'b'), page('b2', 'b'), page('b3', 'b')];
+    expect(session(links, [col('a', 1), col('b', 2)], 30)).toEqual(['b1', 'b2', 'b3']);
+    expect(session(links, [col('a', 1), col('b', 2)], 60)).toEqual(['b1', 'b2', 'b3', 'a1', 'a2']);
   });
 
   it('uses at most two fronts', () => {

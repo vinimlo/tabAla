@@ -1,6 +1,6 @@
 # Política de Privacidade — TabAla
 
-**Data de vigência:** 8 de fevereiro de 2026
+**Data de vigência:** 25 de setembro de 2026
 
 ## Resumo
 
@@ -8,7 +8,7 @@ O TabAla **não coleta, transmite ou compartilha** nenhum dado pessoal. Todos os
 
 ## Dados armazenados
 
-A extensão armazena **apenas** dados que o usuário escolhe salvar explicitamente:
+A extensão armazena os dados que o usuário escolhe salvar e, para as recomendações, dados de uso desses links salvos (descritos nas duas seções abaixo):
 
 - **URLs** das abas salvas pelo usuário
 - **Títulos** das páginas salvas
@@ -33,7 +33,15 @@ Para sugerir o que abrir, ler ou resolver em seguida, o TabAla guarda no seu com
 
 Esses dados ficam só em `chrome.storage.local`, nunca saem do navegador e não entram no arquivo de exportação. Você pode apagá-los em Configurações → Dados → "Apagar dados de uso"; os links continuam. A faixa pode ser desligada em Configurações.
 
-Com "Aprender com o que eu abro" ligado (padrão), o TabAla também percebe, pela permissão `tabs` que já usa, quando uma aba abre um link salvo — por qualquer caminho — e por quanto tempo ela fica ativa numa janela em foco (no máximo 30 minutos por visita). Com isso ele pergunta "concluído?" depois de uma visita longa, aprende quanto tempo cada tipo de link leva e marca com um ponto o ícone da extensão numa aba de link salvo. Endereços que não estão salvos são comparados na memória e descartados; abas anônimas nunca são lidas. Desligar em Configurações para de registrar.
+## Atividade dos links salvos
+
+Com "Aprender com o que eu abro" ligado (padrão), o TabAla também percebe, pela permissão `tabs` que já usa, quando uma aba abre um link salvo — por qualquer caminho — e por quanto tempo ela fica ativa numa janela em foco (no máximo 30 minutos por visita). Com isso ele pergunta "concluído?" depois de uma visita longa, aprende quanto tempo cada tipo de link leva e marca com um ponto o ícone da extensão numa aba de link salvo.
+
+- O que é gravado: para cada link salvo, quantas vezes e em que dias ele foi aberto, o tempo ativo somado e se há uma pergunta "concluído?" pendente.
+- O que nunca é gravado: endereços que não estão salvos (são comparados na memória e descartados) e qualquer coisa de abas anônimas, que nunca são lidas.
+- Onde fica: só em `chrome.storage.local` e `chrome.storage.session`, no navegador; nada sai do computador e nada entra no arquivo de exportação.
+- Como desligar: Configurações → "Aprender com o que eu abro". Desligar para de registrar e limpa as perguntas pendentes.
+- Como apagar: Configurações → Dados → "Apagar dados de uso" apaga o que foi aprendido; os links continuam.
 
 ## Dados não coletados
 

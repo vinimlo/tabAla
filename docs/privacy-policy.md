@@ -1,6 +1,6 @@
 # Privacy Policy — TabAla
 
-**Effective date:** February 8, 2026
+**Effective date:** September 25, 2026
 
 ## Summary
 
@@ -8,7 +8,7 @@ TabAla **does not collect, transmit, or share** any personal data. All data is s
 
 ## Data stored
 
-The extension stores **only** data that the user explicitly chooses to save:
+The extension stores the data the user chooses to save and, for suggestions, usage data about those saved links (described in the two sections below):
 
 - **URLs** of tabs saved by the user
 - **Titles** of saved pages
@@ -33,7 +33,15 @@ To suggest what to open, read or solve next, TabAla keeps on your computer, alon
 
 This data stays in `chrome.storage.local`, never leaves the browser and is not included in exports. You can clear it in Settings → Data → "Clear usage data"; your links stay. The strip can be turned off in Settings.
 
-With "Learn from what I open" on (the default), TabAla also notices, through the `tabs` permission it already uses, when a tab opens a saved link — by any path — and how long it stays active in a focused window (at most 30 minutes per visit). It uses this to ask "completed?" after a long visit, to learn how long each kind of link takes, and to mark the extension icon with a dot on a tab showing a saved link. Addresses that are not saved are compared in memory and discarded; incognito tabs are never read. Turning it off in Settings stops it.
+## Activity on saved links
+
+With "Learn from what I open" on (the default), TabAla also notices, through the `tabs` permission it already uses, when a tab opens a saved link — by any path — and how long it stays active in a focused window (at most 30 minutes per visit). It uses this to ask "completed?" after a long visit, to learn how long each kind of link takes, and to mark the extension icon with a dot on a tab showing a saved link.
+
+- What is stored: for each saved link, how many times and on which days it was opened, the total active time, and whether a "completed?" question is pending.
+- What is never stored: addresses that are not saved (they are compared in memory and discarded) and anything from incognito tabs, which are never read.
+- Where it stays: only in `chrome.storage.local` and `chrome.storage.session`, in the browser; nothing leaves the computer and nothing goes into exports.
+- How to turn it off: Settings → "Learn from what I open". Turning it off stops recording and clears pending questions.
+- How to erase it: Settings → Data → "Clear usage data" erases what was learned; your links stay.
 
 ## Data not collected
 

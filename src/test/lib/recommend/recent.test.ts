@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { recentlyOpened } from '@/lib/recommend/recent';
-import { EMPTY_ACTIVITY } from '@/lib/types';
+import { EMPTY_ACTIVITY, type LinkActivity } from '@/lib/types';
 import { createMockLink } from '../../factories';
 
-const opened = (at: number) => ({ ...EMPTY_ACTIVITY, opens: 1, lastOpenedAt: at });
+const opened = (at: number): LinkActivity => ({ ...EMPTY_ACTIVITY, opens: 1, lastOpenedAt: at });
 
 describe('recentlyOpened', () => {
   const links = ['a', 'b', 'c', 'd'].map((id) => createMockLink({ id }));

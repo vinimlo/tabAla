@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Button from '@/shared/components/ui/Button.svelte';
+  import IconButton from '@/shared/components/ui/IconButton.svelte';
   import { onMount, onDestroy } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
@@ -71,26 +73,9 @@
       <span class="toast-indicator"></span>
       <span class="toast-message">{message}</span>
       {#if actionLabel !== null}
-        <button class="toast-action" type="button" on:click={() => { onAction(); dismiss(); }}>{actionLabel}</button>
+        <Button variant="quiet" size="sm" on:click={() => { onAction(); dismiss(); }}>{actionLabel}</Button>
       {/if}
-      <button
-        class="toast-close"
-        on:click={dismiss}
-        aria-label={t('toast_close')}
-        type="button"
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        >
-          <path d="M18 6L6 18M6 6l12 12"/>
-        </svg>
-      </button>
+      <IconButton icon="close" size="sm" label={t('toast_close')} on:click={dismiss} />
     </div>
   </div>
 {/if}
@@ -169,54 +154,11 @@
     flex: 1;
   }
 
-  .toast-close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-full);
-    color: var(--text-tertiary);
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-    flex-shrink: 0;
-    margin-left: var(--space-1);
-  }
-
-  .toast-close:hover {
-    color: var(--text-primary);
-    background-color: var(--border-default);
-  }
-
-  .toast-close:focus {
-    outline: none;
-  }
-
-  .toast-close:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
-  }
-
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .toast:hover,
     .toast.paused {
       transform: none;
     }
-  }
-
-  .toast-action {
-    padding: var(--space-1) var(--space-2);
-    border: 1px solid var(--accent-primary);
-    border-radius: var(--radius-full);
-    background: transparent;
-    color: var(--accent-primary);
-    font-family: var(--font-body);
-    font-size: var(--text-xs);
-    font-weight: 600;
-    cursor: pointer;
   }
 </style>

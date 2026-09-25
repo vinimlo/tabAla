@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Button from '@/shared/components/ui/Button.svelte';
+  import IconButton from '@/shared/components/ui/IconButton.svelte';
   import { createEventDispatcher, onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import type { Workspace, CreateWorkspaceInput } from '@/lib/types';
@@ -119,16 +121,7 @@
   >
     <div class="modal-header">
       <h2 id="modal-title">{isEditing ? t('workspace_modal_edit_title') : t('workspace_modal_new_title')}</h2>
-      <button
-        type="button"
-        class="close-btn"
-        on:click={() => dispatch('cancel')}
-        aria-label={t('common_close')}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <path d="M18 6L6 18M6 6l12 12"/>
-        </svg>
-      </button>
+      <IconButton icon="close" size="sm" label={t('common_close')} on:click={() => dispatch('cancel')} />
     </div>
 
     <form on:submit|preventDefault={handleSubmit}>
@@ -199,26 +192,15 @@
       </div>
 
       <div class="actions">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          on:click={() => dispatch('cancel')}
-          disabled={isSubmitting}
-        >
-          {t('common_cancel')}
-        </button>
-        <button
-          type="submit"
-          class="btn btn-confirm"
-          disabled={!canSubmit}
-        >
+        <Button on:click={() => dispatch('cancel')} disabled={isSubmitting}>{t('common_cancel')}</Button>
+        <Button variant="primary" type="submit" disabled={!canSubmit}>
           {#if isSubmitting}
             <span class="spinner"></span>
             {isEditing ? t('common_saving') : t('common_creating')}
           {:else}
             {isEditing ? t('common_save') : t('common_create')}
           {/if}
-        </button>
+        </Button>
       </div>
     </form>
   </div>
@@ -231,8 +213,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px) saturate(150%);
+    background-color: var(--scrim);
+    backdrop-filter: blur(6px) saturate(0.9);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -246,9 +228,7 @@
     padding: var(--space-6);
     max-width: 420px;
     width: 90%;
-    box-shadow:
-      var(--shadow-xl),
-      0 0 40px var(--accent-glow);
+    box-shadow: var(--shadow-float);
     transform-origin: center center;
   }
 
@@ -265,26 +245,6 @@
     font-family: var(--font-body);
     font-size: var(--text-lg);
     font-weight: 600;
-  }
-
-  .close-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm);
-    color: var(--text-tertiary);
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .close-btn:hover {
-    background: var(--surface-overlay);
-    color: var(--text-primary);
   }
 
   form {
@@ -433,64 +393,6 @@
     margin-top: var(--space-2);
   }
 
-  .btn {
-    padding: var(--space-3) var(--space-5);
-    border-radius: var(--radius-lg);
-    font-family: var(--font-body);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-    border: 1px solid transparent;
-    min-width: 100px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-  }
-
-  .btn:focus {
-    outline: none;
-  }
-
-  .btn:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
-  }
-
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .btn-cancel {
-    background: transparent;
-    color: var(--text-secondary);
-    border-color: var(--border-default);
-  }
-
-  .btn-cancel:hover:not(:disabled) {
-    background: var(--surface-overlay);
-    color: var(--text-primary);
-    border-color: var(--border-strong);
-  }
-
-  .btn-confirm {
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-    color: white;
-    box-shadow: 0 2px 8px var(--accent-glow);
-  }
-
-  .btn-confirm:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-lg);
-    filter: brightness(1.1);
-  }
-
-  .btn-confirm:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
   .spinner {
     width: 14px;
     height: 14px;
@@ -510,9 +412,6 @@
   @media (prefers-reduced-motion: reduce) {
     .spinner {
       animation: none;
-    }
-    .btn-confirm:hover:not(:disabled) {
-      transform: none;
     }
     .color-option:hover:not(:disabled) {
       transform: none;

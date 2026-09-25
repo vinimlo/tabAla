@@ -145,7 +145,7 @@
     height: 40px;
     border-radius: 50%;
     background-color: var(--workspace-color);
-    border: 2px solid rgba(255, 255, 255, 0.1);
+    border: 2px solid color-mix(in srgb, var(--text-on-accent) 10%, transparent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -163,7 +163,7 @@
   /* Hover state: glow internal + lift */
   .workspace-item:hover .workspace-circle {
     transform: scale(1.05);
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: color-mix(in srgb, var(--text-on-accent) 20%, transparent);
     box-shadow:
       0 4px 12px rgba(0, 0, 0, 0.3),
       inset 0 0 12px rgba(255, 255, 255, 0.05);
@@ -188,22 +188,22 @@
 
   /* Default workspace - coral gradient accent */
   .workspace-item.is-default .workspace-circle {
-    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary, #d4563f));
-    border-color: rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border-color: color-mix(in srgb, var(--text-on-accent) 15%, transparent);
     box-shadow:
       0 2px 8px rgba(232, 93, 66, 0.3),
       inset 0 1px 2px rgba(255, 255, 255, 0.15);
   }
 
   .workspace-item.is-default:hover .workspace-circle {
-    border-color: rgba(255, 255, 255, 0.25);
+    border-color: color-mix(in srgb, var(--text-on-accent) 25%, transparent);
     box-shadow:
       0 6px 20px rgba(232, 93, 66, 0.4),
       inset 0 0 12px rgba(255, 255, 255, 0.1);
   }
 
   .workspace-item.is-default.active .workspace-circle {
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: color-mix(in srgb, var(--text-on-accent) 30%, transparent);
     box-shadow:
       0 8px 24px rgba(232, 93, 66, 0.4),
       inset 0 1px 2px rgba(255, 255, 255, 0.2);

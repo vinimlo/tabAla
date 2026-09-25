@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Button from '@/shared/components/ui/Button.svelte';
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import { t } from '@lib/i18n';
@@ -56,20 +57,8 @@
   >
     <p id="dialog-message">{message}</p>
     <div class="actions">
-      <button
-        class="btn btn-cancel"
-        on:click={() => dispatch('cancel')}
-        type="button"
-      >
-        {cancelText}
-      </button>
-      <button
-        class="btn btn-confirm"
-        on:click={() => dispatch('confirm')}
-        type="button"
-      >
-        {confirmText}
-      </button>
+      <Button on:click={() => dispatch('cancel')}>{cancelText}</Button>
+      <Button variant="danger" on:click={() => dispatch('confirm')}>{confirmText}</Button>
     </div>
   </div>
 </div>
@@ -81,8 +70,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px) saturate(150%);
+    background-color: var(--scrim);
+    backdrop-filter: blur(6px) saturate(0.9);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -96,9 +85,7 @@
     padding: var(--space-6);
     max-width: 340px;
     width: 90%;
-    box-shadow:
-      var(--shadow-xl),
-      0 0 40px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-float);
     transform-origin: center center;
   }
 
@@ -122,60 +109,4 @@
     justify-content: center;
   }
 
-  .btn {
-    padding: var(--space-3) var(--space-5);
-    border-radius: var(--radius-lg);
-    font-family: var(--font-body);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-    border: 1px solid transparent;
-    min-width: 100px;
-  }
-
-  .btn:focus {
-    outline: none;
-  }
-
-  .btn:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
-  }
-
-  .btn-cancel {
-    background: transparent;
-    color: var(--text-secondary);
-    border-color: var(--border-default);
-  }
-
-  .btn-cancel:hover {
-    background: var(--surface-overlay);
-    color: var(--text-primary);
-    border-color: var(--border-strong);
-  }
-
-  .btn-confirm {
-    background: var(--semantic-error);
-    color: white;
-    box-shadow: 0 2px 8px rgba(212, 114, 106, 0.3);
-  }
-
-  .btn-confirm:hover {
-    background: var(--semantic-error);
-    filter: brightness(0.85);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(212, 114, 106, 0.35);
-  }
-
-  .btn-confirm:active {
-    transform: translateY(0);
-  }
-
-  /* Reduced motion */
-  @media (prefers-reduced-motion: reduce) {
-    .btn-confirm:hover {
-      transform: none;
-    }
-  }
 </style>

@@ -115,6 +115,16 @@
   --shadow-card-hover: var(--shadow-lift);
   --shadow-glow: 0 0 20px var(--accent-glow);
 
+  /* Theme previews: each theme's own colors, whatever theme is on screen */
+  --swatch-light-surface: #F8F6F3;
+  --swatch-dark-surface: #0F0E11;
+  --swatch-light-accent: #D14E35;
+  --swatch-dark-accent: #E85D42;
+  --swatch-light-line: rgba(0, 0, 0, 0.08);
+  --swatch-dark-line: rgba(255, 255, 255, 0.08);
+  --swatch-light-line-strong: rgba(0, 0, 0, 0.12);
+  --swatch-dark-line-strong: rgba(255, 255, 255, 0.12);
+
   /* Spacing */
   --space-1: 0.25rem;
   --space-2: 0.5rem;

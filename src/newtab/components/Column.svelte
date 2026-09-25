@@ -498,7 +498,7 @@
   }
 
   .workspace-dot.is-default {
-    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary, #d4563f));
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
   }
 
   .column-content {

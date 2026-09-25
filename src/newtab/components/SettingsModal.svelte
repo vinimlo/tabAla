@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Button from '@/shared/components/ui/Button.svelte';
+  import IconButton from '@/shared/components/ui/IconButton.svelte';
   import { createEventDispatcher, onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import { t } from '@lib/i18n';
@@ -232,16 +234,7 @@
   >
     <header class="modal-header">
       <h2 id="settings-title">{t('settings_title')}</h2>
-      <button
-        type="button"
-        class="btn-close"
-        on:click={handleClose}
-        aria-label={t('common_close')}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <path d="M18 6L6 18M6 6l12 12"/>
-        </svg>
-      </button>
+      <IconButton icon="close" label={t('common_close')} on:click={handleClose} />
     </header>
 
     <div class="modal-content">
@@ -347,9 +340,7 @@
               : t('topic_search_downloading', Math.round(downloadProgress * 100))}
           </span>
         {:else if topicView === 'enable'}
-          <button type="button" class="btn-action" on:click={handleEnableTopicSearch}>
-            {t('topic_search_enable')}
-          </button>
+          <Button size="sm" on:click={handleEnableTopicSearch}>{t('topic_search_enable')}</Button>
         {:else}
           <button
             type="button"
@@ -438,17 +429,7 @@
               {t('settings_export_description')}
             </span>
           </div>
-          <button
-            type="button"
-            class="btn-action"
-            on:click={handleExport}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-          </button>
+          <IconButton icon="download" label={t('settings_export_button')} on:click={handleExport} />
         </div>
 
         <div class="setting-item">
@@ -458,17 +439,7 @@
               {t('settings_import_description')}
             </span>
           </div>
-          <button
-            type="button"
-            class="btn-action"
-            on:click={handleImportClick}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-          </button>
+          <IconButton icon="upload" label={t('settings_import_button')} on:click={handleImportClick} />
         </div>
 
         <div class="setting-item">
@@ -476,17 +447,7 @@
             <span class="setting-label">{t('settings_usage_clear')}</span>
             <span class="setting-description">{t('settings_usage_description')}</span>
           </div>
-          <button
-            type="button"
-            class="btn-action"
-            on:click={() => (confirmClearUsage = true)}
-            aria-label={t('settings_usage_clear')}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            </svg>
-          </button>
+          <IconButton icon="trash" tone="danger" label={t('settings_usage_clear')} on:click={() => (confirmClearUsage = true)} />
         </div>
 
         <input
@@ -536,8 +497,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px) saturate(150%);
+    background-color: var(--scrim);
+    backdrop-filter: blur(6px) saturate(0.9);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -550,9 +511,10 @@
     border-radius: var(--radius-xl);
     width: 90%;
     max-width: 440px;
-    box-shadow:
-      var(--shadow-xl),
-      0 0 40px rgba(0, 0, 0, 0.15);
+    max-height: calc(100vh - 2 * var(--space-6));
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-float);
     overflow: hidden;
     transform-origin: center center;
   }
@@ -573,33 +535,9 @@
     color: var(--text-primary);
   }
 
-  .btn-close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-md);
-    color: var(--text-tertiary);
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .btn-close:hover {
-    background: var(--surface-overlay);
-    color: var(--text-primary);
-  }
-
-  .btn-close:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
-  }
-
   .modal-content {
     padding: var(--space-5);
+    overflow-y: auto;
   }
 
   /* Theme selector */
@@ -677,20 +615,20 @@
   }
 
   .theme-preview-light {
-    background: #F8F6F3;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: var(--swatch-light-surface);
+    border: 1px solid var(--swatch-light-line);
   }
 
   .theme-preview-dark {
-    background: #0F0E11;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--swatch-dark-surface);
+    border: 1px solid var(--swatch-dark-line);
   }
 
   .theme-preview-system {
     flex-direction: row;
     padding: 0;
     gap: 0;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--swatch-light-line);
   }
 
   .preview-half {
@@ -702,11 +640,11 @@
   }
 
   .preview-light {
-    background: #F8F6F3;
+    background: var(--swatch-light-surface);
   }
 
   .preview-dark {
-    background: #0F0E11;
+    background: var(--swatch-dark-surface);
   }
 
   .preview-bar {
@@ -717,12 +655,12 @@
 
   .theme-preview-light .preview-bar,
   .preview-light .preview-bar {
-    background: #D14E35;
+    background: var(--swatch-light-accent);
   }
 
   .theme-preview-dark .preview-bar,
   .preview-dark .preview-bar {
-    background: #E85D42;
+    background: var(--swatch-dark-accent);
   }
 
   .preview-line {
@@ -737,12 +675,12 @@
 
   .theme-preview-light .preview-line,
   .preview-light .preview-line {
-    background: rgba(0, 0, 0, 0.08);
+    background: var(--swatch-light-line);
   }
 
   .theme-preview-dark .preview-line,
   .preview-dark .preview-line {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--swatch-dark-line);
   }
 
   .preview-dot {
@@ -754,11 +692,11 @@
   }
 
   .theme-preview-light .preview-dot {
-    background: rgba(0, 0, 0, 0.12);
+    background: var(--swatch-light-line-strong);
   }
 
   .theme-preview-dark .preview-dot {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--swatch-dark-line-strong);
   }
 
   /* Settings items */
@@ -897,47 +835,12 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
-  .btn-action {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    background: var(--surface-overlay);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-lg);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-    flex-shrink: 0;
-  }
-
-  .btn-action:hover {
-    background: var(--surface-subtle);
-    border-color: var(--border-strong);
-    color: var(--text-primary);
-    transform: translateY(-1px);
-  }
-
-  .btn-action:active {
-    transform: translateY(0);
-  }
-
-  .btn-action:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
-  }
-
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .toggle-thumb {
       transition: transform var(--duration-fast) var(--ease-out);
     }
     .theme-option:hover .theme-preview {
-      transform: none;
-    }
-    .btn-action:hover {
       transform: none;
     }
   }

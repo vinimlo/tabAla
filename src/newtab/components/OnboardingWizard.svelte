@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Button from '@/shared/components/ui/Button.svelte';
   import { createEventDispatcher, tick } from 'svelte';
   import { fade, scale, fly } from 'svelte/transition';
   import { t } from '@lib/i18n';
@@ -223,9 +224,7 @@
     <footer class="modal-footer">
       <div class="footer-left">
         {#if currentStep > 1}
-          <button type="button" class="btn-back" on:click={goBack}>
-            {t('onboarding_back')}
-          </button>
+          <Button variant="quiet" on:click={goBack}>{t('onboarding_back')}</Button>
         {/if}
       </div>
 
@@ -240,9 +239,9 @@
       </div>
 
       <div class="footer-right">
-        <button type="button" class="btn-next" on:click={goNext}>
+        <Button variant="primary" on:click={goNext}>
           {currentStep === TOTAL_STEPS ? t('onboarding_get_started') : t('onboarding_next')}
-        </button>
+        </Button>
       </div>
     </footer>
   </div>
@@ -255,8 +254,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px) saturate(150%);
+    background-color: var(--scrim);
+    backdrop-filter: blur(6px) saturate(0.9);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -269,9 +268,7 @@
     border-radius: var(--radius-xl);
     width: 90%;
     max-width: 480px;
-    box-shadow:
-      var(--shadow-xl),
-      0 0 40px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-float);
     overflow: hidden;
     transform-origin: center center;
     display: flex;
@@ -419,20 +416,20 @@
   }
 
   .theme-preview-light {
-    background: #F8F6F3;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: var(--swatch-light-surface);
+    border: 1px solid var(--swatch-light-line);
   }
 
   .theme-preview-dark {
-    background: #0F0E11;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--swatch-dark-surface);
+    border: 1px solid var(--swatch-dark-line);
   }
 
   .theme-preview-system {
     flex-direction: row;
     padding: 0;
     gap: 0;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--swatch-light-line);
   }
 
   .preview-half {
@@ -444,11 +441,11 @@
   }
 
   .preview-light {
-    background: #F8F6F3;
+    background: var(--swatch-light-surface);
   }
 
   .preview-dark {
-    background: #0F0E11;
+    background: var(--swatch-dark-surface);
   }
 
   .preview-bar {
@@ -459,12 +456,12 @@
 
   .theme-preview-light .preview-bar,
   .preview-light .preview-bar {
-    background: #D14E35;
+    background: var(--swatch-light-accent);
   }
 
   .theme-preview-dark .preview-bar,
   .preview-dark .preview-bar {
-    background: #E85D42;
+    background: var(--swatch-dark-accent);
   }
 
   .preview-line {
@@ -479,12 +476,12 @@
 
   .theme-preview-light .preview-line,
   .preview-light .preview-line {
-    background: rgba(0, 0, 0, 0.08);
+    background: var(--swatch-light-line);
   }
 
   .theme-preview-dark .preview-line,
   .preview-dark .preview-line {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--swatch-dark-line);
   }
 
   .preview-dot {
@@ -496,11 +493,11 @@
   }
 
   .theme-preview-light .preview-dot {
-    background: rgba(0, 0, 0, 0.12);
+    background: var(--swatch-light-line-strong);
   }
 
   .theme-preview-dark .preview-dot {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--swatch-dark-line-strong);
   }
 
   /* New tab toggle */
@@ -630,57 +627,6 @@
     opacity: 0.4;
   }
 
-  .btn-back {
-    padding: var(--space-2) var(--space-4);
-    background: transparent;
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-lg);
-    color: var(--text-secondary);
-    font-family: var(--font-body);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .btn-back:hover {
-    background: var(--surface-overlay);
-    border-color: var(--border-strong);
-    color: var(--text-primary);
-  }
-
-  .btn-back:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
-  }
-
-  .btn-next {
-    padding: var(--space-2) var(--space-5);
-    background: var(--accent-primary);
-    border: none;
-    border-radius: var(--radius-lg);
-    color: white;
-    font-family: var(--font-body);
-    font-size: var(--text-sm);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .btn-next:hover {
-    filter: brightness(1.1);
-    transform: translateY(-1px);
-  }
-
-  .btn-next:active {
-    transform: translateY(0);
-  }
-
-  .btn-next:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
-  }
-
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .done-icon {
@@ -690,9 +636,6 @@
       transition: transform var(--duration-fast) var(--ease-out);
     }
     .theme-option:hover .theme-preview {
-      transform: none;
-    }
-    .btn-next:hover {
       transform: none;
     }
   }

@@ -10,6 +10,8 @@
   import { settingsStore } from '@/lib/stores/settings';
   import { workspacesStore, collectionsByActiveWorkspace } from '@/lib/stores/workspaces';
   import Toast from '@/shared/components/Toast.svelte';
+  import Button from '@/shared/components/ui/Button.svelte';
+  import IconButton from '@/shared/components/ui/IconButton.svelte';
   import ConfirmDialog from '@/shared/components/ConfirmDialog.svelte';
   import WorkspaceSelect from './components/WorkspaceSelect.svelte';
   import { buildIndex, search } from '@/lib/search/engine';
@@ -209,14 +211,7 @@
         <span class="logo">TabAla</span>
         <span class="badge">{totalLinks}</span>
       </div>
-      <button type="button" class="btn-dashboard" on:click={openDashboard} title={t('popup_open_dashboard')}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="7" height="7"/>
-          <rect x="14" y="3" width="7" height="7"/>
-          <rect x="14" y="14" width="7" height="7"/>
-          <rect x="3" y="14" width="7" height="7"/>
-        </svg>
-      </button>
+      <IconButton icon="board" label={t('popup_open_dashboard')} on:click={openDashboard} />
     </header>
 
     <div class="popup-search">
@@ -234,12 +229,10 @@
       <div class="saved-here" role="status">
         {#if savedHere.completedAt === undefined}
           <span class="saved-here-text">{t('popup_saved_in', collectionName(savedHere))}</span>
-          <button type="button" class="saved-here-action" on:click={() => handleCompleteHere(savedHere)}>
-            ✓ {t('progress_complete')}
-          </button>
+          <Button size="sm" icon="check" on:click={() => handleCompleteHere(savedHere)}>{t('progress_complete')}</Button>
         {:else}
           <span class="saved-here-text">{t('popup_completed_on', shortDate(savedHere.completedAt))}</span>
-          <button type="button" class="saved-here-action" on:click={() => restoreLink(savedHere)}>{t('progress_undo')}</button>
+          <Button size="sm" variant="quiet" on:click={() => restoreLink(savedHere)}>{t('progress_undo')}</Button>
         {/if}
       </div>
     {/if}
@@ -270,18 +263,13 @@
             </select>
           </div>
         </div>
-        <button
-          type="button"
-          class="btn-save"
-          on:click={handleSaveCurrentTab}
-          disabled={isSaving}
-        >
+        <Button variant="primary" on:click={handleSaveCurrentTab} disabled={isSaving}>
           {#if isSaving}
             <span class="mini-spinner"></span>
           {:else}
             {t('common_save')}
           {/if}
-        </button>
+        </Button>
       </div>
     </section>
 
@@ -377,14 +365,7 @@
 
     <!-- Footer -->
     <footer class="footer">
-      <button type="button" class="btn-open-dashboard" on:click={openDashboard}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-          <polyline points="15 3 21 3 21 9"/>
-          <line x1="10" y1="14" x2="21" y2="3"/>
-        </svg>
-        {t('popup_open_full_dashboard')}
-      </button>
+      <Button size="sm" variant="quiet" icon="external" on:click={openDashboard}>{t('popup_open_full_dashboard')}</Button>
     </footer>
   {/if}
 </main>
@@ -483,26 +464,6 @@
     border-radius: var(--radius-full);
   }
 
-  .btn-dashboard {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm);
-    color: var(--text-tertiary);
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .btn-dashboard:hover {
-    background: var(--surface-elevated);
-    color: var(--text-primary);
-  }
-
   /* Save Section */
   .save-section {
     padding: var(--space-3) var(--space-4);
@@ -578,44 +539,16 @@
     color: var(--text-primary);
   }
 
-  .btn-save {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .save-row > :global(button) {
     min-width: 64px;
-    height: 32px;
-    padding: 0 var(--space-3);
-    background: var(--accent-primary);
-    border: none;
-    border-radius: var(--radius-sm);
-    color: white;
-    font-family: var(--font-body);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    cursor: pointer;
     flex-shrink: 0;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .btn-save:hover:not(:disabled) {
-    background: var(--accent-secondary);
-    transform: translateY(-1px);
-  }
-
-  .btn-save:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
-  .btn-save:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
   }
 
   .mini-spinner {
     width: 14px;
     height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
+    border: 2px solid color-mix(in srgb, var(--text-on-accent) 30%, transparent);
+    border-top-color: var(--text-on-accent);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -815,37 +748,8 @@
     border-top: 1px solid var(--border-subtle);
   }
 
-  .btn-open-dashboard {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
+  .footer :global(button) {
     width: 100%;
-    padding: var(--space-3);
-    background: var(--surface-elevated);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    color: var(--text-secondary);
-    font-family: var(--font-body);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .btn-open-dashboard:hover {
-    background: var(--surface-overlay);
-    border-color: var(--border-default);
-    color: var(--text-primary);
-  }
-
-  .btn-open-dashboard svg {
-    color: var(--text-tertiary);
-    transition: color var(--duration-fast) var(--ease-out);
-  }
-
-  .btn-open-dashboard:hover svg {
-    color: var(--accent-primary);
   }
 
   .popup-search {
@@ -932,15 +836,7 @@
     white-space: nowrap;
   }
 
-  .saved-here-action {
+  .saved-here > :global(button) {
     flex-shrink: 0;
-    padding: var(--space-1) var(--space-2);
-    border: 1px solid var(--accent-primary);
-    border-radius: var(--radius-md);
-    background: var(--accent-soft);
-    color: var(--accent-primary);
-    font-family: var(--font-body);
-    font-size: var(--text-xs);
-    cursor: pointer;
   }
 </style>

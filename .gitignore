@@ -17,6 +17,7 @@ node_modules/
 # Arquivos gerados durante o processo de build - podem ser recriados
 # ==============================================================================
 dist/
+.preview/
 build/
 .output/
 

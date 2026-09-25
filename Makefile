@@ -8,7 +8,7 @@
 .DEFAULT_GOAL := help
 
 # Evita conflitos com arquivos de mesmo nome
-.PHONY: help dev dev-detached build test test-watch test-ui test-coverage lint lint-fix shell lockfile clean stop
+.PHONY: help dev dev-detached build test test-watch test-ui test-coverage lint lint-fix shell lockfile clean stop preview preview-stop
 
 # =============================================================================
 # Help
@@ -73,6 +73,18 @@ test-coverage:
 	@echo "\033[32m>>> Gerando relatório de cobertura...\033[0m"
 	docker compose run --rm app npm run test:coverage
 	@echo "\033[32m>>> Relatório disponível em coverage/index.html\033[0m"
+
+## preview: Builda em .preview/ (fora do dist/) e serve na porta 4173 com dados fictícios
+preview:
+	@echo "\033[32m>>> Build da prévia em .preview/...\033[0m"
+	docker compose run --rm app npx vite build --outDir .preview --emptyOutDir
+	-@docker rm -f tabala-preview >/dev/null 2>&1
+	docker run --rm -d --cpus 1 --memory 256m -p 4173:4173 -v "$(CURDIR)/.preview:/srv:ro" -w /srv --name tabala-preview python:3.12-slim python -m http.server 4173
+	@echo "\033[32m>>> Prévia em http://localhost:4173/src/newtab/index.html (injete scripts/preview/chrome-stub.js)\033[0m"
+
+## preview-stop: Para o servidor da prévia
+preview-stop:
+	-docker rm -f tabala-preview
 
 # =============================================================================
 # Linting

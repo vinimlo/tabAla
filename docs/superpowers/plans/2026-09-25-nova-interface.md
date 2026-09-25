@@ -9578,7 +9578,8 @@ In that copy (and, with the same edits, in the working-tree `CLAUDE.md`):
 - **Interface**: tokens em src/shared/styles/tokens.css (cor por papel: coral = ação principal, verde = concluído, âmbar = triagem); fonte Instrument Sans local em public/fonts (recorte por scripts/fonts/subset-instrument-sans.sh); primitivas em src/shared/components/ui (Button, IconButton, Icon, Kbd, Menu, LinkTile, Segmented, ProgressRing). Cor literal em componente não passa em src/test/styles/literal-colors.test.ts. Para ver telas fora do Chrome: `make preview` (nunca `vite preview`/`vite dev`, que apagam o dist/)
 ```
 
-. Under "Anti-Patterns", change `- **Evitar** bundle grande - manter extensão leve (<500KB)` to `- **Evitar** bundle grande - manter extensão leve (<560KB; `du -sb dist` ≤ 573440)`: the user raised the ceiling on 2026-09-25.
+4. Under "Comandos", add after `make build`: `make preview        # Builda em .preview/ e serve as telas na porta 4173 (ver scripts/preview/README.md)`.
+5. Under "Anti-Patterns", change `- **Evitar** bundle grande - manter extensão leve (<500KB)` to `- **Evitar** bundle grande - manter extensão leve (<560KB; `du -sb dist` ≤ 573440)`: the user raised the ceiling on 2026-09-25.
 
 Then:
 

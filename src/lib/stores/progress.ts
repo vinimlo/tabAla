@@ -42,8 +42,13 @@ export async function undoDiscard(link: Link): Promise<void> {
   await linksStore.reinsertLink(link);
 }
 
+/** Never throws: a link must open even when its open cannot be recorded. */
 export async function recordOpen(link: Link, now = Date.now()): Promise<void> {
-  await activityStore.record(link.id, 'open', now);
+  try {
+    await activityStore.record(link.id, 'open', now);
+  } catch (error) {
+    console.error('Failed to record an open:', error);
+  }
 }
 
 export async function setCollectionReference(collection: Collection, value: boolean): Promise<void> {

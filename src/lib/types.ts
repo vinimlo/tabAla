@@ -186,6 +186,8 @@ export interface LinkActivity {
   shownDays: string[];
   /** When leaving the strip after 3 days was counted; cleared with shownDays. */
   skippedAt?: number;
+  /** Local day (AAAA-MM-DD) the link last counted in recoStats.shown; survives actions, so a link counts once a day. */
+  countedDay?: string;
   /** Times snoozed; cleared on complete and on "still worth it". */
   snoozes: number;
   /** Phase 2: accumulated active time, in ms. */

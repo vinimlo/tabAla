@@ -212,7 +212,8 @@ describe('App Component', () => {
     const saved = createMockLink({ id: 'saved', url: 'https://saved.example/post', title: 'Saved post', collectionId: 'inbox' });
 
     async function renderOn(links: Link[]): Promise<void> {
-      chromeMock.tabs.query.mockResolvedValue([{ url: 'https://saved.example/post', title: 'Saved post' }]);
+      // The shared mock is typed from its default `[]` (never[]).
+      chromeMock.tabs.query.mockResolvedValue([{ url: 'https://saved.example/post', title: 'Saved post' }] as never[]);
       setStoreState({});
       render(App);
       await waitFor(() => expect(chromeMock.tabs.query).toHaveBeenCalled());

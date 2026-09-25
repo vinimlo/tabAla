@@ -119,6 +119,14 @@ describe('recordShown', () => {
     expect((await getRecoStats())[week]).toMatchObject({ shown: 2, queue: 7 });
   });
 
+  it('counts a link as shown once per day, even after acting on it and seeing it again', async () => {
+    await recordShown(['l1'], [], 7, now);
+    await recordAction('l1', 'open', now);
+    await recordShown(['l1'], [], 7, now + 60_000);
+
+    expect((await getRecoStats())[week]).toMatchObject({ shown: 1, acted: 1 });
+  });
+
   it('writes nothing when nothing changed', async () => {
     await recordShown(['l1'], [], 7, now);
     const writes = chromeMock.storage.local.set.mock.calls.length;

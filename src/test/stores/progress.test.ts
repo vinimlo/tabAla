@@ -100,6 +100,16 @@ describe('progress actions', () => {
     expect(storage.recordAction).toHaveBeenCalledWith('l1', 'open', 1000);
   });
 
+  it('a failure to record an open never stops the link from opening', async () => {
+    vi.mocked(storage.recordAction).mockRejectedValueOnce(new Error('quota'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(recordOpen(link, 1000)).resolves.toBeUndefined();
+
+    expect(log).toHaveBeenCalled();
+    log.mockRestore();
+  });
+
   it('collection flags are present or absent, never false', async () => {
     await setCollectionFocus(collection, true);
     await setCollectionReference(collection, false);

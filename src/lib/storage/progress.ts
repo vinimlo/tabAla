@@ -133,11 +133,16 @@ export async function recordShown(shownIds: string[], skippedIds: string[], queu
     const next: Activity = { ...activity };
     let shown = 0;
     let skipped = 0;
+    let changed = false;
     for (const id of shownIds) {
       const current = next[id] ?? EMPTY_ACTIVITY;
       if (!current.shownDays.includes(today)) {
-        next[id] = { ...current, shownDays: addDay(current.shownDays, today) };
-        shown += 1;
+        next[id] = { ...current, shownDays: addDay(current.shownDays, today), countedDay: today };
+        changed = true;
+        // An action clears shownDays; the day is counted only once all the same.
+        if (current.countedDay !== today) {
+          shown += 1;
+        }
       }
     }
     for (const id of skippedIds) {
@@ -145,14 +150,15 @@ export async function recordShown(shownIds: string[], skippedIds: string[], queu
       if (current.skippedAt === undefined) {
         next[id] = { ...current, skippedAt: now };
         skipped += 1;
+        changed = true;
       }
     }
     const queueChanged = stats[isoWeek(now)]?.queue !== queueSize;
-    if (shown === 0 && skipped === 0 && !queueChanged) {
+    if (!changed && !queueChanged) {
       return;
     }
     const recoStats = bump(stats, now, { shown, skipped, queue: queueSize });
-    await storage.setBatch(shown > 0 || skipped > 0 ? { activity: next, recoStats } : { recoStats });
+    await storage.setBatch(changed ? { activity: next, recoStats } : { recoStats });
   });
 }
 

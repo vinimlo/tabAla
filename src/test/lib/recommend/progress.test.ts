@@ -2,7 +2,7 @@
  * Numbers of the Focus space.
  */
 import { describe, it, expect } from 'vitest';
-import { completedByWeek, completedHistory, previousQueue } from '@/lib/recommend/progress';
+import { completedByWeek, completedHistory, completedThisWeek, previousQueue, weekDots } from '@/lib/recommend/progress';
 import { EMPTY_WEEK } from '@/lib/types';
 import { createMockLink } from '../../factories';
 
@@ -38,5 +38,35 @@ describe('Focus numbers', () => {
       ['2026-W02', ['d']],
     ]);
     expect(history[0].start).toBe(new Date(2026, 8, 21).getTime());
+  });
+});
+describe('weekDots', () => {
+  // Thursday, 2026-09-24.
+  const now = new Date(2026, 8, 24, 15).getTime();
+
+  it('lists Monday to Sunday, marking the days with a completion and today', () => {
+    const links = [
+      createMockLink({ id: 'mon', completedAt: new Date(2026, 8, 21, 9).getTime() }),
+      createMockLink({ id: 'thu', completedAt: new Date(2026, 8, 24, 8).getTime() }),
+      createMockLink({ id: 'last-week', completedAt: new Date(2026, 8, 18, 9).getTime() }),
+      createMockLink({ id: 'pending' }),
+    ];
+
+    const dots = weekDots(links, now);
+
+    expect(dots.map((dot) => dot.day)).toEqual([
+      '2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27',
+    ]);
+    expect(dots.map((dot) => dot.done)).toEqual([true, false, false, true, false, false, false]);
+    expect(dots.map((dot) => dot.today)).toEqual([false, false, false, true, false, false, false]);
+  });
+
+  it('counts the completions of this week', () => {
+    const links = [
+      createMockLink({ id: 'a', completedAt: new Date(2026, 8, 21, 9).getTime() }),
+      createMockLink({ id: 'b', completedAt: new Date(2026, 8, 24, 8).getTime() }),
+      createMockLink({ id: 'c', completedAt: new Date(2026, 8, 20, 23).getTime() }),
+    ];
+    expect(completedThisWeek(links, now)).toBe(2);
   });
 });

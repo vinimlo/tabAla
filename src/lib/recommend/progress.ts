@@ -2,7 +2,7 @@
  * Numbers of the Focus space: completions per week and the history.
  */
 import type { Link, RecoStats } from '@/lib/types';
-import { addDays, isoWeek, weekStart } from './dates';
+import { addDays, dayKey, isoWeek, weekStart } from './dates';
 
 export interface WeekBar {
   week: string;
@@ -57,4 +57,28 @@ export function completedHistory(links: Link[]): CompletedWeek[] {
     }
   }
   return groups;
+}
+
+export interface WeekDot {
+  /** Local day, AAAA-MM-DD. */
+  day: string;
+  done: boolean;
+  today: boolean;
+}
+
+/** Monday to Sunday of this week, marking the days with at least one completion. */
+export function weekDots(links: Link[], now: number): WeekDot[] {
+  const start = weekStart(now);
+  const today = dayKey(now);
+  const doneDays = new Set(links.flatMap((link) => (link.completedAt === undefined ? [] : [dayKey(link.completedAt)])));
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = dayKey(addDays(start, i));
+    return { day, done: doneDays.has(day), today: day === today };
+  });
+}
+
+/** Links completed since this week's Monday. */
+export function completedThisWeek(links: Link[], now: number): number {
+  const start = weekStart(now);
+  return links.filter((link) => link.completedAt !== undefined && link.completedAt >= start).length;
 }

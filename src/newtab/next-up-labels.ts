@@ -4,12 +4,7 @@ import type { Collection, Workspace } from '@/lib/types';
 import type { Reason, SlotRole } from '@/lib/recommend/engine';
 import type { LinkAction } from '@/lib/recommend/effort';
 import type { TriageReason } from '@/lib/recommend/triage';
-
-export const ROLE_KEYS: Record<SlotRole, string> = {
-  continue: 'nextup_role_continue',
-  advance: 'nextup_role_advance',
-  revive: 'nextup_role_revive',
-};
+import type { TimeLeft } from '@/lib/recommend/time';
 
 export const ACTION_KEYS: Record<LinkAction, string> = {
   watch: 'action_watch',
@@ -49,6 +44,49 @@ export function reasonText(reason: Reason): string {
     case 'spent':
       return t('reason_spent', reason.minutes);
   }
+}
+
+export const CONTEXT_KEYS: Record<SlotRole, string> = {
+  continue: 'now_context_continue',
+  advance: 'now_context_advance',
+  revive: 'now_context_revive',
+};
+
+/** The main button of a link already started. */
+export const CONTINUE_KEYS: Record<LinkAction, string> = {
+  watch: 'now_continue_watch',
+  read: 'now_continue_read',
+  explore: 'now_continue_explore',
+  solve: 'now_continue_solve',
+  review: 'now_continue_review',
+  resume: 'now_continue_resume',
+  searchAgain: 'now_continue_search_again',
+  open: 'now_continue_open',
+};
+
+/** The main button of a link not started yet. */
+export const DO_NOW_KEYS: Record<LinkAction, string> = {
+  watch: 'now_do_watch',
+  read: 'now_do_read',
+  explore: 'now_do_explore',
+  solve: 'now_do_solve',
+  review: 'now_do_review',
+  resume: 'now_do_resume',
+  searchAgain: 'now_do_search_again',
+  open: 'now_do_open',
+};
+
+/** "~20 min", "faltam uns 2 min" or "31 min até agora". */
+export function timeText(time: TimeLeft): string {
+  if (time.kind === 'left') {
+    return t('now_time_left', time.minutes);
+  }
+  return time.kind === 'over' ? t('now_time_over', time.minutes) : t('nextup_effort', time.minutes);
+}
+
+/** Under the ring: "18 de ~20 min", or the estimate when nothing was spent. */
+export function ringCaption(time: TimeLeft, effort: number): string {
+  return time.spent > 0 ? t('now_ring_spent', time.spent, effort) : t('nextup_effort', effort);
 }
 
 export function effortText(minutes: number): string {

@@ -4,7 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { ACTION_KEYS, ROLE_KEYS, TRIAGE_KEYS } from '@/newtab/next-up-labels';
+import { ACTION_KEYS, CONTEXT_KEYS, CONTINUE_KEYS, DO_NOW_KEYS, TRIAGE_KEYS } from '@/newtab/next-up-labels';
 import { KIND_LABEL_KEYS } from '@/lib/search/labels';
 
 type Messages = Record<string, { message: string }>;
@@ -42,7 +42,7 @@ describe('locales', () => {
         keys.add(match[2]);
       }
     }
-    for (const map of [ACTION_KEYS, ROLE_KEYS, TRIAGE_KEYS, KIND_LABEL_KEYS]) {
+    for (const map of [ACTION_KEYS, CONTEXT_KEYS, CONTINUE_KEYS, DO_NOW_KEYS, TRIAGE_KEYS, KIND_LABEL_KEYS]) {
       for (const key of Object.values(map)) {
         keys.add(key);
       }

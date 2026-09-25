@@ -27,7 +27,8 @@ export default defineConfig(({ mode }) => ({
       },
     },
     {
-      // The locale files ship minified: same messages, about 12 KB less (spec §17, 500 KB budget).
+      // The locale files ship minified, without the placeholders no message names
+      // ($1 is substituted directly): same messages, about 18 KB less (500 KB budget).
       name: 'minify-locales',
       apply: 'build' as const,
       configResolved(config: { build: { outDir: string }; root: string }) {
@@ -39,9 +40,15 @@ export default defineConfig(({ mode }) => ({
         }
         for (const locale of fs.readdirSync(localesOutDir)) {
           const file = path.join(localesOutDir, locale, 'messages.json');
-          if (fs.existsSync(file)) {
-            fs.writeFileSync(file, JSON.stringify(JSON.parse(fs.readFileSync(file, 'utf8'))));
+          if (!fs.existsSync(file)) {
+            continue;
           }
+          const messages = JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, { message: string; placeholders?: Record<string, unknown> }>;
+          const slim = Object.fromEntries(Object.entries(messages).map(([key, entry]) => {
+            const named = Object.keys(entry.placeholders ?? {}).some((name) => entry.message.toLowerCase().includes(`$${name.toLowerCase()}$`));
+            return [key, named ? entry : { message: entry.message }];
+          }));
+          fs.writeFileSync(file, JSON.stringify(slim));
         }
       },
     },

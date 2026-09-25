@@ -26,7 +26,7 @@
   import { dashboardShortcut } from './shortcuts';
   import { revealLink, workspaceForLink } from './reveal';
   import { createQueryTranslator, getTranslationAvailability } from '@/lib/ai/translator';
-  import NextUpStrip from './components/NextUpStrip.svelte';
+  import NowSection from './components/NowSection.svelte';
   import FocusView from './components/FocusView.svelte';
   import { activityStore } from '@/lib/stores/activity';
   import * as progress from '@/lib/stores/progress';
@@ -127,6 +127,7 @@
   });
 
   onDestroy(() => {
+    clearTimeout(justCompletedTimer);
     document.removeEventListener('visibilitychange', refreshDay);
     clearInterval(dayTimer);
   });
@@ -269,6 +270,23 @@
   /** The last discarded link, while its toast offers Undo. */
   let lastDiscarded: Link | null = null;
 
+  /** The link just completed from Now, while its Undo row shows. */
+  let justCompleted: Link | null = null;
+  let justCompletedTimer: ReturnType<typeof setTimeout> | undefined;
+
+  async function handleNowComplete(event: CustomEvent<Link>): Promise<void> {
+    await progress.completeLink(event.detail);
+    justCompleted = event.detail;
+    clearTimeout(justCompletedTimer);
+    justCompletedTimer = setTimeout(() => (justCompleted = null), 10_000);
+  }
+
+  async function handleUndoComplete(event: CustomEvent<Link>): Promise<void> {
+    clearTimeout(justCompletedTimer);
+    justCompleted = null;
+    await progress.restoreLink(event.detail);
+  }
+
   async function handleDiscard(event: CustomEvent<Link>): Promise<void> {
     await progress.discardLink(event.detail);
     lastDiscarded = event.detail;
@@ -402,17 +420,21 @@
         />
       {:else}
         {#if $settingsStore.settings.showNextUp}
-          <NextUpStrip
+          <NowSection
             {queue}
-            workspaces={$workspacesStore.workspaces}
+            links={$linksStore.links}
+            activity={$activityStore.activity}
+            {now}
             collapsed={$settingsStore.settings.nextUpCollapsed}
+            {justCompleted}
             on:open={handleOpen}
-            on:complete={handleComplete}
+            on:complete={handleNowComplete}
             on:snooze={handleSnooze}
             on:reference={handleMarkReference}
             on:discard={handleDiscard}
             on:reveal={handleReveal}
             on:dismissAsk={handleDismissAsk}
+            on:undo={handleUndoComplete}
             on:toggleCollapsed={() => settingsStore.setNextUpCollapsed(!$settingsStore.settings.nextUpCollapsed)}
             on:openTriage={() => openFocus('triage')}
             on:openFocus={() => openFocus(null)}

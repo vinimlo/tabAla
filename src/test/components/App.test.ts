@@ -250,6 +250,16 @@ describe('App Component', () => {
       expect(vi.mocked(storage.patchLinkState).mock.calls[0][0]).toBe('saved');
     });
 
+    it('recognizes the page through tracking parameters and fragments', async () => {
+      chromeMock.tabs.query.mockResolvedValue([{ url: 'https://saved.example/post?utm_source=news#top', title: 'Saved post' }] as never[]);
+      setStoreState({});
+      render(App);
+      await waitFor(() => expect(chromeMock.tabs.query).toHaveBeenCalled());
+      await act(() => setStoreState({ links: [saved] }));
+
+      expect(await screen.findByText('popup_saved_in')).toBeInTheDocument();
+    });
+
     it('undo brings back the copy that was just completed', async () => {
       await renderOn([{ ...saved, id: 'old-copy', completedAt: 1 }, saved]);
 

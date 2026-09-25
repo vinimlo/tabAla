@@ -17,6 +17,7 @@
   import { createQueryTranslator } from '@/lib/ai/translator';
   import { completeLink, recordOpen, restoreLink } from '@/lib/stores/progress';
   import { shortDate } from '@/lib/recommend/dates';
+  import { sameUrl } from '@/lib/url-match';
 
   let mounted = false;
   let selectedCollectionId = INBOX_COLLECTION_ID;
@@ -38,7 +39,7 @@
     if (url === null) {
       return undefined;
     }
-    const matches = links.filter((link) => link.url === url);
+    const matches = links.filter((link) => sameUrl(link.url, url));
     const pending = matches.find((link) => link.completedAt === undefined);
     if (pending !== undefined) {
       return pending;

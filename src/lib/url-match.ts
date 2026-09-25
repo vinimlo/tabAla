@@ -37,7 +37,10 @@ export function normalizeUrl(url: string): string | null {
       && !(key === 's' && SHARE_PARAM_HOSTS.has(hostname)))
     .sort(([a, av], [b, bv]) => a.localeCompare(b) || av.localeCompare(bv));
   const query = params.length === 0 ? '' : `?${new URLSearchParams(params).toString()}`;
-  return `${host}${path}${query}`;
+  // A fragment that looks like an app route (#/x, #!x, #inbox/thread) names a
+  // different page; a plain anchor (#section) does not.
+  const route = /^#[/!]|\//.test(parsed.hash) ? parsed.hash : '';
+  return `${host}${path}${query}${route}`;
 }
 
 export function sameUrl(a: string, b: string): boolean {

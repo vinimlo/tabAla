@@ -18,6 +18,10 @@ describe('normalizeUrl', () => {
     ['https://m.youtube.com/watch?v=abc', 'youtube.com/watch?v=abc'],
     ['https://youtu.be/abc?si=xyz', 'youtube.com/watch?v=abc'],
     ['file:///Users/me/notes.html', 'file:///Users/me/notes.html'],
+    ['https://mail.google.com/mail/u/0/#inbox/FMfcgz', 'mail.google.com/mail/u/0#inbox/FMfcgz'],
+    ['https://mail.google.com/mail/u/0/#inbox', 'mail.google.com/mail/u/0'],
+    ['https://petstore.swagger.io/#/pet/addPet', 'petstore.swagger.io/#/pet/addPet'],
+    ['https://example.com/app#!/items', 'example.com/app#!/items'],
     ['chrome://newtab/', null],
     ['not a url', null],
   ])('%s -> %s', (url, expected) => {

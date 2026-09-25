@@ -6,6 +6,7 @@
   export let value: string | number | null = null;
 
   const dispatch = createEventDispatcher<{ change: string | number }>();
+  const buttons: HTMLButtonElement[] = [];
 
   function handleKeydown(event: KeyboardEvent, index: number): void {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
@@ -13,13 +14,17 @@
       return;
     }
     event.preventDefault();
-    dispatch('change', options[(index + step + options.length) % options.length].value);
+    const next = (index + step + options.length) % options.length;
+    dispatch('change', options[next].value);
+    // Roving focus: the checked radio is the one that holds it.
+    buttons[next].focus();
   }
 </script>
 
 <div class="segmented" role="radiogroup" aria-label={label}>
   {#each options as option, index (option.value)}
     <button
+      bind:this={buttons[index]}
       type="button"
       role="radio"
       aria-checked={option.value === value}

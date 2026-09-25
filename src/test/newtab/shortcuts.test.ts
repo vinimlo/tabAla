@@ -47,4 +47,14 @@ describe('dashboardShortcut', () => {
   ] as const)('%s -> %s', (_label, expected, layerOpen, event) => {
     expect(dashboardShortcut(event, layerOpen)).toBe(expected);
   });
+
+  it.each([
+    ['f does not switch the page behind a modal', null, keydown({ key: 'f' })],
+    ['t does not open the tabs behind a modal', null, keydown({ key: 't' })],
+    ['n does not stack another modal', null, keydown({ key: 'n' })],
+    ['Cmd+K does not open the palette over a modal', null, keydown({ key: 'k', metaKey: true })],
+    ['Esc still closes the modal', 'closeAll', keydown({ key: 'Escape' })],
+  ] as const)('with a modal or menu open: %s -> %s', (_label, expected, event) => {
+    expect(dashboardShortcut(event, false, true)).toBe(expected);
+  });
 });

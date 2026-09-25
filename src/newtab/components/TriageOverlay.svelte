@@ -75,6 +75,13 @@
     decidedIds = new Set([...decidedIds, link.id]);
     counts = { ...counts, [decision]: counts[decision] + 1 };
     dispatch(decision, link);
+    void focusFirst();
+  }
+
+  /** The decided card leaves the page; the focus goes to the next one, or to Close at the end. */
+  async function focusFirst(): Promise<void> {
+    await tick();
+    root.querySelector<HTMLElement>('.decision, .finished button')?.focus();
   }
 
   function open(item: TriageItem): void {
@@ -106,10 +113,7 @@
     }
   }
 
-  onMount(async () => {
-    await tick();
-    root.querySelector<HTMLElement>('.decision, .finished button')?.focus();
-  });
+  onMount(focusFirst);
 </script>
 
 <svelte:window on:keydown={handleKeydown} />

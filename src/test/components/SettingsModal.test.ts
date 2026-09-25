@@ -22,6 +22,18 @@ describe('SettingsModal', () => {
     settingsStore.set({ settings: { ...DEFAULT_SETTINGS }, loading: false, error: null, pendingLocalUpdate: false });
   });
 
+  it('lists every dashboard shortcut, with no text outside the locales', () => {
+    const { container } = render(SettingsModal);
+    const list = container.querySelector('.shortcuts-list') as HTMLElement;
+
+    for (const label of ['settings_shortcut_search', 'settings_shortcut_new_collection', 'focus_open', 'tabs_sidebar_title', 'settings_shortcut_close_modal']) {
+      expect(list).toHaveTextContent(label);
+    }
+    expect(list).toHaveTextContent('common_or');
+    expect(list).not.toHaveTextContent(/\bou\b/);
+    expect([...list.querySelectorAll('kbd')].map((kbd) => kbd.textContent)).toEqual(['/', 'Ctrl', 'K', 'N', 'F', 'T', 'Esc']);
+  });
+
   it('turns the next up strip off', async () => {
     render(SettingsModal);
 

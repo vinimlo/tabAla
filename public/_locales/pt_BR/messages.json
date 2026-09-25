@@ -1577,5 +1577,9 @@
         "content": "$2"
       }
     }
+  },
+
+  "common_or": {
+    "message": "ou"
   }
 }

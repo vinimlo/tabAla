@@ -3,6 +3,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import TriageOverlay from '@/newtab/components/TriageOverlay.svelte';
 import { buildTriage } from '@/lib/recommend/triage';
 import { createMockCollection, createMockLink } from '../factories';
@@ -102,6 +103,16 @@ describe('TriageOverlay', () => {
 
     expect(open.mock.calls[0][0].detail).toEqual({ link: older, newTab: true });
     expect(discard.mock.calls[0][0].detail.id).toBe('older');
+  });
+
+  it('moves the focus to Close when the last link is decided, so Enter ends it', async () => {
+    render(TriageOverlay, { props: { items } });
+
+    await fireEvent.keyDown(window, { key: '1' });
+    await fireEvent.keyDown(window, { key: '1' });
+    await tick();
+
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'common_close' }));
   });
 
   it('sums up the decisions at the end', async () => {

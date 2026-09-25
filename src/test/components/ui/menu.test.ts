@@ -76,14 +76,16 @@ describe('Segmented', () => {
     expect(change.mock.calls[0][0].detail).toBe(60);
   });
 
-  it('moves with the arrow keys', async () => {
+  it('moves with the arrow keys, and the focus follows the choice', async () => {
     const change = vi.fn();
     render(Segmented, { props: { label: 'Tempo', options, value: 30 }, events: { change } });
+    screen.getByRole('radio', { name: '30 min' }).focus();
 
-    await fireEvent.keyDown(screen.getByRole('radio', { name: '30 min' }), { key: 'ArrowRight' });
-    await fireEvent.keyDown(screen.getByRole('radio', { name: '30 min' }), { key: 'ArrowLeft' });
+    await fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(screen.getByRole('radio', { name: '60 min' }));
+    await fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowLeft' });
 
-    expect(change.mock.calls.map((call) => (call[0] as CustomEvent<number>).detail)).toEqual([60, 15]);
+    expect(change.mock.calls.map((call) => (call[0] as CustomEvent<number>).detail)).toEqual([60, 30]);
   });
 
   it('lets the first option take the focus when nothing is chosen', () => {

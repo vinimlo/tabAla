@@ -429,7 +429,8 @@
   function handleKeydown(event: KeyboardEvent): void {
     if (showOnboarding) { return; }
 
-    const action = dashboardShortcut(event, showSearch || showTriage);
+    const modalOpen = document.querySelector('[role="dialog"], [role="menu"]') !== null;
+    const action = dashboardShortcut(event, showSearch || showTriage, modalOpen);
     if (action === 'closeAll') {
       showSettings = false;
       showCreateCollection = false;

@@ -274,4 +274,19 @@ describe('CommandPalette: acting on a link', () => {
 
     expect((detailOf(handlers.discard) as { id: string }).id).toBe('video');
   });
+
+  it('in a narrow window, gives the focus back to the field after the menu', async () => {
+    const { input } = setup({ wide: false });
+    await type(input, 'hermes');
+
+    await fireEvent.keyDown(input, { key: 'ArrowRight' });
+    await fireEvent.keyDown(await screen.findByRole('menu'), { key: 'Escape' });
+    await tick();
+    expect(document.activeElement).toBe(input);
+
+    await fireEvent.keyDown(input, { key: 'ArrowRight' });
+    await fireEvent.click(await screen.findByRole('menuitem', { name: 'progress_discard' }));
+    await tick();
+    expect(document.activeElement).toBe(input);
+  });
 });

@@ -199,9 +199,17 @@
     activeIndex = 0;
   }
 
+  /** The narrow ⋯ menu gives the keys back to the field when it closes. */
+  function closeNarrowMenu(): void {
+    narrowMenu = false;
+    void tick().then(() => input.focus());
+  }
+
   function run(id: PaletteActionId, link: Link): void {
     zone = 'list';
-    narrowMenu = false;
+    if (narrowMenu) {
+      closeNarrowMenu();
+    }
     if (id === 'open') {
       dispatch('open', link);
     } else if (id === 'complete') {
@@ -394,7 +402,7 @@
                       <span class="row-more" bind:this={menuAnchor}>
                         <IconButton icon="more" size="sm" label={t('progress_more')} expanded={narrowMenu} on:click={() => (narrowMenu = !narrowMenu)} />
                         {#if narrowMenu}
-                          <Menu label={t('progress_more')} align="end" anchor={menuAnchor} on:close={() => (narrowMenu = false)}>
+                          <Menu label={t('progress_more')} align="end" anchor={menuAnchor} on:close={closeNarrowMenu}>
                             {#each actions as action (action.id)}
                               <MenuItem icon={action.icon} danger={action.danger === true} on:select={() => run(action.id, entry.link)}>{action.label}</MenuItem>
                             {/each}

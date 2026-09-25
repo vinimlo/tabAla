@@ -1,6 +1,8 @@
 <script lang="ts">
   import Button from '@/shared/components/ui/Button.svelte';
   import IconButton from '@/shared/components/ui/IconButton.svelte';
+  import Kbd from '@/shared/components/ui/Kbd.svelte';
+  import { modLabel } from '@/shared/platform';
   import { createEventDispatcher, onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import { t } from '@lib/i18n';
@@ -403,15 +405,23 @@
         <h3>{t('settings_keyboard_shortcuts')}</h3>
         <div class="shortcuts-list">
           <div class="shortcut">
-            <kbd>/</kbd> ou <kbd>Ctrl+K</kbd>
+            <Kbd>/</Kbd> {t('common_or')} <Kbd>{modLabel()}</Kbd><Kbd>K</Kbd>
             <span>{t('settings_shortcut_search')}</span>
           </div>
           <div class="shortcut">
-            <kbd>N</kbd>
+            <Kbd>N</Kbd>
             <span>{t('settings_shortcut_new_collection')}</span>
           </div>
           <div class="shortcut">
-            <kbd>Esc</kbd>
+            <Kbd>F</Kbd>
+            <span>{t('focus_open')}</span>
+          </div>
+          <div class="shortcut">
+            <Kbd>T</Kbd>
+            <span>{t('tabs_sidebar_title')}</span>
+          </div>
+          <div class="shortcut">
+            <Kbd>Esc</Kbd>
             <span>{t('settings_shortcut_close_modal')}</span>
           </div>
         </div>
@@ -544,11 +554,9 @@
   .setting-section h3 {
     margin: 0 0 var(--space-3);
     font-family: var(--font-body);
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    color: var(--text-primary);
   }
 
   .theme-selector {
@@ -792,11 +800,9 @@
   .setting-info-section h3 {
     margin: 0 0 var(--space-4);
     font-family: var(--font-body);
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    color: var(--text-primary);
   }
 
   .shortcuts-list {
@@ -817,22 +823,6 @@
   .shortcut span {
     margin-left: auto;
     color: var(--text-tertiary);
-  }
-
-  kbd {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 28px;
-    padding: 4px 8px;
-    background: var(--surface-subtle);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-sm);
-    font-family: var(--font-mono);
-    font-size: var(--text-xs);
-    font-weight: 500;
-    color: var(--text-primary);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
   /* Reduced motion */

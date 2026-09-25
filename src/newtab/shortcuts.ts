@@ -24,11 +24,15 @@ export type DashboardAction =
 
 /**
  * Dashboard keyboard shortcuts. While a layer (search, triage) is open only
- * Esc acts, closing it, so single-letter shortcuts never fire under it.
+ * Esc acts, closing it, so single-letter shortcuts never fire under it. The
+ * same holds under a modal or an open menu, where Esc closes the modals.
  */
-export function dashboardShortcut(event: KeyboardEvent, layerOpen: boolean): DashboardAction {
+export function dashboardShortcut(event: KeyboardEvent, layerOpen: boolean, modalOpen = false): DashboardAction {
   if (layerOpen) {
     return event.key === 'Escape' ? 'closeLayer' : null;
+  }
+  if (modalOpen) {
+    return event.key === 'Escape' ? 'closeAll' : null;
   }
   if (opensSearch(event)) {
     return 'openSearch';

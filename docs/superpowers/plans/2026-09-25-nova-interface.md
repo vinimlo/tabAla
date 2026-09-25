@@ -9632,3 +9632,66 @@ Put in the final message, for Chrome after "Recarregar" in `chrome://extensions`
 5. "Triar N links parados": decide with 1–4; Esc closes.
 6. F opens Focus; choose 15 min, "Começar sessão"; open a second new tab: the pill and "1 de N na sessão" are there too.
 7. Settings → "Apagar dados de uso": the session pill disappears.
+
+---
+
+## Execution record (2026-09-25)
+
+All 15 tasks done on `feat/nova-interface`, then a whole-branch review by a fresh reviewer (no Critical, 3 Important, 9 Minor) and one fix pass (`73a2916`). Final gates: 938 tests passing, lint at the 10 old dialog errors, `du -sb dist` = 538 216 of 573 440.
+
+### Rulings made during execution
+
+- Setup: Ruling: executing on branch feat/nova-interface in the main working tree, not a worktree — same as phases 1–2 of Próximos passos, and the other sessions' uncommitted files (Dockerfile, docker-compose.yml, release.yml, CLAUDE.md hunks, entrypoint.dev.sh, .serena/, AGENTS.md) stay untouched and never staged — cost if wrong: none beyond care when staging.
+- Task 1: Ruling: keys.mjs remove left a blank line before the closing brace (plan regex kept the captured whitespace) — changed to /,?\s*
+- Task 2: Ruling: the plan's new newtab/app.css head dropped --sidebar-collapsed-width, still used by TabsSidebar until Task 5 — kept it in app.css; Task 5 deletes it with the collapsed column — cost if wrong: one stray variable.
+- Task 3: Ruling: the plan's Button test expected a synthetic click on a disabled button to be ignored; per the HTML spec only user-initiated clicks are blocked, jsdom dispatches fireEvent clicks — the test now asserts toBeDisabled(), the guarantee a person gets — cost if wrong: none, the browser blocks real clicks.
+- Task 4: Ruling: menu.test.ts mapped mock calls to .detail on any (no-unsafe-return lint error) — typed as CustomEvent<number>; later mock maps follow the same pattern — cost if wrong: none.
+- Task 5: Ruling: removing boardLinks left `$: links` in App.svelte without readers, which crashed ESLint's no-unused-vars on a reactive declaration — deleted the declaration — cost if wrong: none.
+- Task 5: Ruling: AppHeader grid squeezed at 1024 px with the tabs panel open (summary wrapped per word, search over the button) — side columns now shrink with ellipsis and the search takes a minmax(220px, 520px) middle — cost if wrong: header layout only.
+- Task 6: Ruling: keys.mjs `set` used a replacement string, so a new message with $1 got the capture group ("Adiado até ,") — now a replacer function; Task 5's set values had no $ and were correct — cost if wrong: none.
+- Task 6: Ruling: LinkCard tests selected the removed .link-favicon wrapper; the favicon now lives in LinkTile (.tile) — selectors updated, same assertions; also kept a test that reference still shows without meta (the old reference/snooze test's coverage) — cost if wrong: none.
+- Task 6: Ruling: `$: metaOf = (link) => …` trips svelte/no-reactive-functions (and crashes its fixer) — App computes `cardMetas` (Map) reactively and passes `metaOf={(link) => cardMetas.get(link.id) ?? null}`; Column/KanbanBoard type widened to CardMeta | null — cost if wrong: none.
+- Task 6: Ruling: after Task 6 dist was 506011 of 512000 with most UI still ahead — added a 'minify-locales' build plugin in vite.config.ts (the two messages.json ship minified, same content): 493969 now. A lever outside spec §4.2's font-only list, chosen first because it is invisible; the font fallbacks stay in reserve — cost if wrong: a build plugin to remove.
+- Task 8: Ruling: dist reached 513174 (> 512000) after the Now section. Applied spec §4.2 fallback 1 (condensed face now letters, space, comma, period: 14.2 → 7.0 KB) and made the build drop locale placeholders no message names (Chrome substitutes $1 directly; no message uses $NAME$): 499728 now. Titles of arbitrary links must not use --font-display from here on (the triage title switches to the body face in Task 9) — cost if wrong: if a future message needs $NAME$ the build keeps its placeholders automatically.
+- Task 8: Ruling: the Now collapse chevron used IconButton's expanded colour (coral), a second coral element in the area — NowSection overrides it to tertiary — cost if wrong: none.
+- Task 9: Ruling: the triage title (any link title) uses the body face at 650/24px instead of --font-display, which now covers letters only (Task 8 ruling) — cost if wrong: a slightly less condensed title.
+- Task 9: Ruling: dist hit 511572 (428 bytes of room) after the triage layer. Invisible savings: removed 29 locale keys no source mentions (checked: no key is built dynamically), and the body font keeps only the Latin-1 symbols in use (· « » ° nbsp) with the weight axis capped at 650 (the old 700 only styled a 10 px badge) — cost if wrong: a removed key would show as its raw name; a 700 weight renders as 650.
+- Task 9: Ruling: Svelte scoped classes use the prefix 's' instead of 'svelte-' (vite.config.ts cssHash): -7.8 KB, no visual change; dist 497810 — cost if wrong: none (tests query component classes, not hashes).
+- Task 11: Ruling: the palette test counted the path 'Agentes › Hermes Agent' in the whole dialog, but the details pane repeats the selected link's path — the count is now scoped to the result list — cost if wrong: none.
+- Task 11: Ruling: the popup still uses search_empty and search_completed_badge (the plan's grep caught it, my chained command removed them anyway) — restored both with their original texts; only search_hint_keys is gone — cost if wrong: none.
+- Task 11: Ruling: Array.prototype.at is outside the project's TS lib (lint: unsafe call) — the test indexes the last option instead — cost if wrong: none.
+- Task 12: Ruling: FocusSession's options list was a reactive statement over constants (lint warning) — now a const; a test helper got its return type — cost if wrong: none.
+- Task 12: Ruling: the triage step showed 'Triar' over 'Triar 3 links' (the existing message already carries the verb) — the extra line and the focus_session_triage_verb key are gone; Task 13's running view drops it too — cost if wrong: none.
+- Task 13: Ruling: the reactive block that started/stopped the session clock tripped svelte/infinite-reactive-loop (error) — the clock now ticks from a plain interval set in onMount that only updates while a session exists; parseFocusSession narrows completedIds with a type predicate instead of a cast; a test helper got its return type — cost if wrong: one 30 s interval always on.
+- Task 13: Ruling: the running planner still showed 'Quanto tempo você tem?' without the selector — the question hides with it — cost if wrong: none.
+- Task 14: Ruling: popup is 380px wide (App.svelte .popup), not 360 — shots taken at 380×550 — cost if wrong: none, viewport only.
+- Task 14: Ruling: SettingsModal had no max-height (pre-existing at BASE) and its bottom section (export/import/clear usage) was unreachable under ~1000px of viewport; capped at 100vh − 2·space-6 with a scrolling body, since the task polishes this very dialog — layout only, jsdom cannot measure it, verified by screenshot t14-settings-bottom-* — cost if wrong: three CSS lines to revert.
+- Task 15: Ruling: the policy heading "Next up and Focus"/"Próximos passos e Foco" also renamed to "Now and Focus"/"Agora e Foco" — the brief said "both places" but the phrase "the Next up strip" appears once; the heading is the second place a reader meets the old name — cost if wrong: one heading.
+- Final: Ruling: finding 12 (hero .why nowrap) stays Minor — the collection span is a flex item whose min width is its longest word, so it wraps between words; only a single word wider than ~290 px overflows — cost if wrong: a clipped line with an unusually long one-word collection name.
+- Final: Ruling: session start from Focus switches to the board — stands, Task 13 specifies it and F returns — cost if wrong: one key.
+- Final: Ruling: always-on 30 s clock — stands (Task 13 ruling) — cost if wrong: negligible CPU.
+- Final: Ruling: double keydown listeners in ConfirmDialog/CreateCollectionModal/WorkspaceModal (possible double confirm/submit) — pre-existing at 7ecc933, outside this branch; reported to the user as an adjacent issue, not fixed — cost if wrong: Enter may act twice in those dialogs, as it did before this branch.
+- Final: Ruling: column menu not on the Menu primitive — stands, spec §4.6 does not list it — cost if wrong: one menu with the older look.
+- Final: Ruling: card ⋯ menu may clip at a column's last card — pre-existing positioning, stands — cost if wrong: the last card's menu opens partly hidden.
+- Final: Ruling: CLAUDE.md "Svelte 4" — belongs to another session's unstaged hunk, left alone — cost if wrong: none for this branch.
+- Final: Ruling: no Home/End in Menu, no textarea/select in the focus-trap selector — no dialog here has those elements — cost if wrong: added when one does.
+- Final: Ruling: f/t/n with a card menu open — folded into the modal fix ([role="menu"] counts) — cost if wrong: none.
+- Final: Ruling: plan note 13 (plan says the pane is gone at 1024; spec §8.4 and the code keep it down to 900 px) — implementation follows the spec, plan text was wrong — cost if wrong: none.
+
+### Fixed in the final pass
+
+- Segmented roving focus — "moves with the arrow keys, and the focus follows the choice" RED→GREEN, suite 938/938
+- single-letter shortcuts under modals and open menus — "with a modal or menu open: …" (4 cases) RED→GREEN; App wiring (one line, no App test) checked in the preview: f/n under Settings do nothing, Esc closes, f then opens Focus — suite 938/938
+- narrow palette losing keyboard focus after the ⋯ menu — "in a narrow window, gives the focus back to the field after the menu" RED→GREEN, also checked at 860 px in the preview — suite 938/938
+- (re-graded Minor→Important: focus loss in a keyboard-first dialog, same class as the narrow palette) triage end state — "moves the focus to Close when the last link is decided, so Enter ends it" RED→GREEN — suite 938/938
+- (re-graded Minor→Important: the user asked for design-system standardization; Settings showed "ou" in English, missed the new F and T and used caps labels that spec §4.2 forbids) Settings shortcut list on Kbd + common_or key + sentence-case titles — "lists every dashboard shortcut, with no text outside the locales" RED→GREEN — suite 938/938
+
+### Deferred (minor)
+
+- "Encerrar" clears the session at once, without the "Sessão encerrada: X de Y" pill of spec §11.3.
+- ⌘K "Começar uma sessão de N min" on an empty queue creates an instantly finished session ("0 de 0").
+- literal-colour guard misses named colours; `color: white` remains in WorkspaceRailItem, SettingsModal and OnboardingWizard.
+- aria-activedescendant does not follow the palette's actions zone.
+- the Now "Desfazer" line lasts 10 s even after the next action.
+- parseFocusSession accepts a negative or NaN triage count (only by hand-editing storage).
+- hero context line: .why is nowrap; a single very long word in a collection name could overflow.

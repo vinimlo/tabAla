@@ -215,6 +215,17 @@ describe('browsing signals', () => {
     expect(activity.l2.askCompleteAt).toBeUndefined();
   });
 
+  it('"not yet" holds until new time, beyond the answer, reaches the threshold again', async () => {
+    await recordVisit(['l1'], 6 * MIN, { l1: 5 * MIN }, now);
+    await dismissAsk('l1');
+
+    await recordVisit(['l1'], MIN, { l1: 5 * MIN }, now + 1);
+    expect((await getActivity()).l1.askCompleteAt).toBeUndefined();
+
+    await recordVisit(['l1'], 5 * MIN, { l1: 5 * MIN }, now + 2);
+    expect((await getActivity()).l1.askCompleteAt).toBe(now + 2);
+  });
+
   it('"not yet" clears one question; turning learning off clears them all', async () => {
     await recordVisit(['l1', 'l2'], 6 * MIN, { l1: MIN, l2: MIN }, now);
 

@@ -215,7 +215,8 @@ export async function recordVisit(
       const current = next[id] ?? EMPTY_ACTIVITY;
       const updated: LinkActivity = { ...current, activeMs: current.activeMs + added };
       const threshold = thresholds?.[id];
-      if (threshold !== undefined && updated.activeMs >= threshold) {
+      // After "not yet", only the time spent since that answer counts.
+      if (threshold !== undefined && updated.activeMs - (current.dismissedMs ?? 0) >= threshold) {
         updated.askCompleteAt = now;
       }
       next[id] = updated;
@@ -237,7 +238,7 @@ export async function dismissAsk(linkId: string): Promise<void> {
     if (current?.askCompleteAt === undefined) {
       return;
     }
-    await storage.set('activity', { ...activity, [linkId]: withoutAsk(current) });
+    await storage.set('activity', { ...activity, [linkId]: { ...withoutAsk(current), dismissedMs: current.activeMs } });
   });
 }
 

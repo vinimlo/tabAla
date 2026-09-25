@@ -197,6 +197,8 @@ export interface LinkActivity {
   activeMs: number;
   /** Phase 2: set when a visit ended long enough to ask "completed?". */
   askCompleteAt?: number;
+  /** Phase 2: activeMs when the user answered "not yet"; only time beyond it asks again. */
+  dismissedMs?: number;
 }
 
 /** Keyed by link id. */

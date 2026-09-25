@@ -22,7 +22,7 @@ A busca inteligente e o espaço de recomendação (Próximos passos e Foco, fase
 - Todo botão, tecla, menu e ícone novo ou alterado vem das primitivas (§4.6).
 - Concluir, adiar, mover e mostrar no quadro funcionam a partir da busca, sem passar pelo quadro.
 - A sessão de Foco sobrevive a recarregar a página e aparece em toda aba nova.
-- `make build` continua com no máximo 500 KB.
+- `make build` fica em no máximo 560 KB (`du -sb dist` ≤ 573 440). O teto era 500 KB; subiu para 560 KB por decisão do usuário em 25/09, quando o ⌘K levou a extensão a 524 KB depois de ~35 KB de economias invisíveis.
 
 **Referência visual:** prévias em HTML revisadas em conversa (`mockup.html` e `mockup-v2.html`, geradas no scratchpad). As medidas desta spec vêm da v2.
 
@@ -86,7 +86,7 @@ A paleta de `tokens.css` continua. Os tokens abaixo são adicionados ou renomead
   - `public/fonts/instrument-sans-condensed.woff2`: instância fixa com largura 80% e peso 620, ~14 KB; família CSS `"Instrument Sans Condensed"`, usada só pelo `--font-display`;
   - licença em `public/fonts/OFL.txt`; `@font-face` em `tokens.css`, `font-display: block` (os arquivos são locais).
 - **Recorte:** latim básico e Latin-1 (U+0020–007E, U+00A0–00FF), mais `– — ‘ ’ “ ” … •`, feito por `scripts/fonts/subset-instrument-sans.sh` num container. Meta: ≤ 42 KB somando os dois. Setas e símbolos de tecla (⌘ ⇧ ⌥ ↵ ↑ ↓) caem na fonte do sistema.
-- **Se o portão de 500 KB estourar:** primeiro a instância estreita passa a ter só letras (A–Z, a–z e acentuadas); depois ela sai, e as instruções usam o peso 650 da família normal. A fonte nunca volta a ser remota.
+- **Se o portão de tamanho estourar:** primeiro a instância estreita passa a ter só letras (A–Z, a–z e acentuadas); depois ela sai, e as instruções usam o peso 650 da família normal. A fonte nunca volta a ser remota.
 - `--font-body` = `"Instrument Sans"`; `--font-display` = `"Instrument Sans Condensed"`, com o normal como reserva. `--font-mono` fica só para código, nunca para domínio ou rótulo.
 
 **Escala** (substitui a atual; os nomes existentes continuam válidos):
@@ -399,7 +399,7 @@ Nenhuma permissão nova e nada sai do navegador. A política (en e pt) ganha, na
 - **Helpers puros com teste unitário:** `timeLeft`, `weekDots`, `queueForecast`, `highlight`, `buildCommands`, `recentlyOpened`, `pendingCount`, `sessionView`, `cardMeta` (regra do §7).
 - **Componentes (Testing Library):** primitivas (Button, Menu com teclado, Segmented), cartão Agora nos três estados e nos vazios, Depois, cabeçalho com pílula, `LinkCard` (linha de metadados, ações no hover), `CommandPalette` (grupos vazios, comandos, `>`, destaque, painel, ⌥↵, →, Mover para…), `TriageOverlay` (teclas, progresso, fim, Esc, foco), Foco (começar sessão grava a chave; projeção), `sessionStore` (sincroniza entre instâncias, encerra, expira).
 - Testes da faixa, da `SearchPanel`, da `StatusBar` e da `QuickActionsBar` são substituídos pelos novos, cobrindo o mesmo comportamento.
-- **Portões por etapa:** `make test` verde; `make lint` sem erro novo (12 antigos); `make build` ≤ 500 KB; manifest sem permissão nova.
+- **Portões por etapa:** `make test` verde; `make lint` sem erro novo (12 antigos); `make build` ≤ 560 KB (`du -sb dist` ≤ 573 440); manifest sem permissão nova.
 - **Verificação visual:** harness de prévia em `scripts/preview/` (stub de `chrome.*` com dados fictícios e sem dado pessoal, servidor estático num container com teto de CPU, alvo `make preview` que builda em `.preview/`, fora do `dist`, na porta 4173 registrada no port-map). Em cada etapa: capturas antes e depois de quadro, Agora, ⌘K, triagem e Foco, nos dois temas, a 1440 px e a 1024 px.
 - **Teste manual no Chrome** (roteiro no fim da etapa 5): fonte carregada sem rede, sessão entre duas abas, mover pelo ⌘K, triagem pelo teclado.
 
@@ -407,7 +407,7 @@ Nenhuma permissão nova e nada sai do navegador. A política (en e pt) ganha, na
 
 | Risco | Mitigação |
 |---|---|
-| Fonte + código novo estouram 500 KB (folga de ~64 KB; a fonte e a licença levam ~45) | Recorte da fonte (~41 KB); saem `StatusBar`, `QuickActionsBar`, `NextUpStrip`, `NextUpCard`, `SearchPanel` e `FocusTriage`; o tamanho é medido ao fim de cada etapa (`du -sb dist` ≤ 512 000); se estourar, a instância estreita encolhe e depois sai (§4.2) |
+| Fonte + código novo estouram o teto (500 KB no começo; 560 KB desde 25/09) | Recorte da fonte (~41 KB); saem `StatusBar`, `QuickActionsBar`, `NextUpStrip`, `NextUpCard`, `SearchPanel` e `FocusTriage`; o tamanho é medido ao fim de cada etapa (`du -sb dist` ≤ 573 440); se estourar, a instância estreita encolhe e depois sai (§4.2) |
 | Rodar o Vite com crxjs apaga o `dist` | O harness builda em `.preview/` com `--outDir`; nunca `vite preview` ou `vite dev` durante o trabalho |
 | Muitas telas mudam de uma vez | Cinco etapas, cada uma com testes e imagens; o comportamento do motor não muda |
 | Atalho F atrapalha quem digita | Mesmas guardas dos atalhos atuais (campo de texto, modificadores, camada aberta) |

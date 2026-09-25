@@ -14,7 +14,7 @@
 
 - Every command runs in Docker: `make test`, `make lint`, `make build`, `docker compose run --rm app npx vitest run <file>`. Never `npm`, `npx`, `node` or `python` on the host.
 - Never run `vite preview` or `vite dev`: with crxjs they empty `dist/`, which Chrome loads. Screens are checked only through `make preview` (build into `.preview/`).
-- `make build` then `docker compose run --rm -T app du -sb dist` ≤ 512000 bytes at the end of every stage (baseline 447599 on 2026-09-25).
+- `make build` then `docker compose run --rm -T app du -sb dist` ≤ 573440 bytes (560 KB) at the end of every stage (baseline 447599 on 2026-09-25; the ceiling was 512000 until the user raised it on 2026-09-25, after Task 11).
 - `make lint`: no new errors (baseline: 12 old errors).
 - `src/manifest.json`: no new permission.
 - Svelte 5 in legacy syntax, as the rest of the code; no runes. No Tailwind: scoped `<style>` with CSS variables.
@@ -861,7 +861,7 @@ make lint
 make build && docker compose run --rm -T app du -sb dist
 ```
 
-Expected: all tests pass; lint shows only the 12 old errors; `du -sb dist` prints at most 512000 (about 493000: the fonts and license add ~45 KB).
+Expected: all tests pass; lint shows only the 12 old errors; `du -sb dist` prints at most 573440 (about 493000: the fonts and license add ~45 KB).
 
 - [ ] **Step 9: Look at it**
 
@@ -3308,7 +3308,7 @@ make build && docker compose run --rm -T app du -sb dist
 make preview
 ```
 
-Expected: tests pass; 12 old lint errors; `du` ≤ 512000. In the preview, the columns have no box; each card shows its tile, a two-line title, and "Vídeo · 20 min", "12 de ~40 min" (coral), "Parado há 75 dias" (amber) or "Adiado até …" (dimmed); hovering a card shows ✓, ↗ and ⋯; the focus column shows the coral pin. Capture both themes at 1440 and 1024. `make preview-stop`.
+Expected: tests pass; 12 old lint errors; `du` ≤ 573440. In the preview, the columns have no box; each card shows its tile, a two-line title, and "Vídeo · 20 min", "12 de ~40 min" (coral), "Parado há 75 dias" (amber) or "Adiado até …" (dimmed); hovering a card shows ✓, ↗ and ⋯; the focus column shows the coral pin. Capture both themes at 1440 and 1024. `make preview-stop`.
 
 - [ ] **Step 12: Commit**
 
@@ -4655,7 +4655,7 @@ make build && docker compose run --rm -T app du -sb dist
 make preview
 ```
 
-Expected: tests pass; 12 old lint errors; `du` ≤ 512000. In the preview (1440 and 1024, dark and light): "Agora" with the week dots on the right; the main card with the ring around the YouTube favicon ("18 de ~20 min"), "Continuar em Machine learning", "Assistir" in the condensed face, "Já terminou? Você ficou 18 min nesta aba." with "Sim, concluí" in coral; "Depois" with two rows, "Triar 2 links parados" and "Planejar uma sessão F". At 1024 px, Depois goes under the card. Completing from the card swaps it by a fade and shows "…, concluído agora — Desfazer". `make preview-stop`.
+Expected: tests pass; 12 old lint errors; `du` ≤ 573440. In the preview (1440 and 1024, dark and light): "Agora" with the week dots on the right; the main card with the ring around the YouTube favicon ("18 de ~20 min"), "Continuar em Machine learning", "Assistir" in the condensed face, "Já terminou? Você ficou 18 min nesta aba." with "Sim, concluí" in coral; "Depois" with two rows, "Triar 2 links parados" and "Planejar uma sessão F". At 1024 px, Depois goes under the card. Completing from the card swaps it by a fade and shows "…, concluído agora — Desfazer". `make preview-stop`.
 
 - [ ] **Step 11: Commit**
 
@@ -5544,7 +5544,7 @@ make build && docker compose run --rm -T app du -sb dist
 make preview
 ```
 
-Expected: tests pass; 12 old lint errors; `du` ≤ 512000. In the preview, "Triar 2 links parados" in Depois opens the layer over a blurred page: "Triagem", the amber bar, "1 de 2", the stacked cards, the amber reason, the title in the condensed face, and the four decisions with keys. Keys 1–4 decide; Esc closes; the end shows "Triagem feita." with the counts. Capture both themes. `make preview-stop`.
+Expected: tests pass; 12 old lint errors; `du` ≤ 573440. In the preview, "Triar 2 links parados" in Depois opens the layer over a blurred page: "Triagem", the amber bar, "1 de 2", the stacked cards, the amber reason, the title in the condensed face, and the four decisions with keys. Keys 1–4 decide; Esc closes; the end shows "Triagem feita." with the counts. Capture both themes. `make preview-stop`.
 
 - [ ] **Step 10: Commit**
 
@@ -7344,7 +7344,7 @@ make build && docker compose run --rm -T app du -sb dist
 make preview
 ```
 
-Expected: tests pass; 12 old lint errors; `du` ≤ 512000. In the preview (1440 and 1024, both themes): ⌘K with nothing typed shows "Agora", "Abertos recentemente" and "Ações"; `>` shows only commands; typing "transformer" highlights the word in the titles, shows the filters with icons and "Tudo", and the details pane with the facts and the actions with their keys; → walks into the actions; "Mover para…" lists the collections; at 1024 px the pane is gone and → opens a menu. `make preview-stop`.
+Expected: tests pass; 12 old lint errors; `du` ≤ 573440. In the preview (1440 and 1024, both themes): ⌘K with nothing typed shows "Agora", "Abertos recentemente" and "Ações"; `>` shows only commands; typing "transformer" highlights the word in the titles, shows the filters with icons and "Tudo", and the details pane with the facts and the actions with their keys; → walks into the actions; "Mover para…" lists the collections; at 1024 px the pane is gone and → opens a menu. `make preview-stop`.
 
 - [ ] **Step 9: Commit**
 
@@ -8477,7 +8477,7 @@ make build && docker compose run --rm -T app du -sb dist
 make preview
 ```
 
-Expected: tests pass; 12 old lint errors; `du` ≤ 512000. In the preview, Focus (F or the rail): "Foco" in the condensed face with the green sentence; two columns at 1440 px (session and triage on the left; week by week, fronts and completed on the right), one column at 1024 px; the session shows 15/30/60 as a segmented control, then the timeline with 0′, 1′, … and the colored budget bar; the fronts have the coral pin; completed rows show Undo on hover. Capture both themes. `make preview-stop`.
+Expected: tests pass; 12 old lint errors; `du` ≤ 573440. In the preview, Focus (F or the rail): "Foco" in the condensed face with the green sentence; two columns at 1440 px (session and triage on the left; week by week, fronts and completed on the right), one column at 1024 px; the session shows 15/30/60 as a segmented control, then the timeline with 0′, 1′, … and the colored budget bar; the fronts have the coral pin; completed rows show Undo on hover. Capture both themes. `make preview-stop`.
 
 - [ ] **Step 12: Commit**
 
@@ -9326,7 +9326,7 @@ make build && docker compose run --rm -T app du -sb dist
 make preview
 ```
 
-Expected: tests pass; 12 old lint errors; `du` ≤ 512000. In the preview with `?session=1`: the coral pill "Sessão · N min restantes" in the header, "2 de 3 na sessão" next to "Agora", the current session link as the main card and "Depois, na sessão" with "Encerrar a sessão". In Focus, the planner shows the running session with "Abrir o próximo" and "Encerrar". Without `session=1`: choose 30 min in Focus, "Começar sessão", and the board shows the pill; reload the page and the session is still there. Capture both themes. `make preview-stop`.
+Expected: tests pass; 12 old lint errors; `du` ≤ 573440. In the preview with `?session=1`: the coral pill "Sessão · N min restantes" in the header, "2 de 3 na sessão" next to "Agora", the current session link as the main card and "Depois, na sessão" with "Encerrar a sessão". In Focus, the planner shows the running session with "Abrir o próximo" and "Encerrar". Without `session=1`: choose 30 min in Focus, "Começar sessão", and the board shows the pill; reload the page and the session is still there. Capture both themes. `make preview-stop`.
 
 - [ ] **Step 13: Commit**
 
@@ -9517,7 +9517,7 @@ make build && docker compose run --rm -T app du -sb dist
 make preview
 ```
 
-Expected: tests pass; 12 old lint errors; `du` ≤ 512000. In the preview, open Settings (rail), New collection (N), a workspace's edit dialog, the remove-link confirmation and the discard toast in both themes: same Instrument Sans, same buttons as the rest, blurred backdrop. `make preview-stop`. For the popup, open `http://localhost:4173/src/popup/index.html` with the stub at 360×600.
+Expected: tests pass; 12 old lint errors; `du` ≤ 573440. In the preview, open Settings (rail), New collection (N), a workspace's edit dialog, the remove-link confirmation and the discard toast in both themes: same Instrument Sans, same buttons as the rest, blurred backdrop. `make preview-stop`. For the popup, open `http://localhost:4173/src/popup/index.html` with the stub at 360×600.
 
 - [ ] **Step 7: Commit**
 
@@ -9578,7 +9578,7 @@ In that copy (and, with the same edits, in the working-tree `CLAUDE.md`):
 - **Interface**: tokens em src/shared/styles/tokens.css (cor por papel: coral = ação principal, verde = concluído, âmbar = triagem); fonte Instrument Sans local em public/fonts (recorte por scripts/fonts/subset-instrument-sans.sh); primitivas em src/shared/components/ui (Button, IconButton, Icon, Kbd, Menu, LinkTile, Segmented, ProgressRing). Cor literal em componente não passa em src/test/styles/literal-colors.test.ts. Para ver telas fora do Chrome: `make preview` (nunca `vite preview`/`vite dev`, que apagam o dist/)
 ```
 
-4. Under "Comandos", add after `make build`: `make preview        # Builda em .preview/ e serve as telas na porta 4173 (ver scripts/preview/README.md)`.
+. Under "Anti-Patterns", change `- **Evitar** bundle grande - manter extensão leve (<500KB)` to `- **Evitar** bundle grande - manter extensão leve (<560KB; `du -sb dist` ≤ 573440)`: the user raised the ceiling on 2026-09-25.
 
 Then:
 
@@ -9600,7 +9600,7 @@ git diff main -- src/manifest.json
 docker compose run --rm app npx vitest run src/test/lib/locales.test.ts src/test/styles
 ```
 
-Expected: every test passes; lint shows only the 12 old errors; `du -sb dist` ≤ 512000; the manifest diff is empty; locales and style guards pass.
+Expected: every test passes; lint shows only the 12 old errors; `du -sb dist` ≤ 573440; the manifest diff is empty; locales and style guards pass.
 
 - [ ] **Step 4: The whole tour in the preview**
 

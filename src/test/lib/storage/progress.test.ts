@@ -7,7 +7,8 @@ import {
   exportData, getCollections, getLinks, initializeInbox, removeCollection, saveCollections, saveLinks,
 } from '@/lib/storage';
 import {
-  clearUsageData, getActivity, getRecoStats, patchCollectionState, patchLinkState, recordAction, recordShown,
+  clearAsks, clearUsageData, dismissAsk, getActivity, getRecoStats, patchCollectionState, patchLinkState,
+  recordAction, recordBrowsingOpen, recordShown, recordVisit,
 } from '@/lib/storage/progress';
 import { isoWeek } from '@/lib/recommend/dates';
 import { createMockCollection, createMockLink } from '../../factories';
@@ -169,5 +170,59 @@ describe('clearUsageData', () => {
   it('usage data never goes into an export', async () => {
     await recordAction('l1', 'open', now);
     expect(Object.keys(await exportData())).not.toContain('activity');
+  });
+});
+
+describe('browsing signals', () => {
+  beforeEach(() => clearMockStorage());
+  const MIN = 60_000;
+
+  it('records an open seen in the browser, once per minute', async () => {
+    await recordBrowsingOpen(['l1', 'l2'], now);
+    await recordBrowsingOpen(['l1'], now + 30_000);
+
+    const activity = await getActivity();
+    expect(activity.l1.opens).toBe(1);
+    expect(activity.l2.opens).toBe(1);
+  });
+
+  it('does not count again an open TabAla recorded a moment ago', async () => {
+    await recordAction('l1', 'open', now);
+    await recordBrowsingOpen(['l1'], now + 5_000);
+
+    expect((await getActivity()).l1.opens).toBe(1);
+  });
+
+  it('counts opening a link the strip showed as acting on it', async () => {
+    await recordShown(['l1'], [], 3, now);
+    await recordBrowsingOpen(['l1'], now);
+
+    expect((await getRecoStats())[week].acted).toBe(1);
+  });
+
+  it('adds the time of a visit, at most 30 minutes', async () => {
+    await recordVisit(['l1'], 10 * MIN, null, now);
+    await recordVisit(['l1'], 8 * 60 * MIN, null, now);
+
+    expect((await getActivity()).l1.activeMs).toBe(40 * MIN);
+  });
+
+  it('asks "completed?" when a visit that ended reaches the threshold', async () => {
+    await recordVisit(['l1', 'l2'], 6 * MIN, { l1: 5 * MIN, l2: 20 * MIN }, now);
+
+    const activity = await getActivity();
+    expect(activity.l1.askCompleteAt).toBe(now);
+    expect(activity.l2.askCompleteAt).toBeUndefined();
+  });
+
+  it('"not yet" clears one question; turning learning off clears them all', async () => {
+    await recordVisit(['l1', 'l2'], 6 * MIN, { l1: MIN, l2: MIN }, now);
+
+    await dismissAsk('l1');
+    expect((await getActivity()).l1.askCompleteAt).toBeUndefined();
+
+    await clearAsks();
+    expect((await getActivity()).l2.askCompleteAt).toBeUndefined();
+    expect((await getActivity()).l2.activeMs).toBe(6 * MIN);
   });
 });

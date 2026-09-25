@@ -103,6 +103,8 @@ export interface Settings {
   showNextUp: boolean;
   /** The next up strip is collapsed to its header. */
   nextUpCollapsed: boolean;
+  /** Learn from the pages you open and the time you spend on them (service worker, this device only). */
+  learnFromBrowsing: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -112,6 +114,7 @@ export const DEFAULT_SETTINGS: Settings = {
   topicSearch: false,
   showNextUp: true,
   nextUpCollapsed: false,
+  learnFromBrowsing: true,
 };
 
 // Workspace types

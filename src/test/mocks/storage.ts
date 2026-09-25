@@ -36,6 +36,10 @@ export function createStorageMock(): Record<string, unknown> {
     recordAction: vi.fn(() => Promise.resolve()),
     recordShown: vi.fn(() => Promise.resolve()),
     clearUsageData: vi.fn(() => Promise.resolve()),
+    recordBrowsingOpen: vi.fn(() => Promise.resolve()),
+    recordVisit: vi.fn(() => Promise.resolve()),
+    dismissAsk: vi.fn(() => Promise.resolve()),
+    clearAsks: vi.fn(() => Promise.resolve()),
     getErrorMessage: vi.fn((error: unknown, fallback: string) =>
       error instanceof Error ? error.message : fallback
     ),

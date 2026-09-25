@@ -5,7 +5,15 @@
 import { writable, type Writable } from 'svelte/store';
 import type { Activity, RecoStats } from '@/lib/types';
 import {
-  clearUsageData, getActivity, getRecoStats, recordAction, recordShown, storage, type ActivityEvent,
+  clearAsks as storageClearAsks,
+  clearUsageData,
+  dismissAsk as storageDismissAsk,
+  getActivity,
+  getRecoStats,
+  recordAction,
+  recordShown,
+  storage,
+  type ActivityEvent,
 } from '@/lib/storage';
 
 interface ActivityState {
@@ -21,6 +29,8 @@ function createActivityStore(): {
   record: (linkId: string, event: ActivityEvent, now?: number) => Promise<void>;
   recordShown: (shownIds: string[], skippedIds: string[], queueSize: number, now: number) => Promise<void>;
   clear: () => Promise<void>;
+  dismissAsk: (linkId: string) => Promise<void>;
+  clearAsks: () => Promise<void>;
 } {
   const { subscribe, set, update } = writable<ActivityState>({ activity: {}, stats: {}, loading: true });
 
@@ -54,6 +64,14 @@ function createActivityStore(): {
     },
     async clear(): Promise<void> {
       await clearUsageData();
+      await load();
+    },
+    async dismissAsk(linkId: string): Promise<void> {
+      await storageDismissAsk(linkId);
+      await load();
+    },
+    async clearAsks(): Promise<void> {
+      await storageClearAsks();
       await load();
     },
   };

@@ -325,6 +325,7 @@ describe('settings', () => {
       topicSearch: false,
       showNextUp: true,
       nextUpCollapsed: false,
+      learnFromBrowsing: true,
     };
 
     await saveSettings(customSettings);
@@ -334,7 +335,7 @@ describe('settings', () => {
   });
 
   it('should update specific settings fields', async () => {
-    await saveSettings({ newtabEnabled: true, onboardingCompleted: false, theme: 'system', topicSearch: false, showNextUp: true, nextUpCollapsed: false });
+    await saveSettings({ newtabEnabled: true, onboardingCompleted: false, theme: 'system', topicSearch: false, showNextUp: true, nextUpCollapsed: false, learnFromBrowsing: true });
 
     const updated = await updateSettings({ onboardingCompleted: true });
 

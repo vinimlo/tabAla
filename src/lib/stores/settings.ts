@@ -35,6 +35,7 @@ function createSettingsStore(): Writable<SettingsState> & {
   setTopicSearch: (enabled: boolean) => Promise<void>;
   setShowNextUp: (enabled: boolean) => Promise<void>;
   setNextUpCollapsed: (collapsed: boolean) => Promise<void>;
+  setLearnFromBrowsing: (enabled: boolean) => Promise<void>;
 } {
   const { subscribe, set, update: storeUpdate } = writable<SettingsState>({
     settings: { ...DEFAULT_SETTINGS },
@@ -129,6 +130,10 @@ function createSettingsStore(): Writable<SettingsState> & {
     await updateSettingsStore({ nextUpCollapsed: collapsed });
   }
 
+  async function setLearnFromBrowsing(enabled: boolean): Promise<void> {
+    await updateSettingsStore({ learnFromBrowsing: enabled });
+  }
+
   return {
     subscribe,
     set,
@@ -140,6 +145,7 @@ function createSettingsStore(): Writable<SettingsState> & {
     setTopicSearch,
     setShowNextUp,
     setNextUpCollapsed,
+    setLearnFromBrowsing,
   };
 }
 

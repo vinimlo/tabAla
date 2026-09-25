@@ -58,3 +58,8 @@ export async function setCollectionReference(collection: Collection, value: bool
 export async function setCollectionFocus(collection: Collection, value: boolean): Promise<void> {
   await linksStore.patchCollectionState(collection.id, { focus: value ? true : null });
 }
+
+/** "Not yet" to the "completed?" question. */
+export async function dismissAsk(link: Link): Promise<void> {
+  await activityStore.dismissAsk(link.id);
+}

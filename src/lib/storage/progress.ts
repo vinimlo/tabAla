@@ -166,3 +166,86 @@ export async function recordShown(shownIds: string[], skippedIds: string[], queu
 export async function clearUsageData(): Promise<void> {
   await withDataLock(() => storage.removeBatch(['activity', 'recoStats']));
 }
+
+// Browsing signals (phase 2, written by the service worker)
+
+/** An open TabAla recorded this recently is the same open the service worker sees. */
+export const OPEN_DEDUP_MS = 60_000;
+/** Without the `idle` permission a forgotten tab would count for hours. */
+export const VISIT_CAP_MS = 30 * 60_000;
+
+/** Opens seen in the browser, by any path; one per link per minute. */
+export async function recordBrowsingOpen(linkIds: string[], now: number): Promise<void> {
+  await withDataLock(async () => {
+    const [activity, stats] = await Promise.all([getActivity(), getRecoStats()]);
+    const next: Activity = { ...activity };
+    let acted = 0;
+    let changed = false;
+    for (const id of linkIds) {
+      const current = next[id] ?? EMPTY_ACTIVITY;
+      if (current.lastOpenedAt !== undefined && now - current.lastOpenedAt < OPEN_DEDUP_MS) {
+        continue;
+      }
+      if (current.shownDays.length > 0) {
+        acted += 1;
+      }
+      next[id] = afterAction(current, 'open', now);
+      changed = true;
+    }
+    if (!changed) {
+      return;
+    }
+    await storage.setBatch(acted > 0 ? { activity: next, recoStats: bump(stats, now, { acted }) } : { activity: next });
+  });
+}
+
+/**
+ * Adds a visit's active time (at most 30 min). `thresholds` is set when the
+ * visit ended by closing the tab or leaving the page: a link whose total
+ * reaches its threshold gets the "completed?" question.
+ */
+export async function recordVisit(
+  linkIds: string[], elapsedMs: number, thresholds: Record<string, number> | null, now: number
+): Promise<void> {
+  const added = Math.max(0, Math.min(elapsedMs, VISIT_CAP_MS));
+  await withDataLock(async () => {
+    const activity = await getActivity();
+    const next: Activity = { ...activity };
+    for (const id of linkIds) {
+      const current = next[id] ?? EMPTY_ACTIVITY;
+      const updated: LinkActivity = { ...current, activeMs: current.activeMs + added };
+      const threshold = thresholds?.[id];
+      if (threshold !== undefined && updated.activeMs >= threshold) {
+        updated.askCompleteAt = now;
+      }
+      next[id] = updated;
+    }
+    await storage.set('activity', next);
+  });
+}
+
+function withoutAsk(current: LinkActivity): LinkActivity {
+  const { askCompleteAt: _askCompleteAt, ...rest } = current;
+  return rest;
+}
+
+/** "Not yet": the question about this link goes away. */
+export async function dismissAsk(linkId: string): Promise<void> {
+  await withDataLock(async () => {
+    const activity = await getActivity();
+    const current = activity[linkId];
+    if (current?.askCompleteAt === undefined) {
+      return;
+    }
+    await storage.set('activity', { ...activity, [linkId]: withoutAsk(current) });
+  });
+}
+
+/** Turning learning off clears every pending question. */
+export async function clearAsks(): Promise<void> {
+  await withDataLock(async () => {
+    const activity = await getActivity();
+    const next = Object.fromEntries(Object.entries(activity).map(([id, entry]) => [id, withoutAsk(entry)]));
+    await storage.set('activity', next);
+  });
+}

@@ -48,6 +48,11 @@ describe('settingsStore', () => {
       ]);
       expect(get(settingsStore).settings.nextUpCollapsed).toBe(true);
     });
+
+    it('saves whether to learn from browsing', async () => {
+      await settingsStore.setLearnFromBrowsing(false);
+      expect(vi.mocked(storage.updateSettings)).toHaveBeenCalledWith({ learnFromBrowsing: false });
+    });
   });
 
   describe('initial state', () => {
@@ -70,6 +75,7 @@ describe('settingsStore', () => {
         topicSearch: false,
         showNextUp: true,
         nextUpCollapsed: false,
+        learnFromBrowsing: true,
       };
       vi.mocked(storage.getSettings).mockResolvedValue(customSettings);
 

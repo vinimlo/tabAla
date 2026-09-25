@@ -7,7 +7,7 @@ import * as storage from '@/lib/storage';
 import { linksStore, linksByCollection } from '@/lib/stores/links';
 import { activityStore } from '@/lib/stores/activity';
 import {
-  completeLink, discardLink, keepLink, recordOpen, restoreLink, setCollectionFocus,
+  completeLink, discardLink, dismissAsk, keepLink, recordOpen, restoreLink, setCollectionFocus,
   setCollectionReference, setLinkReference, snoozeLink, undoDiscard,
 } from '@/lib/stores/progress';
 import type { Link } from '@/lib/types';
@@ -93,6 +93,11 @@ describe('progress actions', () => {
 
     expect(storage.insertLink).toHaveBeenCalledWith(placed);
     expect(get(linksStore).links).toEqual([placed]);
+  });
+
+  it('"not yet" dismisses the question about a link', async () => {
+    await dismissAsk(link);
+    expect(storage.dismissAsk).toHaveBeenCalledWith('l1');
   });
 
   it('opening records the open', async () => {

@@ -82,5 +82,9 @@ export {
   recordAction,
   recordShown,
   clearUsageData,
+  recordBrowsingOpen,
+  recordVisit,
+  dismissAsk,
+  clearAsks,
   type ActivityEvent,
 } from './progress';

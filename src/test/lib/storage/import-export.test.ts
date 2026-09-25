@@ -16,6 +16,8 @@ import {
   INBOX_COLLECTION_ID,
   DEFAULT_WORKSPACE_ID,
   WORKSPACE_COLORS,
+  type Collection,
+  type Link,
 } from '@/lib/types';
 
 // Mock storage functions
@@ -168,6 +170,27 @@ describe('validateExportFile', () => {
       links: [createMockLink({ id: 'link-1', order: 0 }), createMockLink({ id: 'link-2' })],
     });
 
+    expect(() => validateExportFile(file)).not.toThrow();
+  });
+
+  it('rejects lifecycle fields of the wrong type', () => {
+    const link = createMockLink({ id: 'link-1' });
+    for (const bad of [{ completedAt: 'yesterday' }, { snoozedUntil: Number.NaN }, { keptAt: null }, { reference: 'yes' }]) {
+      const file = exportFile({ links: [{ ...link, ...bad } as unknown as Link] });
+      expect(() => validateExportFile(file)).toThrow('Invalid link at index 0');
+    }
+    const collection = createMockCollection({ id: 'c1' });
+    for (const bad of [{ reference: 1 }, { focus: 'on' }]) {
+      const file = exportFile({ collections: [{ ...collection, ...bad } as unknown as Collection] });
+      expect(() => validateExportFile(file)).toThrow('Invalid collection at index 0');
+    }
+  });
+
+  it('accepts completed, snoozed, kept and reference links and flagged collections', () => {
+    const file = exportFile({
+      collections: [createMockCollection({ id: 'c1', reference: true, focus: true })],
+      links: [createMockLink({ id: 'l1', collectionId: 'c1', completedAt: 1, snoozedUntil: 2, keptAt: 3, reference: false })],
+    });
     expect(() => validateExportFile(file)).not.toThrow();
   });
 

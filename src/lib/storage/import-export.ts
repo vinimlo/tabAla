@@ -115,6 +115,11 @@ export function validateExportFile(data: unknown): TabAlaExportFile {
     if (c.color !== undefined && (typeof c.color !== 'string' || !isValidHexColor(c.color))) {
       throw new Error(`Invalid collection at index ${i}: invalid color format`);
     }
+    for (const flag of ['reference', 'focus'] as const) {
+      if (c[flag] !== undefined && typeof c[flag] !== 'boolean') {
+        throw new Error(`Invalid collection at index ${i}: invalid ${flag}`);
+      }
+    }
   }
 
   // Validate links
@@ -140,6 +145,14 @@ export function validateExportFile(data: unknown): TabAlaExportFile {
     }
     if (l.tags !== undefined && (!Array.isArray(l.tags) || !l.tags.every((tag) => typeof tag === 'string'))) {
       throw new Error(`Invalid link at index ${i}: invalid tags`);
+    }
+    for (const field of ['completedAt', 'snoozedUntil', 'keptAt'] as const) {
+      if (l[field] !== undefined && !Number.isFinite(l[field])) {
+        throw new Error(`Invalid link at index ${i}: invalid ${field}`);
+      }
+    }
+    if (l.reference !== undefined && typeof l.reference !== 'boolean') {
+      throw new Error(`Invalid link at index ${i}: invalid reference`);
     }
   }
 

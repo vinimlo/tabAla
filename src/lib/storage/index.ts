@@ -70,3 +70,12 @@ export {
   type ImportPreview,
   type ImportResult,
 } from './import-export';
+
+// Recommendation space
+export {
+  applyPatch,
+  patchLinkState,
+  patchCollectionState,
+  type LinkStatePatch,
+  type CollectionStatePatch,
+} from './progress';

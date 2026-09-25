@@ -788,5 +788,11 @@
   },
   "topic_search_toggle_label": {
     "message": "Turn topic search on or off"
+  },
+  "error_update_link_failed": {
+    "message": "Could not update the link"
+  },
+  "error_update_collection_failed": {
+    "message": "Could not update the collection"
   }
 }

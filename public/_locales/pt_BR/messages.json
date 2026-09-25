@@ -788,5 +788,11 @@
   },
   "topic_search_toggle_label": {
     "message": "Ligar ou desligar a busca por assunto"
+  },
+  "error_update_link_failed": {
+    "message": "Não foi possível atualizar o link"
+  },
+  "error_update_collection_failed": {
+    "message": "Não foi possível atualizar a coleção"
   }
 }

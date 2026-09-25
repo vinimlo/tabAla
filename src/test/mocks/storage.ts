@@ -29,6 +29,13 @@ export function createStorageMock(): Record<string, unknown> {
     updateSettings: vi.fn((updates: Partial<typeof DEFAULT_SETTINGS>) =>
       Promise.resolve({ ...DEFAULT_SETTINGS, ...updates })
     ),
+    patchLinkState: vi.fn(() => Promise.resolve({ success: true })),
+    patchCollectionState: vi.fn(() => Promise.resolve({ success: true })),
+    getActivity: vi.fn(() => Promise.resolve({})),
+    getRecoStats: vi.fn(() => Promise.resolve({})),
+    recordAction: vi.fn(() => Promise.resolve()),
+    recordShown: vi.fn(() => Promise.resolve()),
+    clearUsageData: vi.fn(() => Promise.resolve()),
     getErrorMessage: vi.fn((error: unknown, fallback: string) =>
       error instanceof Error ? error.message : fallback
     ),

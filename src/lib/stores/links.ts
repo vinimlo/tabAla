@@ -15,11 +15,16 @@ import {
   recoverOrphanedLinks,
   getErrorMessage,
   storage,
+  patchLinkState as storagePatchLinkState,
+  patchCollectionState as storagePatchCollectionState,
+  type LinkStatePatch,
+  type CollectionStatePatch,
 } from '@/lib/storage';
 import { validateCollectionName, type ValidationResult } from '@/lib/validation';
 import { t } from '@/lib/i18n';
 import { optimisticUpdate } from './helpers';
 import { applyLinkOrder, sortCollectionLinks } from '@/lib/link-order';
+import { applyPatch } from '@/lib/patch';
 
 interface LinksState {
   links: Link[];
@@ -50,6 +55,8 @@ function createLinksStore(): Writable<LinksState> & {
   removeLink: (id: string) => Promise<void>;
   moveLink: (linkId: string, toCollectionId: string) => Promise<void>;
   reorderLinks: (collectionId: string, orderedIds: string[]) => Promise<void>;
+  patchLinkState: (linkId: string, patch: LinkStatePatch) => Promise<void>;
+  patchCollectionState: (collectionId: string, patch: CollectionStatePatch) => Promise<void>;
   addCollection: (name: string, workspaceId?: string) => Promise<Collection>;
   removeCollection: (id: string) => Promise<void>;
   renameCollection: (id: string, newName: string) => Promise<void>;
@@ -203,6 +210,39 @@ function createLinksStore(): Writable<LinksState> & {
     );
   }
 
+  async function patchLinkState(linkId: string, patch: LinkStatePatch): Promise<void> {
+    await optimisticUpdate(
+      store,
+      (state) => ({
+        updated: { ...state, links: state.links.map((link) => (link.id === linkId ? applyPatch(link, patch) : link)) },
+        rollback: { links: state.links } as Partial<LinksState>,
+      }),
+      async () => {
+        const result = await storagePatchLinkState(linkId, patch);
+        return result.success ? null : (result.error ?? t('error_update_link_failed'));
+      },
+      t('error_update_link_failed')
+    );
+  }
+
+  async function patchCollectionState(collectionId: string, patch: CollectionStatePatch): Promise<void> {
+    await optimisticUpdate(
+      store,
+      (state) => ({
+        updated: {
+          ...state,
+          collections: state.collections.map((c) => (c.id === collectionId ? applyPatch(c, patch) : c)),
+        },
+        rollback: { collections: state.collections } as Partial<LinksState>,
+      }),
+      async () => {
+        const result = await storagePatchCollectionState(collectionId, patch);
+        return result.success ? null : (result.error ?? t('error_update_collection_failed'));
+      },
+      t('error_update_collection_failed')
+    );
+  }
+
   function getCollectionNames(): string[] {
     return get(store).collections.map((c) => c.name);
   }
@@ -314,6 +354,8 @@ function createLinksStore(): Writable<LinksState> & {
     removeLink,
     moveLink,
     reorderLinks,
+    patchLinkState,
+    patchCollectionState,
     addCollection,
     removeCollection,
     getCollectionNames,
@@ -333,6 +375,9 @@ export const linksByCollection = derived(linksStore, ($store) => {
   }
 
   for (const link of $store.links) {
+    if (link.completedAt !== undefined) {
+      continue; // completed links leave the board (Focus › Completed lists them)
+    }
     let links = grouped.get(link.collectionId);
     if (!links) {
       links = grouped.get(INBOX_COLLECTION_ID);

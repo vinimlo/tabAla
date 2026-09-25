@@ -73,7 +73,6 @@ export {
 
 // Recommendation space
 export {
-  applyPatch,
   patchLinkState,
   patchCollectionState,
   type LinkStatePatch,

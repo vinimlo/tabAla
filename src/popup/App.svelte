@@ -30,13 +30,20 @@
   let translatedQuery: string | null = null;
   let currentUrl: string | null = null;
 
-  /** The saved link for this tab; the pending copy wins when the page was saved twice. */
+  /**
+   * The saved link for this tab. When the page was saved twice, the pending
+   * copy wins; with none pending, the one completed last (so Undo restores it).
+   */
   function findSaved(links: Link[], url: string | null): Link | undefined {
     if (url === null) {
       return undefined;
     }
     const matches = links.filter((link) => link.url === url);
-    return matches.find((link) => link.completedAt === undefined) ?? matches[0];
+    const pending = matches.find((link) => link.completedAt === undefined);
+    if (pending !== undefined) {
+      return pending;
+    }
+    return [...matches].sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0))[0];
   }
 
   function collectionName(link: Link): string {

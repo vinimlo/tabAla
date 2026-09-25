@@ -248,5 +248,14 @@ describe('App Component', () => {
 
       expect(vi.mocked(storage.patchLinkState).mock.calls[0][0]).toBe('saved');
     });
+
+    it('undo brings back the copy that was just completed', async () => {
+      await renderOn([{ ...saved, id: 'old-copy', completedAt: 1 }, saved]);
+
+      await fireEvent.click(await screen.findByRole('button', { name: /progress_complete/ }));
+      await fireEvent.click(await screen.findByRole('button', { name: 'progress_undo' }));
+
+      expect(vi.mocked(storage.patchLinkState).mock.calls[1]).toEqual(['saved', { completedAt: null }]);
+    });
   });
 });

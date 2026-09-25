@@ -2,7 +2,7 @@
  * Numbers of the Focus space.
  */
 import { describe, it, expect } from 'vitest';
-import { completedByWeek, completedHistory, completedThisWeek, previousQueue, weekDots } from '@/lib/recommend/progress';
+import { completedByWeek, completedHistory, completedThisWeek, previousQueue, queueForecast, weekDots, type WeekBar } from '@/lib/recommend/progress';
 import { EMPTY_WEEK } from '@/lib/types';
 import { createMockLink } from '../../factories';
 
@@ -68,5 +68,21 @@ describe('weekDots', () => {
       createMockLink({ id: 'c', completedAt: new Date(2026, 8, 20, 23).getTime() }),
     ];
     expect(completedThisWeek(links, now)).toBe(2);
+  });
+});
+describe('queueForecast', () => {
+  const bars = (counts: number[]): WeekBar[] => counts.map((completed, i) => ({ week: `w${i}`, completed }));
+
+  it('uses the pace of the four full weeks before this one', () => {
+    expect(queueForecast(bars([9, 9, 9, 2, 4, 6, 4, 1]), 14)).toEqual({ perWeek: 4, weeks: 4 });
+  });
+
+  it('says nothing without completions in those weeks', () => {
+    expect(queueForecast(bars([5, 0, 0, 0, 0, 3]), 14)).toBeNull();
+  });
+
+  it('drops the weeks beyond a year, and knows an empty queue', () => {
+    expect(queueForecast(bars([0, 0, 0, 1, 0, 0, 0, 0]), 100)).toEqual({ perWeek: 0.25, weeks: null });
+    expect(queueForecast(bars([0, 0, 0, 0, 0]), 0)).toEqual({ perWeek: 0, weeks: 0 });
   });
 });

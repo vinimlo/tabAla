@@ -702,9 +702,6 @@
   "success_link_reference": {
     "message": "Marcado como referência"
   },
-  "nextup_empty": {
-    "message": "Nada pendente. Os links que você salvar aparecem aqui."
-  },
   "nextup_effort": {
     "message": "~$1 min",
     "placeholders": {
@@ -806,37 +803,13 @@
     "message": "Abrir o Foco"
   },
   "focus_progress_title": {
-    "message": "Progresso"
+    "message": "Semana a semana"
   },
   "focus_week_one": {
     "message": "1 concluído esta semana"
   },
   "focus_week_many": {
     "message": "$1 concluídos esta semana",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "focus_queue": {
-    "message": "$1 na fila",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "focus_queue_down": {
-    "message": "$1 a menos que na semana passada",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "focus_queue_up": {
-    "message": "$1 a mais que na semana passada",
     "placeholders": {
       "count": {
         "content": "$1"
@@ -858,7 +831,7 @@
     }
   },
   "focus_session_next": {
-    "message": "Próximo"
+    "message": "Abrir o próximo"
   },
   "focus_session_over_budget": {
     "message": "passa do tempo"
@@ -1474,5 +1447,81 @@
   },
   "search_completed_badge": {
     "message": "concluído"
+  },
+
+  "focus_week_now": {
+    "message": "agora"
+  },
+  "focus_queue_fell": {
+    "message": "A fila caiu de $1 para $2.",
+    "placeholders": {
+      "before": {
+        "content": "$1"
+      },
+      "now": {
+        "content": "$2"
+      }
+    }
+  },
+  "focus_queue_rose": {
+    "message": "A fila subiu de $1 para $2.",
+    "placeholders": {
+      "before": {
+        "content": "$1"
+      },
+      "now": {
+        "content": "$2"
+      }
+    }
+  },
+  "focus_forecast_zero": {
+    "message": "A fila está zerada."
+  },
+  "focus_forecast_rate": {
+    "message": "Você conclui uns $1 por semana.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_forecast_weeks_one": {
+    "message": "No ritmo atual, a fila zera em 1 semana."
+  },
+  "focus_forecast_weeks_many": {
+    "message": "No ritmo atual, a fila zera em $1 semanas.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_session_at": {
+    "message": "$1′",
+    "placeholders": {
+      "minute": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_session_budget": {
+    "message": "$1 de $2 min",
+    "placeholders": {
+      "planned": {
+        "content": "$1"
+      },
+      "budget": {
+        "content": "$2"
+      }
+    }
+  },
+  "focus_completed_this_week": {
+    "message": "Esta semana"
+  },
+  "focus_completed_all": {
+    "message": "Ver todos"
+  },
+  "focus_completed_less": {
+    "message": "Mostrar menos"
   }
 }

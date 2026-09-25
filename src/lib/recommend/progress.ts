@@ -82,3 +82,25 @@ export function completedThisWeek(links: Link[], now: number): number {
   const start = weekStart(now);
   return links.filter((link) => link.completedAt !== undefined && link.completedAt >= start).length;
 }
+
+export interface Forecast {
+  /** Completions per week in the four full weeks before this one. */
+  perWeek: number;
+  /** Weeks until the queue is done at that pace; null beyond a year. */
+  weeks: number | null;
+}
+
+/** How long the queue lasts at the recent pace (spec §10.1); null without a pace. */
+export function queueForecast(bars: WeekBar[], queueSize: number): Forecast | null {
+  if (queueSize === 0) {
+    return { perWeek: 0, weeks: 0 };
+  }
+  const recent = bars.slice(-5, -1);
+  const total = recent.reduce((sum, bar) => sum + bar.completed, 0);
+  if (recent.length === 0 || total === 0) {
+    return null;
+  }
+  const perWeek = total / recent.length;
+  const weeks = Math.ceil(queueSize / perWeek);
+  return { perWeek, weeks: weeks > 52 ? null : weeks };
+}

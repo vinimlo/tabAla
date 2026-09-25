@@ -702,9 +702,6 @@
   "success_link_reference": {
     "message": "Marked as reference"
   },
-  "nextup_empty": {
-    "message": "Nothing pending. Links you save show up here."
-  },
   "nextup_effort": {
     "message": "~$1 min",
     "placeholders": {
@@ -806,37 +803,13 @@
     "message": "Open Focus"
   },
   "focus_progress_title": {
-    "message": "Progress"
+    "message": "Week by week"
   },
   "focus_week_one": {
     "message": "1 completed this week"
   },
   "focus_week_many": {
     "message": "$1 completed this week",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "focus_queue": {
-    "message": "$1 in the queue",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "focus_queue_down": {
-    "message": "$1 fewer than last week",
-    "placeholders": {
-      "count": {
-        "content": "$1"
-      }
-    }
-  },
-  "focus_queue_up": {
-    "message": "$1 more than last week",
     "placeholders": {
       "count": {
         "content": "$1"
@@ -858,7 +831,7 @@
     }
   },
   "focus_session_next": {
-    "message": "Next"
+    "message": "Open the next one"
   },
   "focus_session_over_budget": {
     "message": "longer than the session"
@@ -1474,5 +1447,81 @@
   },
   "search_completed_badge": {
     "message": "completed"
+  },
+
+  "focus_week_now": {
+    "message": "now"
+  },
+  "focus_queue_fell": {
+    "message": "The queue fell from $1 to $2.",
+    "placeholders": {
+      "before": {
+        "content": "$1"
+      },
+      "now": {
+        "content": "$2"
+      }
+    }
+  },
+  "focus_queue_rose": {
+    "message": "The queue rose from $1 to $2.",
+    "placeholders": {
+      "before": {
+        "content": "$1"
+      },
+      "now": {
+        "content": "$2"
+      }
+    }
+  },
+  "focus_forecast_zero": {
+    "message": "The queue is empty."
+  },
+  "focus_forecast_rate": {
+    "message": "You complete about $1 a week.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_forecast_weeks_one": {
+    "message": "At this pace, the queue is done in 1 week."
+  },
+  "focus_forecast_weeks_many": {
+    "message": "At this pace, the queue is done in $1 weeks.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_session_at": {
+    "message": "$1′",
+    "placeholders": {
+      "minute": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_session_budget": {
+    "message": "$1 of $2 min",
+    "placeholders": {
+      "planned": {
+        "content": "$1"
+      },
+      "budget": {
+        "content": "$2"
+      }
+    }
+  },
+  "focus_completed_this_week": {
+    "message": "This week"
+  },
+  "focus_completed_all": {
+    "message": "Show all"
+  },
+  "focus_completed_less": {
+    "message": "Show less"
   }
 }

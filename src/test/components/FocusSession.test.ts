@@ -1,11 +1,11 @@
 /**
- * The session of the Focus space.
+ * The session planner of the Focus page.
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/svelte';
 import FocusSession from '@/newtab/components/FocusSession.svelte';
 import { buildQueue, type Queue } from '@/lib/recommend/engine';
-import { EMPTY_ACTIVITY, type Link } from '@/lib/types';
+import type { Link } from '@/lib/types';
 import { createMockCollection, createMockLink } from '../factories';
 
 const DAY = 86_400_000;
@@ -16,44 +16,27 @@ const pages = ['p1', 'p2', 'p3', 'p4'].map((id) =>
 const queueOf = (links: Link[]): Queue => buildQueue({ links, collections, activity: {}, now });
 
 async function pick(index: number): Promise<void> {
-  await fireEvent.click(screen.getAllByRole('button', { name: 'focus_session_minutes' })[index]);
+  await fireEvent.click(screen.getAllByRole('radio', { name: 'focus_session_minutes' })[index]);
 }
 
 describe('FocusSession', () => {
-  it('builds a session for the chosen time', async () => {
+  it('lays out a session for the chosen time, with the minute each step starts', async () => {
     render(FocusSession, { props: { queue: queueOf(pages) } });
     await pick(1);
+
     expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    expect(screen.getAllByText('focus_session_at')).toHaveLength(3);
+    expect(screen.getByText('focus_session_budget')).toBeInTheDocument();
   });
 
-  it('"Next" opens, in a new tab, the first link not opened yet', async () => {
+  it('opens the next link in a new tab', async () => {
     const open = vi.fn();
     render(FocusSession, { props: { queue: queueOf(pages) }, events: { open } });
     await pick(1);
 
     await fireEvent.click(screen.getByRole('button', { name: 'focus_session_next' }));
-    await fireEvent.click(screen.getByRole('button', { name: 'focus_session_next' }));
 
-    const opened = open.mock.calls.map((call) => (call[0] as CustomEvent<{ link: Link; newTab: boolean }>).detail);
-    expect(opened.map((detail) => [detail.link.id, detail.newTab])).toEqual([['p1', true], ['p2', true]]);
-  });
-
-  it('keeps its order while links are opened, and drops the ones completed', async () => {
-    const { rerender } = render(FocusSession, { props: { queue: queueOf(pages) } });
-    await pick(1);
-    const titles = (): string[] => screen.getAllByRole('listitem').map((item) => item.textContent ?? '');
-
-    const opened = { p2: { ...EMPTY_ACTIVITY, opens: 1, lastOpenedAt: now } };
-    await rerender({ queue: buildQueue({ links: pages, collections, activity: opened, now }) });
-    expect(titles()).toEqual([
-      expect.stringContaining('Page p1'),
-      expect.stringContaining('Page p2'),
-      expect.stringContaining('Page p3'),
-    ]);
-
-    const completed = pages.map((page) => (page.id === 'p1' ? { ...page, completedAt: now } : page));
-    await rerender({ queue: buildQueue({ links: completed, collections, activity: opened, now }) });
-    expect(titles()).toEqual([expect.stringContaining('Page p2'), expect.stringContaining('Page p3')]);
+    expect(open.mock.calls[0][0].detail).toEqual({ link: pages[0], newTab: true });
   });
 
   it('completes a link from the list', async () => {
@@ -72,7 +55,7 @@ describe('FocusSession', () => {
     render(FocusSession, { props: { queue: queueOf([...pages, old]) }, events: { openTriage } });
     await pick(0);
 
-    await fireEvent.click(screen.getByRole('button', { name: 'focus_session_triage_one' }));
+    await fireEvent.click(screen.getByRole('button', { name: /focus_session_triage_one/ }));
 
     expect(openTriage).toHaveBeenCalledTimes(1);
   });

@@ -25,6 +25,14 @@ export interface Link {
   order?: number;
   /** Subject tags. Absent: not tagged yet. []: tagged, without tags. */
   tags?: string[];
+  /** Unix ms. Present: completed — off the board and the queue, listed in Focus › Completed. */
+  completedAt?: number;
+  /** Start of a local day (Unix ms). Until then the link stays out of the queue. */
+  snoozedUntil?: number;
+  /** Unix ms of the last "still worth it" answer in triage. */
+  keptAt?: number;
+  /** true: reference, never in the queue. false: pending even in a reference collection. Absent: follows the collection. */
+  reference?: boolean;
 }
 
 /**
@@ -43,6 +51,10 @@ export interface Collection {
   isDefault?: boolean;
   /** undefined for Inbox (global), 'general' for default workspace, or UUID. */
   workspaceId?: string;
+  /** Every link counts as reference, unless the link says `reference: false`. */
+  reference?: boolean;
+  /** Front pinned as focus by the user. */
+  focus?: boolean;
 }
 
 export const INBOX_COLLECTION_ID = 'inbox';
@@ -152,3 +164,50 @@ export interface CreateWorkspaceInput {
   description?: string;
   color: string;
 }
+
+// Recommendation data (never exported)
+
+/**
+ * What the user did with a link. Kept apart from `links` so recording an
+ * open never redraws the board.
+ */
+export interface LinkActivity {
+  opens: number;
+  lastOpenedAt?: number;
+  /** Distinct local days (AAAA-MM-DD) the link was opened, the last 10. */
+  openDays: string[];
+  /** Distinct local days the strip showed the link with no action since; any action clears it. */
+  shownDays: string[];
+  /** When leaving the strip after 3 days was counted; cleared with shownDays. */
+  skippedAt?: number;
+  /** Times snoozed; cleared on complete and on "still worth it". */
+  snoozes: number;
+  /** Phase 2: accumulated active time, in ms. */
+  activeMs: number;
+  /** Phase 2: set when a visit ended long enough to ask "completed?". */
+  askCompleteAt?: number;
+}
+
+/** Keyed by link id. */
+export type Activity = Record<string, LinkActivity>;
+
+export const EMPTY_ACTIVITY: LinkActivity = { opens: 0, openDays: [], shownDays: [], snoozes: 0, activeMs: 0 };
+
+/** Numbers of one ISO week. */
+export interface WeekStats {
+  /** Link × day shown in the strip. */
+  shown: number;
+  /** Opens or completions of a link the strip had shown (each showing counts once). */
+  acted: number;
+  snoozed: number;
+  discarded: number;
+  /** Links that left the strip after 3 days without action. */
+  skipped: number;
+  /** Last queue size seen in the week. */
+  queue: number;
+}
+
+/** Keyed by ISO week (AAAA-Www); the last 12 weeks. */
+export type RecoStats = Record<string, WeekStats>;
+
+export const EMPTY_WEEK: WeekStats = { shown: 0, acted: 0, snoozed: 0, discarded: 0, skipped: 0, queue: 0 };

@@ -23,6 +23,16 @@ All data is stored **exclusively** in `chrome.storage.local`, within the user's 
 
 When the user turns on topic search, the text typed in TabAla's search is translated into English by Chrome's built-in translator, which runs on the user's own computer. Only the search text goes to that local translator; saved links do not. Nothing is sent to external servers. The option is off by default and can be turned off at any time in Settings.
 
+## Next up and Focus (suggestions)
+
+To suggest what to open, read or solve next, TabAla keeps on your computer, alongside your links:
+
+- when you completed, snoozed or marked a link as reference, and when you answered "still worth it" in triage;
+- how many times and on which days you opened a saved link through TabAla;
+- on which days the "Next up" strip showed each link, and weekly counts (how many were shown, opened, snoozed, discarded).
+
+This data stays in `chrome.storage.local`, never leaves the browser and is not included in exports. You can clear it in Settings → Data → "Clear usage data"; your links stay. The strip can be turned off in Settings.
+
 ## Data not collected
 
 The extension **does not collect**:

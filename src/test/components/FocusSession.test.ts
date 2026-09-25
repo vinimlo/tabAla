@@ -34,7 +34,8 @@ describe('FocusSession', () => {
     await fireEvent.click(screen.getByRole('button', { name: 'focus_session_next' }));
     await fireEvent.click(screen.getByRole('button', { name: 'focus_session_next' }));
 
-    expect(open.mock.calls.map((call) => [call[0].detail.link.id, call[0].detail.newTab])).toEqual([['p1', true], ['p2', true]]);
+    const opened = open.mock.calls.map((call) => (call[0] as CustomEvent<{ link: Link; newTab: boolean }>).detail);
+    expect(opened.map((detail) => [detail.link.id, detail.newTab])).toEqual([['p1', true], ['p2', true]]);
   });
 
   it('completes a link from the list', async () => {

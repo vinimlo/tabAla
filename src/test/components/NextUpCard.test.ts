@@ -39,7 +39,7 @@ describe('NextUpCard', () => {
     await fireEvent.click(main);
     await fireEvent.click(main, { metaKey: true });
 
-    expect(open.mock.calls.map((call) => call[0].detail.newTab)).toEqual([false, true]);
+    expect(open.mock.calls.map((call) => (call[0] as CustomEvent<{ newTab: boolean }>).detail.newTab)).toEqual([false, true]);
   });
 
   it('completes, snoozes, marks reference, reveals and discards', async () => {

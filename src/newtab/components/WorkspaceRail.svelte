@@ -12,7 +12,12 @@
   const dispatch = createEventDispatcher<{
     error: string;
     success: string;
+    focus: void;
+    board: void;
   }>();
+
+  /** The Focus space is showing instead of a workspace board. */
+  export let focusActive = false;
 
   let showCreateModal = false;
   let editingWorkspace: Workspace | null = null;
@@ -26,6 +31,7 @@
 
   function handleSelectWorkspace(event: CustomEvent<string>): void {
     workspacesStore.setActiveWorkspace(event.detail);
+    dispatch('board');
   }
 
   function handleContextMenu(event: CustomEvent<{ workspace: Workspace; x: number; y: number }>): void {
@@ -151,6 +157,22 @@
 </script>
 
 <nav class="workspace-rail" aria-label={t('workspace_title')}>
+  <button
+    type="button"
+    class="focus-entry"
+    class:active={focusActive}
+    on:click={() => dispatch('focus')}
+    aria-label={t('focus_open')}
+    aria-pressed={focusActive}
+    title={t('focus_title')}
+  >
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+    </svg>
+  </button>
+
+  <div class="rail-divider"></div>
+
   <div class="workspace-list">
     {#each workspaces as workspace, index (workspace.id)}
       <!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -166,7 +188,7 @@
       >
         <WorkspaceRailItem
           {workspace}
-          isActive={activeWorkspaceId === workspace.id}
+          isActive={!focusActive && activeWorkspaceId === workspace.id}
           on:select={handleSelectWorkspace}
           on:contextmenu={handleContextMenu}
         />
@@ -228,6 +250,32 @@
 {/if}
 
 <style>
+  .focus-entry {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin-bottom: var(--space-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+
+  .focus-entry:hover {
+    color: var(--text-primary);
+    border-color: var(--border-default);
+  }
+
+  .focus-entry.active {
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    background: var(--accent-soft);
+  }
+
   .workspace-rail {
     display: flex;
     flex-direction: column;

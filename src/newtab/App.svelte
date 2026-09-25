@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import { t, getCollectionDisplayName } from '@lib/i18n';
   import './app.css';
   import { linksStore, linksByCollection } from '@/lib/stores/links';
@@ -23,6 +23,7 @@
   import { revealLink, workspaceForLink } from './reveal';
   import { createQueryTranslator, getTranslationAvailability } from '@/lib/ai/translator';
   import NextUpStrip from './components/NextUpStrip.svelte';
+  import FocusView from './components/FocusView.svelte';
   import { activityStore } from '@/lib/stores/activity';
   import * as progress from '@/lib/stores/progress';
   import { buildQueue, type Queue } from '@/lib/recommend/engine';
@@ -43,6 +44,15 @@
   /** Refreshed when the page becomes visible, so a tab left open overnight moves to the new day. */
   let now = Date.now();
   let lastShownReport = '';
+  let view: 'board' | 'focus' = 'board';
+
+  async function openFocus(section: 'triage' | 'completed' | null): Promise<void> {
+    view = 'focus';
+    if (section !== null) {
+      await tick();
+      document.getElementById(`focus-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
 
   $: showOnboarding = !onboardingDismissed && !$settingsStore.loading && !$settingsStore.settings.onboardingCompleted;
   $: loading = $linksStore.loading || $workspacesStore.loading;
@@ -58,7 +68,7 @@
     activity: $activityStore.activity,
     now,
   });
-  $: nextUpVisible = !loading && $settingsStore.settings.showNextUp && !$settingsStore.settings.nextUpCollapsed;
+  $: nextUpVisible = !loading && view === 'board' && $settingsStore.settings.showNextUp && !$settingsStore.settings.nextUpCollapsed;
   $: if (nextUpVisible && !$activityStore.loading) {
     reportShown(queue);
   }
@@ -184,6 +194,7 @@
   }
 
   async function revealOnBoard(link: Link): Promise<void> {
+    view = 'board';
     workspacesStore.setActiveWorkspace(
       workspaceForLink(link, $linksStore.collections, $workspacesStore.activeWorkspaceId)
     );
@@ -262,6 +273,9 @@
 
 <main class="dashboard" class:mounted>
   <WorkspaceRail
+    focusActive={view === 'focus'}
+    on:focus={() => openFocus(null)}
+    on:board={() => (view = 'board')}
     on:error={(e) => errorMessage = e.detail}
     on:success={(e) => successMessage = e.detail}
   />
@@ -289,33 +303,46 @@
         on:newCollection={() => showCreateCollection = true}
       />
 
-      {#if $settingsStore.settings.showNextUp}
-        <NextUpStrip
+      {#if view === 'focus'}
+        <FocusView
           {queue}
-          workspaces={$workspacesStore.workspaces}
-          collapsed={$settingsStore.settings.nextUpCollapsed}
+          links={$linksStore.links}
+          stats={$activityStore.stats}
+          {now}
           on:open={handleOpen}
           on:complete={handleComplete}
-          on:snooze={handleSnooze}
-          on:reference={handleMarkReference}
-          on:discard={handleDiscard}
-          on:reveal={handleReveal}
-          on:toggleCollapsed={() => settingsStore.setNextUpCollapsed(!$settingsStore.settings.nextUpCollapsed)}
         />
+      {:else}
+        {#if $settingsStore.settings.showNextUp}
+          <NextUpStrip
+            {queue}
+            workspaces={$workspacesStore.workspaces}
+            collapsed={$settingsStore.settings.nextUpCollapsed}
+            on:open={handleOpen}
+            on:complete={handleComplete}
+            on:snooze={handleSnooze}
+            on:reference={handleMarkReference}
+            on:discard={handleDiscard}
+            on:reveal={handleReveal}
+            on:toggleCollapsed={() => settingsStore.setNextUpCollapsed(!$settingsStore.settings.nextUpCollapsed)}
+            on:openTriage={() => openFocus('triage')}
+            on:openFocus={() => openFocus(null)}
+          />
+        {/if}
+
+        <KanbanBoard
+          {collections}
+          linksByCollection={$linksByCollection}
+          workspaces={$workspacesStore.workspaces}
+          currentWorkspaceId={$workspacesStore.activeWorkspaceId}
+          on:removeLink={handleRemoveLink}
+          on:error={handleError}
+          on:success={handleSuccess}
+          on:tabDrop={handleTabDrop}
+        />
+
+        <StatusBar links={boardLinks} {collections} workspace={currentWorkspace} />
       {/if}
-
-      <KanbanBoard
-        {collections}
-        linksByCollection={$linksByCollection}
-        workspaces={$workspacesStore.workspaces}
-        currentWorkspaceId={$workspacesStore.activeWorkspaceId}
-        on:removeLink={handleRemoveLink}
-        on:error={handleError}
-        on:success={handleSuccess}
-        on:tabDrop={handleTabDrop}
-      />
-
-      <StatusBar links={boardLinks} {collections} workspace={currentWorkspace} />
     {/if}
   </div>
 </main>

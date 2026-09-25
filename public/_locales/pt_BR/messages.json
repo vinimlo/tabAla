@@ -970,5 +970,80 @@
   },
   "focus_title": {
     "message": "Foco"
+  },
+  "focus_open": {
+    "message": "Abrir o Foco"
+  },
+  "focus_progress_title": {
+    "message": "Progresso"
+  },
+  "focus_week_one": {
+    "message": "1 concluído esta semana"
+  },
+  "focus_week_many": {
+    "message": "$1 concluídos esta semana",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_queue": {
+    "message": "$1 na fila",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_queue_down": {
+    "message": "$1 a menos que na semana passada",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_queue_up": {
+    "message": "$1 a mais que na semana passada",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_session_title": {
+    "message": "Sessão"
+  },
+  "focus_session_pick": {
+    "message": "Quanto tempo você tem?"
+  },
+  "focus_session_minutes": {
+    "message": "$1 min",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_session_next": {
+    "message": "Próximo"
+  },
+  "focus_session_over_budget": {
+    "message": "passa do tempo"
+  },
+  "focus_session_triage_one": {
+    "message": "Triar 1 link"
+  },
+  "focus_session_triage_many": {
+    "message": "Triar $1 links",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_session_empty": {
+    "message": "Nada para fazer nesta sessão."
   }
 }

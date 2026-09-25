@@ -970,5 +970,80 @@
   },
   "focus_title": {
     "message": "Focus"
+  },
+  "focus_open": {
+    "message": "Open Focus"
+  },
+  "focus_progress_title": {
+    "message": "Progress"
+  },
+  "focus_week_one": {
+    "message": "1 completed this week"
+  },
+  "focus_week_many": {
+    "message": "$1 completed this week",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_queue": {
+    "message": "$1 in the queue",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_queue_down": {
+    "message": "$1 fewer than last week",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_queue_up": {
+    "message": "$1 more than last week",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_session_title": {
+    "message": "Session"
+  },
+  "focus_session_pick": {
+    "message": "How much time do you have?"
+  },
+  "focus_session_minutes": {
+    "message": "$1 min",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_session_next": {
+    "message": "Next"
+  },
+  "focus_session_over_budget": {
+    "message": "longer than the session"
+  },
+  "focus_session_triage_one": {
+    "message": "Triage 1 link"
+  },
+  "focus_session_triage_many": {
+    "message": "Triage $1 links",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_session_empty": {
+    "message": "Nothing to do in this session."
   }
 }

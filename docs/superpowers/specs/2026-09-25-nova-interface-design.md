@@ -33,7 +33,7 @@ A busca inteligente e o espaço de recomendação (Próximos passos e Foco, fase
 | Profundidade | **Nova experiência, não só polimento** | Pedido explícito: "subir mais um patamar" depois da primeira prévia |
 | Recomendação na página inicial | **Um cartão principal (Agora) + duas alternativas (Depois)** | Três cartões iguais pedem escolha; um principal já responde |
 | Cor | **Paleta atual mantida; papéis redefinidos** | O coral é a marca (ícone, badge). Coral = a ação principal de cada área; verde = concluído; âmbar = triagem; o resto neutro |
-| Fonte | **Instrument Sans variável, local, recortada** | Licença OFL, eixo de largura: a versão estreita faz as instruções ("Assistir", "Foco") sem somar outra família |
+| Fonte | **Instrument Sans local e recortada: variável no peso + uma instância estreita fixa** | Licença OFL; a versão estreita faz as instruções ("Assistir", "Foco") sem trazer outra família, e os dois arquivos somam ~41 KB |
 | Busca | **Vira central de comando (⌘K)** | Vazia, mostra o que fazer; com resultados, age sobre o link; aceita comandos |
 | Triagem | **Camada própria, acionável de qualquer tela** | Decidir um link por vez, pelo teclado, sem ir até o Foco |
 | Sessão | **Persiste entre abas** | Toda aba nova é o tabAla; a sessão deve seguir a pessoa |
@@ -81,10 +81,13 @@ A paleta de `tokens.css` continua. Os tokens abaixo são adicionados ou renomead
 
 ### 4.2 Tipografia
 
-- **Família única:** Instrument Sans variável (eixos `wdth` 75–100 e `wght` 400–700), em `public/fonts/instrument-sans.woff2`, com a licença em `public/fonts/OFL.txt`. `@font-face` em `tokens.css`, `font-display: block` (o arquivo é local).
-- **Recorte:** latim básico e Latin-1 (U+0020–007E, U+00A0–00FF), mais `– — ‘ ’ “ ” … • ·`, feito com `pyftsubset` num container. Meta: ≤ 40 KB. Setas e símbolos de tecla (⌘ ⇧ ⌥ ↵ ↑ ↓) caem na fonte do sistema.
-- **Se o portão de 500 KB estourar:** primeiro corta-se o eixo de largura (as instruções passam a usar só peso 650); a fonte nunca volta a ser remota.
-- `--font-body` e `--font-display` apontam para a mesma família; `--font-display` usa `font-stretch: 80%` onde aparece. `--font-mono` fica só para código, nunca para domínio ou rótulo.
+- **Família única, dois arquivos locais** (medidos em 25/09; a fonte variável com os dois eixos recortada dava 54 KB):
+  - `public/fonts/instrument-sans.woff2`: Instrument Sans variável só no peso (`wght` 400–700, largura normal), ~27 KB; família CSS `"Instrument Sans"`;
+  - `public/fonts/instrument-sans-condensed.woff2`: instância fixa com largura 80% e peso 620, ~14 KB; família CSS `"Instrument Sans Condensed"`, usada só pelo `--font-display`;
+  - licença em `public/fonts/OFL.txt`; `@font-face` em `tokens.css`, `font-display: block` (os arquivos são locais).
+- **Recorte:** latim básico e Latin-1 (U+0020–007E, U+00A0–00FF), mais `– — ‘ ’ “ ” … •`, feito por `scripts/fonts/subset-instrument-sans.sh` num container. Meta: ≤ 42 KB somando os dois. Setas e símbolos de tecla (⌘ ⇧ ⌥ ↵ ↑ ↓) caem na fonte do sistema.
+- **Se o portão de 500 KB estourar:** primeiro a instância estreita passa a ter só letras (A–Z, a–z e acentuadas); depois ela sai, e as instruções usam o peso 650 da família normal. A fonte nunca volta a ser remota.
+- `--font-body` = `"Instrument Sans"`; `--font-display` = `"Instrument Sans Condensed"`, com o normal como reserva. `--font-mono` fica só para código, nunca para domínio ou rótulo.
 
 **Escala** (substitui a atual; os nomes existentes continuam válidos):
 
@@ -404,7 +407,7 @@ Nenhuma permissão nova e nada sai do navegador. A política (en e pt) ganha, na
 
 | Risco | Mitigação |
 |---|---|
-| Fonte + código novo estouram 500 KB (folga de ~63 KB) | Recorte da fonte (≤ 40 KB); saem `StatusBar`, `QuickActionsBar`, `NextUpStrip`, `NextUpCard` e `SearchPanel`; se ainda estourar, cortar o eixo de largura |
+| Fonte + código novo estouram 500 KB (folga de ~64 KB; a fonte e a licença levam ~45) | Recorte da fonte (~41 KB); saem `StatusBar`, `QuickActionsBar`, `NextUpStrip`, `NextUpCard`, `SearchPanel` e `FocusTriage`; o tamanho é medido ao fim de cada etapa (`du -sb dist` ≤ 512 000); se estourar, a instância estreita encolhe e depois sai (§4.2) |
 | Rodar o Vite com crxjs apaga o `dist` | O harness builda em `.preview/` com `--outDir`; nunca `vite preview` ou `vite dev` durante o trabalho |
 | Muitas telas mudam de uma vez | Cinco etapas, cada uma com testes e imagens; o comportamento do motor não muda |
 | Atalho F atrapalha quem digita | Mesmas guardas dos atalhos atuais (campo de texto, modificadores, camada aberta) |

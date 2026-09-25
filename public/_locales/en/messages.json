@@ -1045,5 +1045,82 @@
   },
   "focus_session_empty": {
     "message": "Nothing to do in this session."
+  },
+  "focus_triage_title": {
+    "message": "Triage"
+  },
+  "focus_fronts_title": {
+    "message": "Fronts"
+  },
+  "focus_completed_title": {
+    "message": "Completed"
+  },
+  "focus_completed_empty": {
+    "message": "Completed links show up here, and you can undo."
+  },
+  "focus_week_of": {
+    "message": "Week of $1",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_front_count_one": {
+    "message": "1 pending"
+  },
+  "focus_front_count_many": {
+    "message": "$1 pending",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "triage_reason_skipped": {
+    "message": "You skipped this 3 times. Is it still worth it?"
+  },
+  "triage_reason_snoozed": {
+    "message": "Snoozed 3 times. Is it still worth it?"
+  },
+  "triage_reason_revisited": {
+    "message": "You keep coming back without completing it. Make it a reference?"
+  },
+  "triage_reason_stale": {
+    "message": "Saved over 60 days ago with no decision"
+  },
+  "triage_keep": {
+    "message": "Still worth it"
+  },
+  "triage_already_done": {
+    "message": "Already done"
+  },
+  "triage_saved_on": {
+    "message": "Saved on $1",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "triage_left_one": {
+    "message": "1 left"
+  },
+  "triage_left_many": {
+    "message": "$1 left",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "triage_empty": {
+    "message": "Nothing to triage."
+  },
+  "progress_undo": {
+    "message": "Undo"
+  },
+  "success_link_restored": {
+    "message": "Back in its column"
   }
 }

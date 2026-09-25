@@ -1,14 +1,19 @@
 <script lang="ts">
   import { plural, t } from '@/lib/i18n';
-  import type { Link, RecoStats } from '@/lib/types';
+  import type { Link, RecoStats, Workspace } from '@/lib/types';
   import type { Queue } from '@/lib/recommend/engine';
   import { completedByWeek, previousQueue } from '@/lib/recommend/progress';
   import FocusSession from './FocusSession.svelte';
+  import FocusTriage from './FocusTriage.svelte';
+  import FocusFronts from './FocusFronts.svelte';
+  import FocusCompleted from './FocusCompleted.svelte';
 
   export let queue: Queue;
   export let links: Link[];
   export let stats: RecoStats;
   export let now: number;
+  export let workspaces: Workspace[] = [];
+  export let keyboard = true;
 
   $: bars = completedByWeek(links, now);
   $: thisWeek = bars[bars.length - 1].completed;
@@ -35,6 +40,9 @@
   </section>
 
   <FocusSession {queue} on:open on:complete on:openTriage={() => scrollTo('focus-triage')} />
+  <FocusTriage items={queue.triage} {workspaces} {keyboard} on:keep on:discard on:reference on:complete on:open />
+  <FocusFronts fronts={queue.fronts} {workspaces} on:collectionFocus on:collectionReference />
+  <FocusCompleted {links} on:restore on:open />
 </div>
 
 <style>

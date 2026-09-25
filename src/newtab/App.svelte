@@ -16,7 +16,7 @@
   import SettingsModal from './components/SettingsModal.svelte';
   import CreateCollectionModal from '@/shared/components/CreateCollectionModal.svelte';
   import OnboardingWizard from './components/OnboardingWizard.svelte';
-  import type { Link } from '@/lib/types';
+  import type { Collection, Link } from '@/lib/types';
   import { openLinkInCurrentTab, openLinkInNewTab } from '@/lib/tabs';
   import SearchPanel from './components/SearchPanel.svelte';
   import { dashboardShortcut } from './shortcuts';
@@ -212,7 +212,13 @@
 
   async function handleSearchReveal(event: CustomEvent<Link>): Promise<void> {
     showSearch = false;
-    await revealOnBoard(event.detail);
+    const link = event.detail;
+    if (link.completedAt !== undefined) {
+      view = 'focus';
+      await revealLink(link.id);
+      return;
+    }
+    await revealOnBoard(link);
   }
 
   function handleOpen(event: CustomEvent<{ link: Link; newTab: boolean }>): void {
@@ -241,6 +247,23 @@
 
   async function handleReveal(event: CustomEvent<Link>): Promise<void> {
     await revealOnBoard(event.detail);
+  }
+
+  async function handleKeep(event: CustomEvent<Link>): Promise<void> {
+    await progress.keepLink(event.detail);
+  }
+
+  async function handleRestore(event: CustomEvent<Link>): Promise<void> {
+    await progress.restoreLink(event.detail);
+    successMessage = t('success_link_restored');
+  }
+
+  async function handleCollectionFocus(event: CustomEvent<{ collection: Collection; value: boolean }>): Promise<void> {
+    await progress.setCollectionFocus(event.detail.collection, event.detail.value);
+  }
+
+  async function handleCollectionReference(event: CustomEvent<{ collection: Collection; value: boolean }>): Promise<void> {
+    await progress.setCollectionReference(event.detail.collection, event.detail.value);
   }
 
   function handleKeydown(event: KeyboardEvent): void {
@@ -309,8 +332,16 @@
           links={$linksStore.links}
           stats={$activityStore.stats}
           {now}
+          workspaces={$workspacesStore.workspaces}
+          keyboard={!showOnboarding && !showSearch && !showSettings && !showCreateCollection && linkToRemove === null}
           on:open={handleOpen}
           on:complete={handleComplete}
+          on:keep={handleKeep}
+          on:discard={handleDiscard}
+          on:reference={handleMarkReference}
+          on:restore={handleRestore}
+          on:collectionFocus={handleCollectionFocus}
+          on:collectionReference={handleCollectionReference}
         />
       {:else}
         {#if $settingsStore.settings.showNextUp}

@@ -10,9 +10,17 @@ const now = Date.now();
 
 describe('FocusView', () => {
   it('shows its progress even with nothing saved', () => {
-    render(FocusView, { props: { queue: buildQueue({ links: [], collections: [], activity: {}, now }), links: [], stats: {}, now } });
+    render(FocusView, { props: { queue: buildQueue({ links: [], collections: [], activity: {}, now }), links: [], stats: {}, now, workspaces: [] } });
 
     expect(screen.getByText(/focus_week_many/)).toBeInTheDocument();
     expect(screen.getByText(/focus_queue/)).toBeInTheDocument();
+  });
+
+  it('has the triage, fronts and completed sections', () => {
+    render(FocusView, { props: { queue: buildQueue({ links: [], collections: [], activity: {}, now }), links: [], stats: {}, now, workspaces: [] } });
+
+    for (const title of ['focus_triage_title', 'focus_fronts_title', 'focus_completed_title']) {
+      expect(screen.getByRole('heading', { name: title })).toBeInTheDocument();
+    }
   });
 });

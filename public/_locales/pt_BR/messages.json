@@ -1045,5 +1045,82 @@
   },
   "focus_session_empty": {
     "message": "Nada para fazer nesta sessão."
+  },
+  "focus_triage_title": {
+    "message": "Triagem"
+  },
+  "focus_fronts_title": {
+    "message": "Frentes"
+  },
+  "focus_completed_title": {
+    "message": "Concluídos"
+  },
+  "focus_completed_empty": {
+    "message": "Os links concluídos aparecem aqui, e dá para desfazer."
+  },
+  "focus_week_of": {
+    "message": "Semana de $1",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_front_count_one": {
+    "message": "1 pendente"
+  },
+  "focus_front_count_many": {
+    "message": "$1 pendentes",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "triage_reason_skipped": {
+    "message": "Você pulou isto 3 vezes. Ainda vale?"
+  },
+  "triage_reason_snoozed": {
+    "message": "Adiado 3 vezes. Ainda vale?"
+  },
+  "triage_reason_revisited": {
+    "message": "Você volta aqui e não conclui. Virar referência?"
+  },
+  "triage_reason_stale": {
+    "message": "Salvo há mais de 60 dias, sem decisão"
+  },
+  "triage_keep": {
+    "message": "Ainda vale"
+  },
+  "triage_already_done": {
+    "message": "Já concluí"
+  },
+  "triage_saved_on": {
+    "message": "Salvo em $1",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "triage_left_one": {
+    "message": "Falta 1"
+  },
+  "triage_left_many": {
+    "message": "Faltam $1",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "triage_empty": {
+    "message": "Nada para triar."
+  },
+  "progress_undo": {
+    "message": "Desfazer"
+  },
+  "success_link_restored": {
+    "message": "De volta à coluna"
   }
 }

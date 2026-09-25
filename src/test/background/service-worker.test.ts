@@ -96,4 +96,33 @@ describe('service-worker', () => {
 
     consoleSpy.mockRestore();
   });
+
+  it('listens to tabs and windows to learn from browsing', async () => {
+    await loadServiceWorker();
+
+    for (const event of [chrome.tabs.onUpdated, chrome.tabs.onActivated, chrome.tabs.onRemoved, chrome.windows.onFocusChanged]) {
+      expect(vi.mocked(event.addListener)).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('records an open and marks the tab when a saved page finishes loading', async () => {
+    const storage = await import('@/lib/storage');
+    vi.mocked(storage.getLinks).mockResolvedValue([
+      { id: 'l1', url: 'https://example.com/post', title: 'Post', collectionId: 'inbox', createdAt: 1 },
+    ]);
+    await loadServiceWorker();
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const onUpdated = vi.mocked(chrome.tabs.onUpdated.addListener).mock.calls[0][0] as (
+      id: number, change: { status?: string }, tab: chrome.tabs.Tab
+    ) => void;
+
+    onUpdated(1, { status: 'complete' }, {
+      id: 1, windowId: 10, url: 'https://example.com/post', active: true, incognito: false,
+    } as chrome.tabs.Tab);
+
+    await vi.waitFor(() => {
+      expect(storage.recordBrowsingOpen).toHaveBeenCalledWith(['l1'], expect.any(Number));
+      expect(chrome.action.setBadgeText).toHaveBeenCalledWith({ tabId: 1, text: '•' });
+    });
+  });
 });

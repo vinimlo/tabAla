@@ -61,6 +61,7 @@ const chromeMock = {
   storage: {
     local: createStorageArea(),
     sync: createStorageArea(),
+    session: createStorageArea(),
     onChanged: {
       addListener: vi.fn(),
       removeListener: vi.fn(),
@@ -87,6 +88,24 @@ const chromeMock = {
       addListener: vi.fn(),
       removeListener: vi.fn(),
     },
+    onActivated: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    },
+  },
+
+  windows: {
+    WINDOW_ID_NONE: -1,
+    get: vi.fn((windowId: number) => Promise.resolve({ id: windowId, focused: true })),
+    onFocusChanged: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    },
+  },
+
+  action: {
+    setBadgeText: vi.fn(() => Promise.resolve()),
+    setBadgeBackgroundColor: vi.fn(() => Promise.resolve()),
   },
 
   runtime: {

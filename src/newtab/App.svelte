@@ -19,6 +19,10 @@
   import SearchPanel from './components/SearchPanel.svelte';
   import AppHeader from './components/AppHeader.svelte';
   import { pendingSummary } from './header';
+  import { cardMeta, type CardMeta } from './card-meta';
+  import { activityOf } from '@/lib/recommend/triage';
+  import { isReference, isSnoozed } from '@/lib/recommend/state';
+  import { linkKind } from '@/lib/link-kind';
   import { dashboardShortcut } from './shortcuts';
   import { revealLink, workspaceForLink } from './reveal';
   import { createQueryTranslator, getTranslationAvailability } from '@/lib/ai/translator';
@@ -71,6 +75,18 @@
     activity: $activityStore.activity,
     now,
   });
+  $: triageReasons = new Map(queue.triage.map((item) => [item.link.id, item.reason]));
+  $: collectionById = new Map($linksStore.collections.map((collection) => [collection.id, collection]));
+  $: cardMetas = new Map($linksStore.links.map((link): [string, CardMeta] => [link.id, cardMeta({
+    link,
+    reference: isReference(link, collectionById.get(link.collectionId)),
+    snoozed: isSnoozed(link, now),
+    triage: triageReasons.get(link.id),
+    activity: activityOf($activityStore.activity, link.id),
+    kind: linkKind(link.url),
+    effort: queue.effortOf(link),
+    now,
+  })]));
   $: nextUpOnScreen = stripOnScreen({
     loading: loading || $settingsStore.loading || $activityStore.loading,
     visible,
@@ -404,6 +420,7 @@
         {/if}
 
         <KanbanBoard
+          metaOf={(link) => cardMetas.get(link.id) ?? null}
           {collections}
           linksByCollection={$linksByCollection}
           workspaces={$workspacesStore.workspaces}

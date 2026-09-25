@@ -76,7 +76,7 @@ function set(file) {
         throw new Error(`${locale}: ${key} not found`);
       }
       const at = lines.findIndex((line, i) => i > range[0] && i <= range[1] && line.includes('"message":'));
-      lines[at] = lines[at].replace(/"message": ".*?"(,?)$/, `"message": ${JSON.stringify(value[locale])}$1`);
+      lines[at] = lines[at].replace(/"message": ".*?"(,?)$/, (_, comma) => `"message": ${JSON.stringify(value[locale])}${comma}`);
     }
     write(locale, lines.join('\n'));
   }

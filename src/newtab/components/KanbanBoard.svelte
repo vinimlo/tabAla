@@ -8,6 +8,7 @@
   import { workspacesStore } from '@/lib/stores/workspaces';
   import { openLinkInNewTab, openLinkInCurrentTab } from '@/lib/tabs';
   import Column from './Column.svelte';
+  import type { CardMeta } from '../card-meta';
   import {
     completeLink, recordOpen, setCollectionFocus, setCollectionReference, setLinkReference, snoozeLink,
   } from '@/lib/stores/progress';
@@ -16,6 +17,8 @@
   export let linksByCollection: Map<string, Link[]>;
   export let workspaces: Workspace[] = [];
   export let currentWorkspaceId: string = '';
+  /** The meta line of each card; null leaves only reference and snooze. */
+  export let metaOf: ((link: Link) => CardMeta | null) | null = null;
 
   const dispatch = createEventDispatcher<{
     removeLink: { id: string; title: string };
@@ -150,6 +153,7 @@
           links={column.links}
           {workspaces}
           {currentWorkspaceId}
+          {metaOf}
           on:openLink={handleOpenLink}
           on:openLinkInNewTab={handleOpenLinkInNewTab}
           on:removeLink={(e) => dispatch('removeLink', e.detail)}

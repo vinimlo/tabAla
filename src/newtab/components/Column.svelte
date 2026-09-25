@@ -6,12 +6,17 @@
   import type { Collection, Link, Workspace } from '@/lib/types';
   import { INBOX_COLLECTION_ID } from '@/lib/types';
   import LinkCard from './LinkCard.svelte';
+  import IconButton from '@/shared/components/ui/IconButton.svelte';
+  import Icon from '@/shared/components/ui/Icon.svelte';
+  import type { CardMeta } from '../card-meta';
   import { isReference } from '@/lib/recommend/state';
 
   export let collection: Collection;
   export let links: Link[] = [];
   export let workspaces: Workspace[] = [];
   export let currentWorkspaceId: string = '';
+  /** The meta line of each card; null leaves only reference and snooze. */
+  export let metaOf: ((link: Link) => CardMeta | null) | null = null;
 
   const dispatch = createEventDispatcher<{
     openLink: Link;
@@ -213,48 +218,32 @@
           on:dblclick={startEditing}
           title={isInbox ? t('common_inbox') : t('column_double_click_rename')}
         >
+          <span class="dot" style:--dot={collection.color ?? 'var(--text-tertiary)'} aria-hidden="true"></span>
           {getCollectionDisplayName(collection)}
           <span class="link-count">{links.length}</span>
+          {#if collection.focus === true}
+            <span class="pin" title={t('reason_focus')}><Icon name="pin-filled" size={13} /></span>
+          {/if}
         </button>
       {/if}
 
       {#if !isInbox}
         <div class="column-menu" bind:this={menuRef}>
-          <button
-            type="button"
-            class="btn-menu"
-            on:click|stopPropagation={toggleMenu}
-            aria-label={t('column_menu')}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <circle cx="12" cy="12" r="1"/>
-              <circle cx="12" cy="5" r="1"/>
-              <circle cx="12" cy="19" r="1"/>
-            </svg>
-          </button>
+          <IconButton icon="more" size="sm" label={t('column_menu')} expanded={showMenu} on:click={(event) => { event.stopPropagation(); toggleMenu(); }} />
 
           {#if showMenu}
             <div class="menu-dropdown">
               <button type="button" class="menu-item" on:click={handleOpenAll} disabled={links.length === 0}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                  <polyline points="15 3 21 3 21 9"/>
-                  <line x1="10" y1="14" x2="21" y2="3"/>
-                </svg>
+                <Icon name="external" size={14} />
                 {t('column_open_all')}
               </button>
               {#if otherWorkspaces.length > 0}
                 <!-- svelte-ignore a11y-no-static-element-interactions -->
                 <div class="menu-item-with-submenu" on:mouseenter={() => showMoveSubmenu = true} on:mouseleave={() => showMoveSubmenu = false}>
                   <button type="button" class="menu-item" on:click|stopPropagation={() => showMoveSubmenu = true}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                      <path d="M12 11v6M9 14l3-3 3 3"/>
-                    </svg>
+                    <Icon name="folder" size={14} />
                     {t('column_move_to')}
-                    <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
+                    <span class="chevron"><Icon name="chevron-right" size={12} /></span>
                   </button>
                   {#if showMoveSubmenu}
                     <div class="submenu">
@@ -277,22 +266,15 @@
                 </div>
               {/if}
               <button type="button" class="menu-item" on:click={handleToggleFocus}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
-                </svg>
+                <Icon name="target" size={14} />
                 {collection.focus === true ? t('column_unpin_focus') : t('column_pin_focus')}
               </button>
               <button type="button" class="menu-item" on:click={handleToggleReference}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                </svg>
+                <Icon name="reference" size={14} />
                 {collection.reference === true ? t('column_unmark_reference') : t('column_mark_reference')}
               </button>
               <button type="button" class="menu-item menu-item-danger" on:click={handleDeleteCollection}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                </svg>
+                <Icon name="trash" size={14} />
                 {t('column_delete_collection')}
               </button>
             </div>
@@ -320,6 +302,7 @@
             {link}
             reference={isReference(link, collection)}
             collectionReference={collection.reference === true}
+            meta={metaOf === null ? null : metaOf(link)}
             on:open={(e) => dispatch('openLink', e.detail)}
             on:openInNewTab={(e) => dispatch('openLinkInNewTab', e.detail)}
             on:remove={(e) => dispatch('removeLink', e.detail)}
@@ -344,33 +327,24 @@
     min-width: var(--column-min-width);
     max-width: var(--column-max-width);
     max-height: 100%;
-    background: var(--surface-elevated);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-lg);
     flex-shrink: 0;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .column.inbox {
-    border-left: 2px solid var(--accent-primary);
+    transition: background-color var(--duration-fast) var(--ease-out);
   }
 
   .column.tab-drag-over {
-    border-color: var(--accent-primary);
     background: var(--accent-soft);
-    box-shadow:
-      0 0 0 2px var(--accent-glow),
-      0 8px 24px rgba(232, 93, 66, 0.15);
-    transform: scale(1.01);
+    outline: 1px dashed var(--accent-line);
+    outline-offset: 4px;
   }
 
   .column-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-2) var(--space-3);
-    min-height: 46px;
-    border-bottom: 1px solid var(--border-subtle);
+    min-height: 30px;
+    padding: 0 4px;
+    margin-bottom: var(--space-2);
   }
 
   .column-title {
@@ -381,33 +355,35 @@
     margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-2));
     background: transparent;
     border: none;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     color: var(--text-primary);
-    font-family: var(--font-body);
-    font-size: 0.8125rem;
-    font-weight: 600;
+    font: 600 13.5px / 1 var(--font-body);
     cursor: default;
-    transition: all var(--duration-fast) var(--ease-out);
   }
 
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 3px;
+    background: var(--dot);
+  }
+
+  .link-count {
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--text-tertiary);
+  }
+
+  .pin {
+    display: inline-grid;
+    color: var(--accent-primary);
+  }
   .column-title.editable {
     cursor: pointer;
   }
 
   .column-title.editable:hover {
     background: var(--surface-overlay);
-  }
-
-  .link-count {
-    font-family: var(--font-mono);
-    font-size: var(--text-xs);
-    font-weight: 500;
-    color: var(--text-tertiary);
-    background: var(--surface-subtle);
-    padding: 2px 8px;
-    border-radius: var(--radius-full);
-    min-width: 24px;
-    text-align: center;
   }
 
   .edit-input {
@@ -429,31 +405,6 @@
 
   .column-menu {
     position: relative;
-  }
-
-  .btn-menu {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-md);
-    color: var(--text-tertiary);
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-  }
-
-  .btn-menu:hover {
-    background: var(--surface-overlay);
-    color: var(--text-primary);
-  }
-
-  .btn-menu:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
   }
 
   .menu-dropdown {
@@ -552,10 +503,10 @@
 
   .column-content {
     flex: 1;
-    padding: var(--space-2);
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: 6px;
     overflow-y: auto;
     min-height: 100px;
   }

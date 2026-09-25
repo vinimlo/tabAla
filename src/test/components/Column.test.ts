@@ -71,6 +71,17 @@ describe('Column Component', () => {
     expect(screen.getByText('2')).toBeInTheDocument();
   });
 
+  it('passes each card its meta line', () => {
+    render(Column, {
+      props: {
+        collection: createMockCollection({ id: 'col-1', name: 'Work' }),
+        links: [createMockLink({ id: 'l1', title: 'Link 1', collectionId: 'col-1' })],
+        metaOf: () => ({ type: 'kind', kind: 'paper', effort: 40 }),
+      },
+    });
+    expect(screen.getByText('card_kind_effort')).toBeInTheDocument();
+  });
+
   it('should not show 3-dot menu for Inbox', () => {
     render(Column, {
       props: { collection: inboxCollection, links: [] },

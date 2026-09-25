@@ -789,7 +789,7 @@
     "message": "Referência"
   },
   "linkcard_snoozed_until": {
-    "message": "Até $1",
+    "message": "Adiado até $1",
     "placeholders": {
       "date": {
         "content": "$1"
@@ -1188,6 +1188,51 @@
     "message": "em $1 coleções",
     "placeholders": {
       "count": {
+        "content": "$1"
+      }
+    }
+  },
+
+  "card_kind_effort": {
+    "message": "$1 · $2 min",
+    "placeholders": {
+      "kind": {
+        "content": "$1"
+      },
+      "minutes": {
+        "content": "$2"
+      }
+    }
+  },
+  "card_progress": {
+    "message": "$1 de ~$2 min",
+    "placeholders": {
+      "spent": {
+        "content": "$1"
+      },
+      "effort": {
+        "content": "$2"
+      }
+    }
+  },
+  "card_triage_skipped": {
+    "message": "Pulado 3 vezes"
+  },
+  "card_triage_snoozed": {
+    "message": "Adiado $1 vezes",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "card_triage_revisited": {
+    "message": "Aberto e não concluído"
+  },
+  "card_triage_stale": {
+    "message": "Parado há $1 dias",
+    "placeholders": {
+      "days": {
         "content": "$1"
       }
     }

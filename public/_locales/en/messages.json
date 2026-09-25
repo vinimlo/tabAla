@@ -789,7 +789,7 @@
     "message": "Reference"
   },
   "linkcard_snoozed_until": {
-    "message": "Until $1",
+    "message": "Snoozed until $1",
     "placeholders": {
       "date": {
         "content": "$1"
@@ -1188,6 +1188,51 @@
     "message": "in $1 collections",
     "placeholders": {
       "count": {
+        "content": "$1"
+      }
+    }
+  },
+
+  "card_kind_effort": {
+    "message": "$1 · $2 min",
+    "placeholders": {
+      "kind": {
+        "content": "$1"
+      },
+      "minutes": {
+        "content": "$2"
+      }
+    }
+  },
+  "card_progress": {
+    "message": "$1 of ~$2 min",
+    "placeholders": {
+      "spent": {
+        "content": "$1"
+      },
+      "effort": {
+        "content": "$2"
+      }
+    }
+  },
+  "card_triage_skipped": {
+    "message": "Skipped 3 times"
+  },
+  "card_triage_snoozed": {
+    "message": "Snoozed $1 times",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "card_triage_revisited": {
+    "message": "Opened, not completed"
+  },
+  "card_triage_stale": {
+    "message": "Idle for $1 days",
+    "placeholders": {
+      "days": {
         "content": "$1"
       }
     }

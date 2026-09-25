@@ -7,6 +7,8 @@ import path from 'node:path';
 import manifest from './src/manifest.json';
 import pkg from './package.json';
 
+let localesOutDir = '';
+
 const manifestWithVersion = {
   ...manifest,
   version: pkg.version,
@@ -22,6 +24,25 @@ export default defineConfig(({ mode }) => ({
       enforce: 'post' as const,
       transformIndexHtml(html: string) {
         return html.replace(/ crossorigin/g, '');
+      },
+    },
+    {
+      // The locale files ship minified: same messages, about 12 KB less (spec §17, 500 KB budget).
+      name: 'minify-locales',
+      apply: 'build' as const,
+      configResolved(config: { build: { outDir: string }; root: string }) {
+        localesOutDir = path.resolve(config.root, config.build.outDir, '_locales');
+      },
+      closeBundle() {
+        if (!fs.existsSync(localesOutDir)) {
+          return;
+        }
+        for (const locale of fs.readdirSync(localesOutDir)) {
+          const file = path.join(localesOutDir, locale, 'messages.json');
+          if (fs.existsSync(file)) {
+            fs.writeFileSync(file, JSON.stringify(JSON.parse(fs.readFileSync(file, 'utf8'))));
+          }
+        }
       },
     },
     {

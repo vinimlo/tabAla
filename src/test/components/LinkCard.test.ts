@@ -25,7 +25,7 @@ describe('LinkCard Component', () => {
   it('should render favicon when present', () => {
     const { container } = render(LinkCard, { props: { link: defaultLink } });
 
-    const img = container.querySelector('.link-favicon img') as HTMLImageElement;
+    const img = container.querySelector('.tile img') as HTMLImageElement;
     expect(img).toBeInTheDocument();
     expect(img.src).toBe('https://www.example.com/favicon.ico');
   });
@@ -46,25 +46,18 @@ describe('LinkCard Component', () => {
     expect(img).toBeNull();
 
     // SVG fallback should be present
-    const svg = container.querySelector('.link-favicon svg');
+    const svg = container.querySelector('.tile svg');
     expect(svg).toBeInTheDocument();
   });
 
-  it('should dispatch remove event when remove button is clicked', async () => {
-    const removeFn = vi.fn();
-    render(LinkCard, {
-      props: { link: defaultLink },
-      events: { remove: removeFn },
-    });
+  it('removes from its menu', async () => {
+    const remove = vi.fn();
+    render(LinkCard, { props: { link: defaultLink }, events: { remove } });
 
-    const removeButton = screen.getByRole('button', { name: /linkcard_remove/i });
-    await fireEvent.click(removeButton);
+    await fireEvent.click(screen.getByRole('button', { name: 'progress_more' }));
+    await fireEvent.click(screen.getByRole('menuitem', { name: 'linkcard_remove' }));
 
-    expect(removeFn).toHaveBeenCalledTimes(1);
-    expect(removeFn.mock.calls[0][0].detail).toEqual({
-      id: 'link-1',
-      title: 'Example Page',
-    });
+    expect(remove.mock.calls[0][0].detail).toEqual({ id: defaultLink.id, title: defaultLink.title });
   });
 
   it('should have accessibility attributes (role and tabindex)', () => {
@@ -131,12 +124,26 @@ describe('LinkCard Component', () => {
       expect(reference.mock.calls[0][0].detail).toEqual({ link, value: false });
     });
 
-    it('shows when a link is a reference or snoozed', () => {
+    it('shows the line its meta asks for, and dims a snoozed card', async () => {
+      const until = new Date(2026, 8, 28).getTime();
+      const { container, rerender } = render(LinkCard, { props: { link, meta: { type: 'kind', kind: 'video', effort: 20 } } });
+      expect(screen.getByText('card_kind_effort')).toBeInTheDocument();
+
+      await rerender({ link, meta: { type: 'snoozed', until } });
+
+      expect(screen.getByText('linkcard_snoozed_until')).toBeInTheDocument();
+      expect(container.querySelector('.link-card')).toHaveClass('dim');
+    });
+
+    it('shows the title even without meta, and the URL when the title is empty', () => {
+      render(LinkCard, { props: { link: { ...link, title: '' } } });
+      expect(screen.getByText(link.url)).toBeInTheDocument();
+    });
+
+    it('still shows reference and snooze without meta', () => {
       const snoozed = { ...link, snoozedUntil: Date.now() + 2 * 86_400_000 };
       render(LinkCard, { props: { link: snoozed, reference: true } });
-
       expect(screen.getByText('linkcard_reference_badge')).toBeInTheDocument();
-      expect(screen.getByText('linkcard_snoozed_until')).toBeInTheDocument();
     });
   });
 });

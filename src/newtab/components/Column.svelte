@@ -6,6 +6,7 @@
   import type { Collection, Link, Workspace } from '@/lib/types';
   import { INBOX_COLLECTION_ID } from '@/lib/types';
   import LinkCard from './LinkCard.svelte';
+  import { isReference } from '@/lib/recommend/state';
 
   export let collection: Collection;
   export let links: Link[] = [];
@@ -21,6 +22,11 @@
     deleteCollection: { id: string; name: string; linkCount: number };
     tabDrop: { url: string; title: string; favicon?: string; collectionId: string };
     moveToWorkspace: { collectionId: string; workspaceId: string };
+    completeLink: Link;
+    snoozeLink: { link: Link; until: number };
+    linkReference: { link: Link; value: boolean | null };
+    collectionFocus: { collection: Collection; value: boolean };
+    collectionReference: { collection: Collection; value: boolean };
   }>();
 
   $: otherWorkspaces = workspaces.filter((w) => w.id !== currentWorkspaceId);
@@ -106,6 +112,16 @@
       name: getCollectionDisplayName(collection),
       linkCount: links.length,
     });
+  }
+
+  function handleToggleFocus(): void {
+    closeMenu();
+    dispatch('collectionFocus', { collection, value: collection.focus !== true });
+  }
+
+  function handleToggleReference(): void {
+    closeMenu();
+    dispatch('collectionReference', { collection, value: collection.reference !== true });
   }
 
   function handleOpenAll(): void {
@@ -260,6 +276,18 @@
                   {/if}
                 </div>
               {/if}
+              <button type="button" class="menu-item" on:click={handleToggleFocus}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+                </svg>
+                {collection.focus === true ? t('column_unpin_focus') : t('column_pin_focus')}
+              </button>
+              <button type="button" class="menu-item" on:click={handleToggleReference}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+                {collection.reference === true ? t('column_unmark_reference') : t('column_mark_reference')}
+              </button>
               <button type="button" class="menu-item menu-item-danger" on:click={handleDeleteCollection}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="3 6 5 6 21 6"/>
@@ -290,9 +318,14 @@
         <div animate:flip={{ duration: flipDurationMs }}>
           <LinkCard
             {link}
+            reference={isReference(link, collection)}
+            collectionReference={collection.reference === true}
             on:open={(e) => dispatch('openLink', e.detail)}
             on:openInNewTab={(e) => dispatch('openLinkInNewTab', e.detail)}
             on:remove={(e) => dispatch('removeLink', e.detail)}
+            on:complete={(e) => dispatch('completeLink', e.detail)}
+            on:snooze={(e) => dispatch('snoozeLink', e.detail)}
+            on:reference={(e) => dispatch('linkReference', e.detail)}
           />
         </div>
       {:else}

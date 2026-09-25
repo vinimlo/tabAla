@@ -8,6 +8,9 @@
   import { workspacesStore } from '@/lib/stores/workspaces';
   import { openLinkInNewTab, openLinkInCurrentTab } from '@/lib/tabs';
   import Column from './Column.svelte';
+  import {
+    completeLink, recordOpen, setCollectionFocus, setCollectionReference, setLinkReference, snoozeLink,
+  } from '@/lib/stores/progress';
 
   export let collections: Collection[] = [];
   export let linksByCollection: Map<string, Link[]>;
@@ -43,6 +46,7 @@
 
   async function handleOpenLink(event: CustomEvent<Link>): Promise<void> {
     const link = event.detail;
+    await recordOpen(link);
     const result = await openLinkInCurrentTab(link.url);
     if (!result.success) {
       dispatch('error', result.error ?? t('error_open_link_failed'));
@@ -51,10 +55,36 @@
 
   async function handleOpenLinkInNewTab(event: CustomEvent<Link>): Promise<void> {
     const link = event.detail;
+    await recordOpen(link);
     const result = await openLinkInNewTab(link.url);
     if (!result.success) {
       dispatch('error', result.error ?? t('error_open_link_failed'));
     }
+  }
+
+  async function handleCompleteLink(event: CustomEvent<Link>): Promise<void> {
+    await completeLink(event.detail);
+    dispatch('success', t('success_link_completed'));
+  }
+
+  async function handleSnoozeLink(event: CustomEvent<{ link: Link; until: number }>): Promise<void> {
+    await snoozeLink(event.detail.link, event.detail.until);
+    dispatch('success', t('success_link_snoozed'));
+  }
+
+  async function handleLinkReference(event: CustomEvent<{ link: Link; value: boolean | null }>): Promise<void> {
+    await setLinkReference(event.detail.link, event.detail.value);
+    if (event.detail.value === true) {
+      dispatch('success', t('success_link_reference'));
+    }
+  }
+
+  async function handleCollectionFocus(event: CustomEvent<{ collection: Collection; value: boolean }>): Promise<void> {
+    await setCollectionFocus(event.detail.collection, event.detail.value);
+  }
+
+  async function handleCollectionReference(event: CustomEvent<{ collection: Collection; value: boolean }>): Promise<void> {
+    await setCollectionReference(event.detail.collection, event.detail.value);
   }
 
   async function handleReorderLinks(event: CustomEvent<{ collectionId: string; orderedIds: string[] }>): Promise<void> {
@@ -128,6 +158,11 @@
           on:deleteCollection={handleDeleteCollection}
           on:tabDrop={(e) => dispatch('tabDrop', e.detail)}
           on:moveToWorkspace={handleMoveToWorkspace}
+          on:completeLink={handleCompleteLink}
+          on:snoozeLink={handleSnoozeLink}
+          on:linkReference={handleLinkReference}
+          on:collectionFocus={handleCollectionFocus}
+          on:collectionReference={handleCollectionReference}
         />
       </div>
     {/each}

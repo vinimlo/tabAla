@@ -794,5 +794,58 @@
   },
   "error_update_collection_failed": {
     "message": "Não foi possível atualizar a coleção"
+  },
+  "progress_complete": {
+    "message": "Concluir"
+  },
+  "progress_more": {
+    "message": "Mais ações"
+  },
+  "progress_snooze_tomorrow": {
+    "message": "Adiar para amanhã"
+  },
+  "progress_snooze_next_week": {
+    "message": "Adiar para a próxima semana"
+  },
+  "progress_mark_reference": {
+    "message": "Marcar como referência"
+  },
+  "progress_unmark_reference": {
+    "message": "Não é referência"
+  },
+  "linkcard_complete_title": {
+    "message": "Concluir: sai do quadro e fica em Foco › Concluídos"
+  },
+  "linkcard_reference_badge": {
+    "message": "Referência"
+  },
+  "linkcard_snoozed_until": {
+    "message": "Até $1",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "column_pin_focus": {
+    "message": "Fixar como foco"
+  },
+  "column_unpin_focus": {
+    "message": "Desafixar foco"
+  },
+  "column_mark_reference": {
+    "message": "Marcar coleção como referência"
+  },
+  "column_unmark_reference": {
+    "message": "Desmarcar coleção de referência"
+  },
+  "success_link_completed": {
+    "message": "Concluído"
+  },
+  "success_link_snoozed": {
+    "message": "Adiado"
+  },
+  "success_link_reference": {
+    "message": "Marcado como referência"
   }
 }

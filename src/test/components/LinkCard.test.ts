@@ -74,4 +74,69 @@ describe('LinkCard Component', () => {
     expect(card).toHaveAttribute('role', 'button');
     expect(card).toHaveAttribute('tabindex', '0');
   });
+
+  describe('progress', () => {
+    const link = createMockLink({ id: 'l1', title: 'Paper', url: 'https://example.com/p', collectionId: 'c1' });
+
+    it('completes without opening the link', async () => {
+      const complete = vi.fn();
+      const open = vi.fn();
+      render(LinkCard, { props: { link }, events: { complete, open } });
+
+      await fireEvent.click(screen.getByRole('button', { name: 'progress_complete' }));
+
+      expect(complete.mock.calls[0][0].detail).toEqual(link);
+      expect(open).not.toHaveBeenCalled();
+    });
+
+    it('Enter on an action button does not open the link', async () => {
+      const open = vi.fn();
+      render(LinkCard, { props: { link }, events: { open } });
+
+      await fireEvent.keyDown(screen.getByRole('button', { name: 'progress_complete' }), { key: 'Enter' });
+
+      expect(open).not.toHaveBeenCalled();
+    });
+
+    it('snoozes until next week from the menu', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 8, 24, 10));
+      const snooze = vi.fn();
+      render(LinkCard, { props: { link }, events: { snooze } });
+
+      await fireEvent.click(screen.getByRole('button', { name: 'progress_more' }));
+      await fireEvent.click(screen.getByRole('menuitem', { name: 'progress_snooze_next_week' }));
+      vi.useRealTimers();
+
+      expect(snooze.mock.calls[0][0].detail).toEqual({ link, until: new Date(2026, 8, 28).getTime() });
+    });
+
+    it('marks a link as reference', async () => {
+      const reference = vi.fn();
+      render(LinkCard, { props: { link }, events: { reference } });
+
+      await fireEvent.click(screen.getByRole('button', { name: 'progress_more' }));
+      await fireEvent.click(screen.getByRole('menuitem', { name: 'progress_mark_reference' }));
+
+      expect(reference.mock.calls[0][0].detail).toEqual({ link, value: true });
+    });
+
+    it('unmarking inside a reference collection keeps it pending there', async () => {
+      const reference = vi.fn();
+      render(LinkCard, { props: { link, reference: true, collectionReference: true }, events: { reference } });
+
+      await fireEvent.click(screen.getByRole('button', { name: 'progress_more' }));
+      await fireEvent.click(screen.getByRole('menuitem', { name: 'progress_unmark_reference' }));
+
+      expect(reference.mock.calls[0][0].detail).toEqual({ link, value: false });
+    });
+
+    it('shows when a link is a reference or snoozed', () => {
+      const snoozed = { ...link, snoozedUntil: Date.now() + 2 * 86_400_000 };
+      render(LinkCard, { props: { link: snoozed, reference: true } });
+
+      expect(screen.getByText('linkcard_reference_badge')).toBeInTheDocument();
+      expect(screen.getByText('linkcard_snoozed_until')).toBeInTheDocument();
+    });
+  });
 });

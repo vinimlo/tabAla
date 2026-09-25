@@ -41,6 +41,7 @@
   $: error = $linksStore.error ?? $workspacesStore.error;
   $: collections = $collectionsByActiveWorkspace;
   $: links = $linksStore.links;
+  $: boardLinks = links.filter((link) => link.completedAt === undefined);
   $: currentWorkspace = $activeWorkspace;
 
   onMount(async () => {
@@ -224,7 +225,7 @@
         on:tabDrop={handleTabDrop}
       />
 
-      <StatusBar {links} {collections} workspace={currentWorkspace} />
+      <StatusBar links={boardLinks} {collections} workspace={currentWorkspace} />
     {/if}
   </div>
 </main>

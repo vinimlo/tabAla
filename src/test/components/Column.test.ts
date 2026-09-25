@@ -98,4 +98,35 @@ describe('Column Component', () => {
     // The empty state shows translation key 'newtab_drag_links_here'
     expect(screen.getByText('newtab_drag_links_here')).toBeInTheDocument();
   });
+
+  it('forwards completing a card', async () => {
+    const completeLink = vi.fn();
+    render(Column, { props: { collection: workCollection, links: mockLinks }, events: { completeLink } });
+
+    await fireEvent.click(screen.getAllByRole('button', { name: 'progress_complete' })[0]);
+
+    expect(completeLink.mock.calls[0][0].detail.id).toBe('link-1');
+  });
+
+  it('pins the collection as focus and marks it as reference from its menu', async () => {
+    const collectionFocus = vi.fn();
+    const collectionReference = vi.fn();
+    render(Column, {
+      props: { collection: workCollection, links: mockLinks },
+      events: { collectionFocus, collectionReference },
+    });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'column_menu' }));
+    await fireEvent.click(screen.getByRole('button', { name: /column_pin_focus/ }));
+    await fireEvent.click(screen.getByRole('button', { name: 'column_menu' }));
+    await fireEvent.click(screen.getByRole('button', { name: /column_mark_reference/ }));
+
+    expect(collectionFocus.mock.calls[0][0].detail).toEqual({ collection: workCollection, value: true });
+    expect(collectionReference.mock.calls[0][0].detail).toEqual({ collection: workCollection, value: true });
+  });
+
+  it('marks the cards of a reference collection', () => {
+    render(Column, { props: { collection: { ...workCollection, reference: true }, links: mockLinks } });
+    expect(screen.getAllByText('linkcard_reference_badge')).toHaveLength(2);
+  });
 });

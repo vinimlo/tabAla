@@ -794,5 +794,58 @@
   },
   "error_update_collection_failed": {
     "message": "Could not update the collection"
+  },
+  "progress_complete": {
+    "message": "Complete"
+  },
+  "progress_more": {
+    "message": "More actions"
+  },
+  "progress_snooze_tomorrow": {
+    "message": "Snooze until tomorrow"
+  },
+  "progress_snooze_next_week": {
+    "message": "Snooze until next week"
+  },
+  "progress_mark_reference": {
+    "message": "Mark as reference"
+  },
+  "progress_unmark_reference": {
+    "message": "Not a reference"
+  },
+  "linkcard_complete_title": {
+    "message": "Complete: leaves the board and stays in Focus › Completed"
+  },
+  "linkcard_reference_badge": {
+    "message": "Reference"
+  },
+  "linkcard_snoozed_until": {
+    "message": "Until $1",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "column_pin_focus": {
+    "message": "Pin as focus"
+  },
+  "column_unpin_focus": {
+    "message": "Unpin focus"
+  },
+  "column_mark_reference": {
+    "message": "Mark collection as reference"
+  },
+  "column_unmark_reference": {
+    "message": "Unmark reference collection"
+  },
+  "success_link_completed": {
+    "message": "Completed"
+  },
+  "success_link_snoozed": {
+    "message": "Snoozed"
+  },
+  "success_link_reference": {
+    "message": "Marked as reference"
   }
 }

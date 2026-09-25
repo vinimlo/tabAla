@@ -1122,5 +1122,24 @@
   },
   "success_link_restored": {
     "message": "De volta à coluna"
+  },
+  "popup_saved_in": {
+    "message": "Salvo em $1",
+    "placeholders": {
+      "collection": {
+        "content": "$1"
+      }
+    }
+  },
+  "popup_completed_on": {
+    "message": "Concluído em $1",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "search_completed_badge": {
+    "message": "concluído"
   }
 }

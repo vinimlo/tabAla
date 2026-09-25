@@ -162,6 +162,9 @@
                 <span class="hit-path">{hitPath(hit)}</span>
                 <span class="hit-kind">{t(KIND_LABEL_KEYS[hit.kind])}</span>
                 <span class="hit-domain">{extractDomain(hit.link.url).replace(/^www\./, '')}</span>
+                {#if hit.link.completedAt !== undefined}
+                  <span class="hit-completed">{t('search_completed_badge')}</span>
+                {/if}
               </span>
               {#if hit.tags.length > 0}
                 <span class="hit-tags">
@@ -351,5 +354,9 @@
   .hit-tag.matched {
     color: var(--text-primary);
     background: var(--accent-soft);
+  }
+
+  .hit-completed {
+    color: var(--semantic-success);
   }
 </style>

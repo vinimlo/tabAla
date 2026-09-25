@@ -12,6 +12,7 @@ import { linksStore } from '@/lib/stores/links';
 import { workspacesStore } from '@/lib/stores/workspaces';
 import { settingsStore } from '@/lib/stores/settings';
 import { chromeMock } from '../setup';
+import * as storage from '@/lib/storage';
 import type { Link } from '@/lib/types';
 import { DEFAULT_WORKSPACE_ID, DEFAULT_SETTINGS } from '@/lib/types';
 import { createMockLink, createMockWorkspace } from '../factories';
@@ -111,7 +112,8 @@ describe('App Component', () => {
     expect(screen.getByText('Estudos › ICPC')).toBeInTheDocument();
 
     await fireEvent.keyDown(input, { key: 'Enter' });
-    expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'https://cp.example/dijkstra', active: true });
+    // The open is recorded first (the popup closes once the new tab takes focus).
+    await waitFor(() => expect(chrome.tabs.create).toHaveBeenCalledWith({ url: 'https://cp.example/dijkstra', active: true }));
   });
 
   it('also searches the English translation when topic search is on', async () => {
@@ -204,5 +206,47 @@ describe('App Component', () => {
     // The count badges show "1" indicating the link is there
     const countElements = screen.getAllByText('1');
     expect(countElements.length).toBeGreaterThanOrEqual(1);
+  });
+
+  describe('when the current tab is a saved link', () => {
+    const saved = createMockLink({ id: 'saved', url: 'https://saved.example/post', title: 'Saved post', collectionId: 'inbox' });
+
+    async function renderOn(links: Link[]): Promise<void> {
+      chromeMock.tabs.query.mockResolvedValue([{ url: 'https://saved.example/post', title: 'Saved post' }]);
+      setStoreState({});
+      render(App);
+      await waitFor(() => expect(chromeMock.tabs.query).toHaveBeenCalled());
+      await act(() => setStoreState({ links }));
+    }
+
+    afterEach(() => {
+      chromeMock.tabs.query.mockImplementation(() => Promise.resolve([]));
+    });
+
+    it('offers to complete it', async () => {
+      await renderOn([saved]);
+
+      expect(await screen.findByText('popup_saved_in')).toBeInTheDocument();
+      await fireEvent.click(screen.getByRole('button', { name: /progress_complete/ }));
+
+      expect(storage.patchLinkState).toHaveBeenCalledWith('saved', { completedAt: expect.any(Number), snoozedUntil: null });
+    });
+
+    it('offers to undo when it is already completed', async () => {
+      await renderOn([{ ...saved, completedAt: 1 }]);
+
+      expect(await screen.findByText('popup_completed_on')).toBeInTheDocument();
+      await fireEvent.click(screen.getByRole('button', { name: 'progress_undo' }));
+
+      expect(storage.patchLinkState).toHaveBeenCalledWith('saved', { completedAt: null });
+    });
+
+    it('acts on the pending copy when the page was saved twice', async () => {
+      await renderOn([{ ...saved, id: 'old-copy', completedAt: 1 }, saved]);
+
+      await fireEvent.click(await screen.findByRole('button', { name: /progress_complete/ }));
+
+      expect(vi.mocked(storage.patchLinkState).mock.calls[0][0]).toBe('saved');
+    });
   });
 });

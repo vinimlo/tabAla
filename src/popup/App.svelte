@@ -15,6 +15,8 @@
   import { buildIndex, search } from '@/lib/search/engine';
   import { displayNames, hitPath } from '@/lib/search/labels';
   import { createQueryTranslator } from '@/lib/ai/translator';
+  import { completeLink, recordOpen, restoreLink } from '@/lib/stores/progress';
+  import { shortDate } from '@/lib/recommend/dates';
 
   let mounted = false;
   let selectedCollectionId = INBOX_COLLECTION_ID;
@@ -26,6 +28,28 @@
   let query = '';
   const translateQuery = createQueryTranslator();
   let translatedQuery: string | null = null;
+  let currentUrl: string | null = null;
+
+  /** The saved link for this tab; the pending copy wins when the page was saved twice. */
+  function findSaved(links: Link[], url: string | null): Link | undefined {
+    if (url === null) {
+      return undefined;
+    }
+    const matches = links.filter((link) => link.url === url);
+    return matches.find((link) => link.completedAt === undefined) ?? matches[0];
+  }
+
+  function collectionName(link: Link): string {
+    const collection = $linksStore.collections.find((c) => c.id === link.collectionId);
+    return collection === undefined ? '' : getCollectionDisplayName(collection);
+  }
+
+  async function handleCompleteHere(link: Link): Promise<void> {
+    await completeLink(link);
+    successMessage = t('success_link_completed');
+  }
+
+  $: savedHere = findSaved($linksStore.links, currentUrl);
 
   async function requestTranslation(current: string, enabled: boolean): Promise<void> {
     translatedQuery = null;
@@ -59,7 +83,7 @@
   $: workspaces = $workspacesStore.workspaces;
   $: selectedWorkspaceId = $workspacesStore.activeWorkspaceId;
   $: collections = $collectionsByActiveWorkspace;
-  $: totalLinks = $linksStore.links.length;
+  $: totalLinks = $linksStore.links.filter((link) => link.completedAt === undefined).length;
 
   function handleWorkspaceChange(event: CustomEvent<string>): void {
     workspacesStore.setActiveWorkspace(event.detail);
@@ -78,6 +102,7 @@
       linksStore.load(),
       settingsStore.load(),
     ]);
+    currentUrl = (await getCurrentTab())?.url ?? null;
     setTimeout(() => { mounted = true; }, 50);
   });
 
@@ -128,6 +153,7 @@
   }
 
   async function handleOpenLink(link: Link): Promise<void> {
+    await recordOpen(link);
     const result = await openLinkInNewTab(link.url);
     if (!result.success) {
       errorMessage = result.error ?? t('error_open_link_failed');
@@ -196,6 +222,20 @@
       />
     </div>
 
+    {#if savedHere !== undefined}
+      <div class="saved-here" role="status">
+        {#if savedHere.completedAt === undefined}
+          <span class="saved-here-text">{t('popup_saved_in', collectionName(savedHere))}</span>
+          <button type="button" class="saved-here-action" on:click={() => handleCompleteHere(savedHere)}>
+            ✓ {t('progress_complete')}
+          </button>
+        {:else}
+          <span class="saved-here-text">{t('popup_completed_on', shortDate(savedHere.completedAt))}</span>
+          <button type="button" class="saved-here-action" on:click={() => restoreLink(savedHere)}>{t('progress_undo')}</button>
+        {/if}
+      </div>
+    {/if}
+
     <!-- Save Section -->
     <section class="save-section">
       <div class="save-row">
@@ -249,6 +289,9 @@
             <span class="search-hit-text">
               <span class="search-hit-title">{hit.link.title || hit.link.url}</span>
               <span class="search-hit-path">{hitPath(hit)}</span>
+              {#if hit.link.completedAt !== undefined}
+                <span class="search-hit-path">{t('search_completed_badge')}</span>
+              {/if}
             </span>
           </button>
         {:else}
@@ -860,5 +903,36 @@
   .search-hit-path {
     font-size: var(--text-xs);
     color: var(--text-tertiary);
+  }
+
+  .saved-here {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin: 0 var(--space-4) var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+  }
+
+  .saved-here-text {
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .saved-here-action {
+    flex-shrink: 0;
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--accent-primary);
+    border-radius: var(--radius-md);
+    background: var(--accent-soft);
+    color: var(--accent-primary);
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    cursor: pointer;
   }
 </style>

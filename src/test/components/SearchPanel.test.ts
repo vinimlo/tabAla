@@ -131,4 +131,15 @@ describe('SearchPanel', () => {
     expect(screen.getByText('search_empty')).toBeInTheDocument();
     expect(screen.getByText('search_enable_topic_hint')).toBeInTheDocument();
   });
+
+  it('marks completed links', async () => {
+    const done = createMockLink({
+      id: 'done', title: 'Hermes finished talk', url: 'https://example.com/done', collectionId: 'hermes', createdAt: 5, completedAt: 6,
+    });
+    const { input } = setup({ links: [...links, done] });
+
+    await type(input, 'finished');
+
+    expect(screen.getByText('search_completed_badge')).toBeInTheDocument();
+  });
 });

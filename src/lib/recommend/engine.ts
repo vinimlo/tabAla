@@ -151,25 +151,28 @@ function pickSlots(fronts: Front[], activity: Activity, now: number): Recommenda
     used.add(continued.collection.id);
   }
 
+  // Advance takes all slots but the last; Revive picks among the fronts not
+  // shown yet, and when none qualifies the last slot goes to Advance too.
+  const advance = (count: number): void => {
+    for (const front of fronts.filter((f) => !used.has(f.collection.id)).slice(0, count)) {
+      slots.push(recommendation(front.eligible[0], front.collection, 'advance', advanceReason(front)));
+      used.add(front.collection.id);
+    }
+  };
+  advance(SLOTS - slots.length - 1);
+
   const reviveBefore = addDays(now, -REVIVE_DAYS);
   const revive = fronts
     .filter((front) => !used.has(front.collection.id) && front.lastTouch < reviveBefore)
     .sort((a, b) => a.lastTouch - b.lastTouch)[0];
-  if (revive !== undefined) {
-    used.add(revive.collection.id);
+  if (revive === undefined) {
+    advance(SLOTS - slots.length);
+    return slots;
   }
-
-  const advanceCount = SLOTS - slots.length - (revive === undefined ? 0 : 1);
-  for (const front of fronts.filter((f) => !used.has(f.collection.id)).slice(0, advanceCount)) {
-    slots.push(recommendation(front.eligible[0], front.collection, 'advance', advanceReason(front)));
-  }
-
-  if (revive !== undefined) {
-    slots.push(recommendation(revive.eligible[0], revive.collection, 'revive', {
-      type: 'stale',
-      weeks: Math.floor(daysBetween(revive.lastTouch, now) / 7),
-    }));
-  }
+  slots.push(recommendation(revive.eligible[0], revive.collection, 'revive', {
+    type: 'stale',
+    weeks: Math.floor(daysBetween(revive.lastTouch, now) / 7),
+  }));
   return slots;
 }
 

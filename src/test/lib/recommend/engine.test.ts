@@ -87,17 +87,21 @@ describe('buildQueue', () => {
     expect(slots([link('a1', 'a')], [col('a', 1)], { a1: opened(20) })).toEqual(['advance:a1']);
   });
 
-  it('revisits the front untouched for longest, after 14 days, as the last card', () => {
-    const links = [
-      link('a1', 'a'),
-      link('b1', 'b'),
-      link('o1', 'old', { createdAt: daysAgo(30) }),
-      link('o2', 'old', { createdAt: daysAgo(31) }),
-    ];
-    const queue = buildQueue({ links, collections: [col('a', 1), col('b', 2), col('old', 3)], activity: {}, now });
+  it('revisits, as the last card, the front untouched for longest among those not already shown', () => {
+    const many = (prefix: string, count: number, days: number): Link[] =>
+      Array.from({ length: count }, (_, i) => link(`${prefix}${i}`, prefix, { createdAt: daysAgo(days) }));
+    const links = [...many('a', 10, 24), ...many('b', 5, 1), ...many('c', 3, 1), ...many('d', 2, 20)];
+    const queue = buildQueue({ links, collections: [col('a', 1), col('b', 2), col('c', 3), col('d', 4)], activity: {}, now });
 
-    expect(queue.slots.map((slot) => `${slot.role}:${slot.collection.id}`)).toEqual(['advance:a', 'advance:b', 'revive:old']);
-    expect(queue.slots[2].reason).toEqual({ type: 'stale', weeks: 4 });
+    expect(queue.slots.map((slot) => `${slot.role}:${slot.collection.id}`)).toEqual(['advance:a', 'advance:b', 'revive:d']);
+    expect(queue.slots[2].reason).toEqual({ type: 'stale', weeks: 2 });
+  });
+
+  it('gives the revive card to the next front when no front has been untouched for 14 days', () => {
+    const links = [link('a1', 'a'), link('a2', 'a'), link('b1', 'b'), link('c1', 'c', { createdAt: daysAgo(5) })];
+    const queue = buildQueue({ links, collections: [col('a', 1), col('b', 2), col('c', 3)], activity: {}, now });
+
+    expect(queue.slots.map((slot) => `${slot.role}:${slot.collection.id}`)).toEqual(['advance:a', 'advance:b', 'advance:c']);
   });
 
   it('fills every slot from a different front', () => {

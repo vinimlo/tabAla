@@ -85,8 +85,9 @@ interface Collection {
 - **Links órfãos**: Links de coleções excluídas vão para Inbox
 - **Unicidade**: Mesmo URL pode existir em múltiplas coleções
 - **Ordenação**: posição manual na coleção (arrastar grava `order`); links sem posição, como os recém-salvos, ficam no topo por data. Mover sem arrastar (`moveLink`) tira a posição
-- **Busca**: painel ⌘K em todos os workspaces (src/lib/search); a busca por assunto traduz a consulta para o inglês com o Translator do Chrome e busca a original e a traduzida juntas (src/lib/ai/translator.ts)
-- **Próximos passos e Foco**: motor puro em src/lib/recommend (frentes = coleções, próximo link pela ordem da coluna, vagas continuar/avançar/retomar, triagem, sessão). Um link feito é **concluído** (nunca "vencido"). Comportamento em `activity` e números em `recoStats`, chaves separadas de `links` e fora do export; botões chamam src/lib/stores/progress.ts. Fase 2: o service worker (src/background/activity.ts, visita em `storage.session`) registra aberturas por qualquer caminho, tempo ativo (teto de 30 min por visita) e a pergunta "concluído?"; casamento de URL em src/lib/url-match.ts
+- **Busca**: paleta ⌘K em todos os workspaces (src/newtab/components/CommandPalette.svelte sobre src/lib/search). Antes de digitar mostra Agora, abertos recentemente e ações; `>` lista só comandos (src/newtab/commands.ts); com um resultado selecionado dá para abrir, concluir (⌥↵), adiar, mover, mostrar no quadro e descartar. A busca por assunto traduz a consulta para o inglês com o Translator do Chrome (src/lib/ai/translator.ts)
+- **Próximos passos e Foco**: motor puro em src/lib/recommend (frentes = coleções, próximo link pela ordem da coluna, vagas continuar/avançar/retomar, triagem, sessão). Um link feito é **concluído** (nunca "vencido"). Comportamento em `activity` e números em `recoStats`, chaves separadas de `links` e fora do export; botões chamam src/lib/stores/progress.ts. Fase 2: o service worker (src/background/activity.ts, visita em `storage.session`) registra aberturas por qualquer caminho, tempo ativo (teto de 30 min por visita) e a pergunta "concluído?"; casamento de URL em src/lib/url-match.ts. A seção da nova aba chama-se **Agora** (um cartão principal + Depois). A sessão de Foco iniciada fica em `focusSession` (src/lib/storage/session.ts) e é seguida em toda aba; expira em 12 h e sai com "Apagar dados de uso".
+- **Interface**: tokens em src/shared/styles/tokens.css (cor por papel: coral = ação principal, verde = concluído, âmbar = triagem); fonte Instrument Sans local em public/fonts (recorte por scripts/fonts/subset-instrument-sans.sh); primitivas em src/shared/components/ui (Button, IconButton, Icon, Kbd, Menu, LinkTile, Segmented, ProgressRing). Cor literal em componente não passa em src/test/styles/literal-colors.test.ts. Para ver telas fora do Chrome: `make preview` (nunca `vite preview`/`vite dev`, que apagam o dist/)
 
 ## Comandos
 
@@ -95,6 +96,7 @@ Todos os comandos são executados via Docker através do Makefile:
 ```bash
 make dev             # Build com watch mode
 make build           # Build de produção
+make preview         # Builda em .preview/ e serve as telas na porta 4173 (ver scripts/preview/README.md)
 make test            # Rodar testes
 make lint            # Lint + type check
 make shell           # Abre shell no container
@@ -112,7 +114,7 @@ make shell           # Abre shell no container
 - **Não usar** APIs síncronas do chrome.storage (deprecated)
 - **Não armazenar** dados sensíveis (senhas, tokens)
 - **Não usar** Manifest V2 - sempre V3
-- **Evitar** bundle grande - manter extensão leve (<500KB)
+- **Evitar** bundle grande - manter extensão leve (<560KB; `du -sb dist` ≤ 573440)
 - **Não bloquear** UI durante operações de storage
 - **Nunca** hardcodar credenciais ou API keys
 

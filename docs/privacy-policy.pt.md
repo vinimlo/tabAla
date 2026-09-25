@@ -23,15 +23,16 @@ Todos esses dados ficam armazenados **exclusivamente** no `chrome.storage.local`
 
 Quando o usuário ativa a busca por assunto, o texto digitado na busca do TabAla é traduzido para o inglês pelo tradutor embutido no Chrome, que roda no próprio computador. Só o texto da busca vai para esse tradutor local; os links salvos não. Nada é enviado para servidores externos. A opção vem desligada e pode ser desligada a qualquer momento em Configurações.
 
-## Próximos passos e Foco (recomendações)
+## Agora e Foco (recomendações)
 
 Para sugerir o que abrir, ler ou resolver em seguida, o TabAla guarda no seu computador, junto dos links:
 
 - quando você concluiu, adiou ou marcou um link como referência, e quando respondeu "ainda vale" na triagem;
 - quantas vezes e em que dias você abriu um link salvo pelo próprio TabAla;
-- em que dias a faixa "Próximos passos" mostrou cada link, e contagens por semana (quantos foram mostrados, abertos, adiados, descartados).
+- em que dias a seção "Agora" mostrou cada link, e contagens por semana (quantos foram mostrados, abertos, adiados, descartados);
+- enquanto uma sessão de Foco está em andamento: a duração, o horário de início e quais links salvos ela planeja, para que toda nova aba possa segui-la. Isso é apagado quando a sessão termina, doze horas depois do início ou em "Apagar dados de uso".
 
-Esses dados ficam só em `chrome.storage.local`, nunca saem do navegador e não entram no arquivo de exportação. Você pode apagá-los em Configurações → Dados → "Apagar dados de uso"; os links continuam. A faixa pode ser desligada em Configurações.
+Esses dados ficam só em `chrome.storage.local`, nunca saem do navegador e não entram no arquivo de exportação. Você pode apagá-los em Configurações → Dados → "Apagar dados de uso"; os links continuam. O "Agora" pode ser desligado em Configurações.
 
 ## Atividade dos links salvos
 

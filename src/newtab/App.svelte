@@ -240,9 +240,24 @@
     successMessage = t('success_link_reference');
   }
 
+  /** The last discarded link, while its toast offers Undo. */
+  let lastDiscarded: Link | null = null;
+
   async function handleDiscard(event: CustomEvent<Link>): Promise<void> {
     await progress.discardLink(event.detail);
+    lastDiscarded = event.detail;
     successMessage = t('success_link_removed');
+  }
+
+  function closeSuccessToast(): void {
+    successMessage = null;
+    lastDiscarded = null;
+  }
+
+  function undoDiscard(): void {
+    if (lastDiscarded !== null) {
+      void progress.undoDiscard(lastDiscarded);
+    }
   }
 
   async function handleReveal(event: CustomEvent<Link>): Promise<void> {
@@ -379,7 +394,14 @@
 </main>
 
 {#if successMessage}
-  <Toast message={successMessage} type="success" onClose={() => successMessage = null} />
+  <Toast
+    message={successMessage}
+    type="success"
+    duration={lastDiscarded === null ? 3000 : 6000}
+    actionLabel={lastDiscarded !== null && successMessage === t('success_link_removed') ? t('progress_undo') : null}
+    onAction={undoDiscard}
+    onClose={closeSuccessToast}
+  />
 {/if}
 
 {#if errorMessage}

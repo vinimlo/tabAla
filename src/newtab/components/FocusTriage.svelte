@@ -9,6 +9,8 @@
 
   export let items: TriageItem[];
   export let workspaces: Workspace[] = [];
+  /** All links: an opened link leaves triage, but stays on screen until decided. */
+  export let links: Link[] = [];
   /** False while a dialog or the search is open: keys 1–4 then belong to it. */
   export let keyboard = true;
 
@@ -29,16 +31,41 @@
 
   type Decision = (typeof DECISIONS)[number]['event'];
 
-  $: current = items[0];
+  /** The link opened from triage: opening renews it, so it leaves `items`. */
+  let pinned: TriageItem | null = null;
+
+  $: current = resolveCurrent(pinned, items, links);
+
+  function resolveCurrent(held: TriageItem | null, list: TriageItem[], all: Link[]): TriageItem | undefined {
+    if (held !== null) {
+      const live = all.find((link) => link.id === held.link.id);
+      if (live !== undefined && live.completedAt === undefined && live.reference !== true) {
+        return list.find((item) => item.link.id === live.id) ?? { ...held, link: live };
+      }
+    }
+    return list[0];
+  }
 
   function decide(decision: Decision): void {
     if (current !== undefined) {
+      pinned = null;
       dispatch(decision, current.link);
     }
   }
 
+  function open(item: TriageItem): void {
+    pinned = item;
+    dispatch('open', { link: item.link, newTab: true });
+  }
+
+  /** A dialog, the search or a menu owns the keyboard while it is open. */
+  function overlayOpen(): boolean {
+    return document.querySelector('[role="dialog"], [role="menu"]') !== null;
+  }
+
   function handleKeydown(event: KeyboardEvent): void {
-    if (!keyboard || current === undefined || isEditable(event.target) || event.metaKey || event.ctrlKey || event.altKey) {
+    if (!keyboard || event.repeat || current === undefined || isEditable(event.target)
+      || event.metaKey || event.ctrlKey || event.altKey || overlayOpen()) {
       return;
     }
     const decision = DECISIONS.find((d) => d.key === event.key);
@@ -59,7 +86,7 @@
     <p class="triage-left">{plural(items.length, 'triage_left_one', 'triage_left_many')}</p>
     <article class="triage-card">
       <p class="triage-reason">{t(TRIAGE_KEYS[current.reason])}</p>
-      <button type="button" class="triage-title" on:click={() => dispatch('open', { link: current.link, newTab: true })}>
+      <button type="button" class="triage-title" on:click={() => open(current)}>
         {current.link.title || current.link.url}
       </button>
       <p class="triage-meta">

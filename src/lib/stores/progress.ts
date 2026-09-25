@@ -37,6 +37,11 @@ export async function discardLink(link: Link, now = Date.now()): Promise<void> {
   await activityStore.record(link.id, 'discard', now);
 }
 
+/** Undo of a discard: the link comes back with its id, position and state. */
+export async function undoDiscard(link: Link): Promise<void> {
+  await linksStore.reinsertLink(link);
+}
+
 export async function recordOpen(link: Link, now = Date.now()): Promise<void> {
   await activityStore.record(link.id, 'open', now);
 }

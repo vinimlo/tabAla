@@ -40,7 +40,7 @@
   </section>
 
   <FocusSession {queue} on:open on:complete on:openTriage={() => scrollTo('focus-triage')} />
-  <FocusTriage items={queue.triage} {workspaces} {keyboard} on:keep on:discard on:reference on:complete on:open />
+  <FocusTriage items={queue.triage} {workspaces} {links} {keyboard} on:keep on:discard on:reference on:complete on:open />
   <FocusFronts fronts={queue.fronts} {workspaces} on:collectionFocus on:collectionReference />
   <FocusCompleted {links} on:restore on:open />
 </div>

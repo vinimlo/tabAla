@@ -20,6 +20,17 @@ describe('Toast Component', () => {
     expect(closeButton).toBeInTheDocument();
   });
 
+  it('offers an action, such as undo, and closes after running it', async () => {
+    const onAction = vi.fn();
+    const onClose = vi.fn();
+    render(Toast, { props: { message: 'Discarded', actionLabel: 'Undo', onAction, onClose } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it('should call onClose when close button is clicked', async () => {
     const onClose = vi.fn();
     render(Toast, { props: { message: 'Test message', onClose } });

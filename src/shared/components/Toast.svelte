@@ -8,6 +8,9 @@
   export let duration: number = 3000;
   export let type: 'error' | 'success' | 'info' = 'error';
   export let onClose: () => void = () => {};
+  /** Optional action shown in the toast, such as "Undo". */
+  export let actionLabel: string | null = null;
+  export let onAction: () => void = () => {};
 
   let visible = true;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -67,6 +70,9 @@
     >
       <span class="toast-indicator"></span>
       <span class="toast-message">{message}</span>
+      {#if actionLabel !== null}
+        <button class="toast-action" type="button" on:click={() => { onAction(); dismiss(); }}>{actionLabel}</button>
+      {/if}
       <button
         class="toast-close"
         on:click={dismiss}
@@ -200,5 +206,17 @@
     .toast.paused {
       transform: none;
     }
+  }
+
+  .toast-action {
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--accent-primary);
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--accent-primary);
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    cursor: pointer;
   }
 </style>

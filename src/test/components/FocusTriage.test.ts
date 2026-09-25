@@ -63,6 +63,46 @@ describe('FocusTriage', () => {
     expect(keep).not.toHaveBeenCalled();
   });
 
+  it('keeps the opened link on screen, so the next decision is about it', async () => {
+    const open = vi.fn();
+    const discard = vi.fn();
+    const { rerender } = render(FocusTriage, {
+      props: { items, workspaces: [], links: [old, older] },
+      events: { open, discard },
+    });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'file:///notes/x.html' }));
+    // Opening renews the link, so it leaves the triage list.
+    await rerender({ items: items.filter((item) => item.link.id !== 'older'), workspaces: [], links: [old, older] });
+    await fireEvent.keyDown(window, { key: '2' });
+
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(discard.mock.calls[0][0].detail.id).toBe('older');
+  });
+
+  it('a held key decides only once', async () => {
+    const discard = vi.fn();
+    render(FocusTriage, { props: { items, workspaces: [] }, events: { discard } });
+
+    await fireEvent.keyDown(window, { key: '2' });
+    await fireEvent.keyDown(window, { key: '2', repeat: true });
+
+    expect(discard).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores the keys while any dialog or menu is open', async () => {
+    const keep = vi.fn();
+    render(FocusTriage, { props: { items, workspaces: [] }, events: { keep } });
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    document.body.appendChild(dialog);
+
+    await fireEvent.keyDown(window, { key: '1' });
+
+    dialog.remove();
+    expect(keep).not.toHaveBeenCalled();
+  });
+
   it('says when there is nothing to triage', () => {
     render(FocusTriage, { props: { items: [], workspaces: [] } });
     expect(screen.getByText('triage_empty')).toBeInTheDocument();

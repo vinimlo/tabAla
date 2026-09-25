@@ -8,7 +8,7 @@ import { linksStore, linksByCollection } from '@/lib/stores/links';
 import { activityStore } from '@/lib/stores/activity';
 import {
   completeLink, discardLink, keepLink, recordOpen, restoreLink, setCollectionFocus,
-  setCollectionReference, setLinkReference, snoozeLink,
+  setCollectionReference, setLinkReference, snoozeLink, undoDiscard,
 } from '@/lib/stores/progress';
 import type { Link } from '@/lib/types';
 import { EMPTY_ACTIVITY } from '@/lib/types';
@@ -82,6 +82,17 @@ describe('progress actions', () => {
 
     expect(storage.removeLink).toHaveBeenCalledWith('l1');
     expect(storage.recordAction).toHaveBeenCalledWith('l1', 'discard', 1000);
+  });
+
+  it('undoing a discard puts the same link back', async () => {
+    const placed = { ...link, order: 3, keptAt: 7 };
+    seed([placed]);
+    await discardLink(placed, 1000);
+
+    await undoDiscard(placed);
+
+    expect(storage.insertLink).toHaveBeenCalledWith(placed);
+    expect(get(linksStore).links).toEqual([placed]);
   });
 
   it('opening records the open', async () => {

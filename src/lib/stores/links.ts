@@ -56,6 +56,7 @@ function createLinksStore(): Writable<LinksState> & {
   moveLink: (linkId: string, toCollectionId: string) => Promise<void>;
   reorderLinks: (collectionId: string, orderedIds: string[]) => Promise<void>;
   patchLinkState: (linkId: string, patch: LinkStatePatch) => Promise<void>;
+  reinsertLink: (link: Link) => Promise<void>;
   patchCollectionState: (collectionId: string, patch: CollectionStatePatch) => Promise<void>;
   addCollection: (name: string, workspaceId?: string) => Promise<Collection>;
   removeCollection: (id: string) => Promise<void>;
@@ -225,6 +226,22 @@ function createLinksStore(): Writable<LinksState> & {
     );
   }
 
+  /** Puts a removed link back as it was (same id, position and state): undo of a discard. */
+  async function reinsertLink(link: Link): Promise<void> {
+    await optimisticUpdate(
+      store,
+      (state) => ({
+        updated: { ...state, links: [link, ...state.links.filter((l) => l.id !== link.id)] },
+        rollback: { links: state.links } as Partial<LinksState>,
+      }),
+      async () => {
+        await insertLink(link);
+        return null;
+      },
+      'Failed to save link'
+    );
+  }
+
   async function patchCollectionState(collectionId: string, patch: CollectionStatePatch): Promise<void> {
     await optimisticUpdate(
       store,
@@ -355,6 +372,7 @@ function createLinksStore(): Writable<LinksState> & {
     moveLink,
     reorderLinks,
     patchLinkState,
+    reinsertLink,
     patchCollectionState,
     addCollection,
     removeCollection,

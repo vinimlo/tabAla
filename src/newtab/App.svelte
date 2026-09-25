@@ -27,7 +27,7 @@
   import { activityStore } from '@/lib/stores/activity';
   import * as progress from '@/lib/stores/progress';
   import { buildQueue, type Queue } from '@/lib/recommend/engine';
-  import { dayKey } from '@/lib/recommend/dates';
+  import { sameDayNow, shownReport, stripOnScreen } from './next-up-report';
 
   let mounted = false;
   let onboardingDismissed = false;
@@ -41,8 +41,11 @@
   let showSearch = false;
   const translateQuery = createQueryTranslator();
   let translationAvailable = false;
-  /** Refreshed when the page becomes visible, so a tab left open overnight moves to the new day. */
+  /** Moves to the new day when the page is shown again or the clock passes midnight. */
   let now = Date.now();
+  /** A background dashboard tab never records what its strip "showed". */
+  let visible = true;
+  let dayTimer: ReturnType<typeof setInterval> | undefined;
   let lastShownReport = '';
   let view: 'board' | 'focus' = 'board';
 
@@ -68,27 +71,30 @@
     activity: $activityStore.activity,
     now,
   });
-  $: nextUpVisible = !loading && view === 'board' && $settingsStore.settings.showNextUp && !$settingsStore.settings.nextUpCollapsed;
-  $: if (nextUpVisible && !$activityStore.loading) {
+  $: nextUpOnScreen = stripOnScreen({
+    loading: loading || $settingsStore.loading || $activityStore.loading,
+    visible,
+    view,
+    showNextUp: $settingsStore.settings.showNextUp,
+    collapsed: $settingsStore.settings.nextUpCollapsed,
+  });
+  $: if (nextUpOnScreen) {
     reportShown(queue);
   }
 
   /** Records what the strip shows, once per distinct set of cards per day. */
   function reportShown(current: Queue): void {
-    const shown = current.slots.map((slot) => slot.link.id);
-    const skipped = current.triage.filter((item) => item.reason === 'skipped').map((item) => item.link.id);
-    const report = [dayKey(now), current.size, ...shown, '|', ...skipped].join(',');
-    if (report === lastShownReport) {
+    const report = shownReport(current, now);
+    if (report.key === lastShownReport) {
       return;
     }
-    lastShownReport = report;
-    void activityStore.recordShown(shown, skipped, current.size, now);
+    lastShownReport = report.key;
+    void activityStore.recordShown(report.shown, report.skipped, current.size, now);
   }
 
   function refreshDay(): void {
-    if (document.visibilityState === 'visible') {
-      now = Date.now();
-    }
+    visible = document.visibilityState === 'visible';
+    now = sameDayNow(now, Date.now());
   }
 
   onMount(async () => {
@@ -99,11 +105,16 @@
       activityStore.load(),
     ]);
     setTimeout(() => mounted = true, 50);
+    refreshDay();
     document.addEventListener('visibilitychange', refreshDay);
+    dayTimer = setInterval(refreshDay, 60_000);
     translationAvailable = (await getTranslationAvailability()) !== 'unavailable';
   });
 
-  onDestroy(() => document.removeEventListener('visibilitychange', refreshDay));
+  onDestroy(() => {
+    document.removeEventListener('visibilitychange', refreshDay);
+    clearInterval(dayTimer);
+  });
 
   async function handleCreateCollection(event: CustomEvent<string>): Promise<void> {
     const name = event.detail;

@@ -18,6 +18,7 @@
     type ModelAvailability,
   } from '@/lib/ai/translator';
   import ConfirmDialog from '@/shared/components/ConfirmDialog.svelte';
+  import { activityStore } from '@/lib/stores/activity';
   import Toast from '@/shared/components/Toast.svelte';
 
   const dispatch = createEventDispatcher<{
@@ -62,6 +63,17 @@
   let toastMessage = '';
   let toastType: 'success' | 'error' = 'success';
   let showToast = false;
+  let confirmClearUsage = false;
+
+  async function toggleNextUp(): Promise<void> {
+    await settingsStore.setShowNextUp(!settings.showNextUp);
+  }
+
+  async function handleClearUsage(): Promise<void> {
+    confirmClearUsage = false;
+    await activityStore.clear();
+    showToastMessage(t('success_usage_cleared'), 'success');
+  }
 
   function handleClose(): void {
     dispatch('close');
@@ -348,6 +360,27 @@
 
       <div class="setting-divider"></div>
 
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">{t('settings_nextup_title')}</span>
+          <span class="setting-description">{t('settings_nextup_description')}</span>
+        </div>
+        <button
+          type="button"
+          class="toggle"
+          class:active={settings.showNextUp}
+          on:click={toggleNextUp}
+          aria-pressed={settings.showNextUp}
+          aria-label={t('settings_nextup_toggle_label')}
+        >
+          <span class="toggle-track">
+            <span class="toggle-thumb"></span>
+          </span>
+        </button>
+      </div>
+
+      <div class="setting-divider"></div>
+
       <div class="setting-info-section">
         <h3>{t('settings_keyboard_shortcuts')}</h3>
         <div class="shortcuts-list">
@@ -411,6 +444,24 @@
           </button>
         </div>
 
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-label">{t('settings_usage_clear')}</span>
+            <span class="setting-description">{t('settings_usage_description')}</span>
+          </div>
+          <button
+            type="button"
+            class="btn-action"
+            on:click={() => (confirmClearUsage = true)}
+            aria-label={t('settings_usage_clear')}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+        </div>
+
         <input
           type="file"
           accept=".json"
@@ -430,6 +481,16 @@
     cancelText={t('common_cancel')}
     on:confirm={handleConfirmImport}
     on:cancel={handleCancelImport}
+  />
+{/if}
+
+{#if confirmClearUsage}
+  <ConfirmDialog
+    message={t('settings_usage_confirm')}
+    confirmText={t('common_delete')}
+    cancelText={t('common_cancel')}
+    on:confirm={handleClearUsage}
+    on:cancel={() => (confirmClearUsage = false)}
   />
 {/if}
 

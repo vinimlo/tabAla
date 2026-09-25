@@ -1141,5 +1141,26 @@
   },
   "search_completed_badge": {
     "message": "completed"
+  },
+  "settings_nextup_title": {
+    "message": "Next up on the new tab"
+  },
+  "settings_nextup_description": {
+    "message": "Suggests what to open, read or solve next among your saved links"
+  },
+  "settings_nextup_toggle_label": {
+    "message": "Turn next up on or off"
+  },
+  "settings_usage_clear": {
+    "message": "Clear usage data"
+  },
+  "settings_usage_description": {
+    "message": "What you opened, completed or snoozed, used only for the suggestions on this device. Your links stay."
+  },
+  "settings_usage_confirm": {
+    "message": "Clear usage data? Your links stay, and suggestions start learning again."
+  },
+  "success_usage_cleared": {
+    "message": "Usage data cleared"
   }
 }

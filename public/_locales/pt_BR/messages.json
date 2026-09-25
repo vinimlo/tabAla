@@ -1141,5 +1141,26 @@
   },
   "search_completed_badge": {
     "message": "concluído"
+  },
+  "settings_nextup_title": {
+    "message": "Próximos passos na nova aba"
+  },
+  "settings_nextup_description": {
+    "message": "Sugere o que abrir, ler ou resolver em seguida entre os links salvos"
+  },
+  "settings_nextup_toggle_label": {
+    "message": "Ligar ou desligar os próximos passos"
+  },
+  "settings_usage_clear": {
+    "message": "Apagar dados de uso"
+  },
+  "settings_usage_description": {
+    "message": "O que você abriu, concluiu ou adiou, usado só para as sugestões neste aparelho. Os links ficam."
+  },
+  "settings_usage_confirm": {
+    "message": "Apagar os dados de uso? Os links continuam, e as sugestões voltam a aprender do zero."
+  },
+  "success_usage_cleared": {
+    "message": "Dados de uso apagados"
   }
 }

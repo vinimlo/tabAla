@@ -1334,5 +1334,52 @@
         "content": "$1"
       }
     }
+  },
+
+  "command_start_session": {
+    "message": "Começar uma sessão de $1 min",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "command_open_focus": {
+    "message": "Abrir o Foco"
+  },
+  "command_back_to_board": {
+    "message": "Voltar ao quadro"
+  },
+  "command_go_to_workspace": {
+    "message": "Ir para $1",
+    "placeholders": {
+      "workspace": {
+        "content": "$1"
+      }
+    }
+  },
+  "command_theme_light": {
+    "message": "Mudar para o tema claro"
+  },
+  "command_theme_dark": {
+    "message": "Mudar para o tema escuro"
+  },
+  "command_show_now": {
+    "message": "Mostrar Agora"
+  },
+  "command_hide_now": {
+    "message": "Ocultar Agora"
+  },
+  "command_settings": {
+    "message": "Abrir configurações"
+  },
+  "palette_action_open": {
+    "message": "Abrir"
+  },
+  "palette_action_restore": {
+    "message": "Restaurar"
+  },
+  "palette_action_move": {
+    "message": "Mover para…"
   }
 }

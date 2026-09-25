@@ -1334,5 +1334,52 @@
         "content": "$1"
       }
     }
+  },
+
+  "command_start_session": {
+    "message": "Start a $1 min session",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "command_open_focus": {
+    "message": "Open Focus"
+  },
+  "command_back_to_board": {
+    "message": "Back to the board"
+  },
+  "command_go_to_workspace": {
+    "message": "Go to $1",
+    "placeholders": {
+      "workspace": {
+        "content": "$1"
+      }
+    }
+  },
+  "command_theme_light": {
+    "message": "Switch to the light theme"
+  },
+  "command_theme_dark": {
+    "message": "Switch to the dark theme"
+  },
+  "command_show_now": {
+    "message": "Show Now"
+  },
+  "command_hide_now": {
+    "message": "Hide Now"
+  },
+  "command_settings": {
+    "message": "Open settings"
+  },
+  "palette_action_open": {
+    "message": "Open"
+  },
+  "palette_action_restore": {
+    "message": "Restore"
+  },
+  "palette_action_move": {
+    "message": "Move to…"
   }
 }

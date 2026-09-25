@@ -847,5 +847,128 @@
   },
   "success_link_reference": {
     "message": "Marked as reference"
+  },
+  "nextup_title": {
+    "message": "Next up"
+  },
+  "nextup_empty": {
+    "message": "Nothing pending. Links you save show up here."
+  },
+  "nextup_triage_one": {
+    "message": "1 to triage"
+  },
+  "nextup_triage_many": {
+    "message": "$1 to triage",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "nextup_effort": {
+    "message": "~$1 min",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "nextup_role_continue": {
+    "message": "Continue"
+  },
+  "nextup_role_advance": {
+    "message": "Advance"
+  },
+  "nextup_role_revive": {
+    "message": "Revisit"
+  },
+  "action_watch": {
+    "message": "Watch"
+  },
+  "action_read": {
+    "message": "Read"
+  },
+  "action_explore": {
+    "message": "Explore"
+  },
+  "action_solve": {
+    "message": "Solve"
+  },
+  "action_review": {
+    "message": "Review"
+  },
+  "action_resume": {
+    "message": "Resume"
+  },
+  "action_search_again": {
+    "message": "Search again"
+  },
+  "action_open": {
+    "message": "Open"
+  },
+  "reason_opened_today": {
+    "message": "Opened today"
+  },
+  "reason_opened_day": {
+    "message": "Opened yesterday"
+  },
+  "reason_opened_days": {
+    "message": "Opened $1 days ago",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "reason_focus": {
+    "message": "Pinned focus"
+  },
+  "reason_momentum_one": {
+    "message": "1 completed this week"
+  },
+  "reason_momentum_many": {
+    "message": "$1 completed this week",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "reason_nearly_done_one": {
+    "message": "1 left to clear"
+  },
+  "reason_nearly_done_many": {
+    "message": "$1 left to clear",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "reason_next_in_column": {
+    "message": "Next in the column"
+  },
+  "reason_stale_week": {
+    "message": "Untouched for 1 week"
+  },
+  "reason_stale_weeks": {
+    "message": "Untouched for $1 weeks",
+    "placeholders": {
+      "weeks": {
+        "content": "$1"
+      }
+    }
+  },
+  "progress_snooze": {
+    "message": "Snooze"
+  },
+  "progress_discard": {
+    "message": "Discard"
+  },
+  "progress_reveal": {
+    "message": "Show in its column"
+  },
+  "focus_title": {
+    "message": "Focus"
   }
 }

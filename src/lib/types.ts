@@ -99,6 +99,10 @@ export interface Settings {
   theme: ThemePreference;
   /** Also search the English translation of each query (Chrome's on-device translator). */
   topicSearch: boolean;
+  /** Show the next up strip above the board. */
+  showNextUp: boolean;
+  /** The next up strip is collapsed to its header. */
+  nextUpCollapsed: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -106,6 +110,8 @@ export const DEFAULT_SETTINGS: Settings = {
   onboardingCompleted: false,
   theme: 'system',
   topicSearch: false,
+  showNextUp: true,
+  nextUpCollapsed: false,
 };
 
 // Workspace types

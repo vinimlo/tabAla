@@ -37,6 +37,19 @@ describe('settingsStore', () => {
     });
   });
 
+  describe('next up', () => {
+    it('saves whether the strip shows and whether it is collapsed', async () => {
+      await settingsStore.setShowNextUp(false);
+      await settingsStore.setNextUpCollapsed(true);
+
+      expect(vi.mocked(storage.updateSettings).mock.calls.map((call) => call[0])).toEqual([
+        { showNextUp: false },
+        { nextUpCollapsed: true },
+      ]);
+      expect(get(settingsStore).settings.nextUpCollapsed).toBe(true);
+    });
+  });
+
   describe('initial state', () => {
     it('should have loading: true, settings: DEFAULT_SETTINGS, error: null', () => {
       settingsStore.set(INITIAL_STORE_STATE);
@@ -55,6 +68,8 @@ describe('settingsStore', () => {
         onboardingCompleted: true,
         theme: 'dark',
         topicSearch: false,
+        showNextUp: true,
+        nextUpCollapsed: false,
       };
       vi.mocked(storage.getSettings).mockResolvedValue(customSettings);
 

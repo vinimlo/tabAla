@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import { t, getCollectionDisplayName } from '@lib/i18n';
   import './app.css';
   import { linksStore, linksByCollection } from '@/lib/stores/links';
@@ -22,6 +22,11 @@
   import { dashboardShortcut } from './shortcuts';
   import { revealLink, workspaceForLink } from './reveal';
   import { createQueryTranslator, getTranslationAvailability } from '@/lib/ai/translator';
+  import NextUpStrip from './components/NextUpStrip.svelte';
+  import { activityStore } from '@/lib/stores/activity';
+  import * as progress from '@/lib/stores/progress';
+  import { buildQueue, type Queue } from '@/lib/recommend/engine';
+  import { dayKey } from '@/lib/recommend/dates';
 
   let mounted = false;
   let onboardingDismissed = false;
@@ -35,6 +40,9 @@
   let showSearch = false;
   const translateQuery = createQueryTranslator();
   let translationAvailable = false;
+  /** Refreshed when the page becomes visible, so a tab left open overnight moves to the new day. */
+  let now = Date.now();
+  let lastShownReport = '';
 
   $: showOnboarding = !onboardingDismissed && !$settingsStore.loading && !$settingsStore.settings.onboardingCompleted;
   $: loading = $linksStore.loading || $workspacesStore.loading;
@@ -44,15 +52,48 @@
   $: boardLinks = links.filter((link) => link.completedAt === undefined);
   $: currentWorkspace = $activeWorkspace;
 
+  $: queue = buildQueue({
+    links: $linksStore.links,
+    collections: $linksStore.collections,
+    activity: $activityStore.activity,
+    now,
+  });
+  $: nextUpVisible = !loading && $settingsStore.settings.showNextUp && !$settingsStore.settings.nextUpCollapsed;
+  $: if (nextUpVisible && !$activityStore.loading) {
+    reportShown(queue);
+  }
+
+  /** Records what the strip shows, once per distinct set of cards per day. */
+  function reportShown(current: Queue): void {
+    const shown = current.slots.map((slot) => slot.link.id);
+    const skipped = current.triage.filter((item) => item.reason === 'skipped').map((item) => item.link.id);
+    const report = [dayKey(now), current.size, ...shown, '|', ...skipped].join(',');
+    if (report === lastShownReport) {
+      return;
+    }
+    lastShownReport = report;
+    void activityStore.recordShown(shown, skipped, current.size, now);
+  }
+
+  function refreshDay(): void {
+    if (document.visibilityState === 'visible') {
+      now = Date.now();
+    }
+  }
+
   onMount(async () => {
     await Promise.all([
       workspacesStore.load(),
       linksStore.load(),
       settingsStore.load(),
+      activityStore.load(),
     ]);
     setTimeout(() => mounted = true, 50);
+    document.addEventListener('visibilitychange', refreshDay);
     translationAvailable = (await getTranslationAvailability()) !== 'unavailable';
   });
+
+  onDestroy(() => document.removeEventListener('visibilitychange', refreshDay));
 
   async function handleCreateCollection(event: CustomEvent<string>): Promise<void> {
     const name = event.detail;
@@ -133,28 +174,62 @@
     }
   }
 
-  async function handleSearchOpen(event: CustomEvent<Link>): Promise<void> {
-    showSearch = false;
-    const result = await openLinkInCurrentTab(event.detail.url);
+  /** Every open from the dashboard is recorded first: opening in this tab leaves the page. */
+  async function openLink(link: Link, newTab: boolean): Promise<void> {
+    await progress.recordOpen(link);
+    const result = newTab ? await openLinkInNewTab(link.url) : await openLinkInCurrentTab(link.url);
     if (!result.success) {
       errorMessage = result.error ?? t('error_open_link_failed');
     }
   }
 
-  async function handleSearchOpenInNewTab(event: CustomEvent<Link>): Promise<void> {
-    const result = await openLinkInNewTab(event.detail.url);
-    if (!result.success) {
-      errorMessage = result.error ?? t('error_open_link_failed');
-    }
-  }
-
-  async function handleSearchReveal(event: CustomEvent<Link>): Promise<void> {
-    showSearch = false;
-    const link = event.detail;
+  async function revealOnBoard(link: Link): Promise<void> {
     workspacesStore.setActiveWorkspace(
       workspaceForLink(link, $linksStore.collections, $workspacesStore.activeWorkspaceId)
     );
     await revealLink(link.id);
+  }
+
+  async function handleSearchOpen(event: CustomEvent<Link>): Promise<void> {
+    showSearch = false;
+    await openLink(event.detail, false);
+  }
+
+  async function handleSearchOpenInNewTab(event: CustomEvent<Link>): Promise<void> {
+    await openLink(event.detail, true);
+  }
+
+  async function handleSearchReveal(event: CustomEvent<Link>): Promise<void> {
+    showSearch = false;
+    await revealOnBoard(event.detail);
+  }
+
+  function handleOpen(event: CustomEvent<{ link: Link; newTab: boolean }>): void {
+    void openLink(event.detail.link, event.detail.newTab);
+  }
+
+  async function handleComplete(event: CustomEvent<Link>): Promise<void> {
+    await progress.completeLink(event.detail);
+    successMessage = t('success_link_completed');
+  }
+
+  async function handleSnooze(event: CustomEvent<{ link: Link; until: number }>): Promise<void> {
+    await progress.snoozeLink(event.detail.link, event.detail.until);
+    successMessage = t('success_link_snoozed');
+  }
+
+  async function handleMarkReference(event: CustomEvent<Link>): Promise<void> {
+    await progress.setLinkReference(event.detail, true);
+    successMessage = t('success_link_reference');
+  }
+
+  async function handleDiscard(event: CustomEvent<Link>): Promise<void> {
+    await progress.discardLink(event.detail);
+    successMessage = t('success_link_removed');
+  }
+
+  async function handleReveal(event: CustomEvent<Link>): Promise<void> {
+    await revealOnBoard(event.detail);
   }
 
   function handleKeydown(event: KeyboardEvent): void {
@@ -213,6 +288,21 @@
         on:openSettings={() => showSettings = true}
         on:newCollection={() => showCreateCollection = true}
       />
+
+      {#if $settingsStore.settings.showNextUp}
+        <NextUpStrip
+          {queue}
+          workspaces={$workspacesStore.workspaces}
+          collapsed={$settingsStore.settings.nextUpCollapsed}
+          on:open={handleOpen}
+          on:complete={handleComplete}
+          on:snooze={handleSnooze}
+          on:reference={handleMarkReference}
+          on:discard={handleDiscard}
+          on:reveal={handleReveal}
+          on:toggleCollapsed={() => settingsStore.setNextUpCollapsed(!$settingsStore.settings.nextUpCollapsed)}
+        />
+      {/if}
 
       <KanbanBoard
         {collections}

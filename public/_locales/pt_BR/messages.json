@@ -847,5 +847,128 @@
   },
   "success_link_reference": {
     "message": "Marcado como referência"
+  },
+  "nextup_title": {
+    "message": "Próximos passos"
+  },
+  "nextup_empty": {
+    "message": "Nada pendente. Os links que você salvar aparecem aqui."
+  },
+  "nextup_triage_one": {
+    "message": "1 para triar"
+  },
+  "nextup_triage_many": {
+    "message": "$1 para triar",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "nextup_effort": {
+    "message": "~$1 min",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "nextup_role_continue": {
+    "message": "Continuar"
+  },
+  "nextup_role_advance": {
+    "message": "Avançar"
+  },
+  "nextup_role_revive": {
+    "message": "Retomar"
+  },
+  "action_watch": {
+    "message": "Assistir"
+  },
+  "action_read": {
+    "message": "Ler"
+  },
+  "action_explore": {
+    "message": "Explorar"
+  },
+  "action_solve": {
+    "message": "Resolver"
+  },
+  "action_review": {
+    "message": "Revisar"
+  },
+  "action_resume": {
+    "message": "Retomar"
+  },
+  "action_search_again": {
+    "message": "Refazer a busca"
+  },
+  "action_open": {
+    "message": "Abrir"
+  },
+  "reason_opened_today": {
+    "message": "Aberto hoje"
+  },
+  "reason_opened_day": {
+    "message": "Aberto ontem"
+  },
+  "reason_opened_days": {
+    "message": "Aberto há $1 dias",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "reason_focus": {
+    "message": "Foco fixado"
+  },
+  "reason_momentum_one": {
+    "message": "1 concluído esta semana"
+  },
+  "reason_momentum_many": {
+    "message": "$1 concluídos esta semana",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "reason_nearly_done_one": {
+    "message": "Falta 1 para zerar"
+  },
+  "reason_nearly_done_many": {
+    "message": "Faltam $1 para zerar",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "reason_next_in_column": {
+    "message": "Próximo da coluna"
+  },
+  "reason_stale_week": {
+    "message": "Parada há 1 semana"
+  },
+  "reason_stale_weeks": {
+    "message": "Parada há $1 semanas",
+    "placeholders": {
+      "weeks": {
+        "content": "$1"
+      }
+    }
+  },
+  "progress_snooze": {
+    "message": "Adiar"
+  },
+  "progress_discard": {
+    "message": "Descartar"
+  },
+  "progress_reveal": {
+    "message": "Ver na coluna"
+  },
+  "focus_title": {
+    "message": "Foco"
   }
 }

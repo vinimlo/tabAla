@@ -323,6 +323,8 @@ describe('settings', () => {
       onboardingCompleted: true,
       theme: 'dark',
       topicSearch: false,
+      showNextUp: true,
+      nextUpCollapsed: false,
     };
 
     await saveSettings(customSettings);
@@ -332,7 +334,7 @@ describe('settings', () => {
   });
 
   it('should update specific settings fields', async () => {
-    await saveSettings({ newtabEnabled: true, onboardingCompleted: false, theme: 'system', topicSearch: false });
+    await saveSettings({ newtabEnabled: true, onboardingCompleted: false, theme: 'system', topicSearch: false, showNextUp: true, nextUpCollapsed: false });
 
     const updated = await updateSettings({ onboardingCompleted: true });
 

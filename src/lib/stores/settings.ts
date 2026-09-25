@@ -33,6 +33,8 @@ function createSettingsStore(): Writable<SettingsState> & {
   setNewtabEnabled: (enabled: boolean) => Promise<void>;
   setTheme: (theme: ThemePreference) => Promise<void>;
   setTopicSearch: (enabled: boolean) => Promise<void>;
+  setShowNextUp: (enabled: boolean) => Promise<void>;
+  setNextUpCollapsed: (collapsed: boolean) => Promise<void>;
 } {
   const { subscribe, set, update: storeUpdate } = writable<SettingsState>({
     settings: { ...DEFAULT_SETTINGS },
@@ -119,6 +121,14 @@ function createSettingsStore(): Writable<SettingsState> & {
     await updateSettingsStore({ topicSearch: enabled });
   }
 
+  async function setShowNextUp(enabled: boolean): Promise<void> {
+    await updateSettingsStore({ showNextUp: enabled });
+  }
+
+  async function setNextUpCollapsed(collapsed: boolean): Promise<void> {
+    await updateSettingsStore({ nextUpCollapsed: collapsed });
+  }
+
   return {
     subscribe,
     set,
@@ -128,6 +138,8 @@ function createSettingsStore(): Writable<SettingsState> & {
     setNewtabEnabled,
     setTheme,
     setTopicSearch,
+    setShowNextUp,
+    setNextUpCollapsed,
   };
 }
 

@@ -748,6 +748,9 @@
   "kind_page": {
     "message": "Page"
   },
+  "kind_chat": {
+    "message": "Chat"
+  },
 
   "search_open_placeholder": {
     "message": "Search all links"

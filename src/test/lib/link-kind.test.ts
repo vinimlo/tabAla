@@ -32,6 +32,16 @@ describe('linkKind', () => {
     ['https://www.google.com.br/search?q=teste', 'search'],
     ['https://duckduckgo.com/?q=tabala', 'search'],
     ['https://www.anthropic.com/news/claude', 'page'],
+    ['https://claude.ai/chat/0a1b2c', 'chat'],
+    ['https://claude.ai/project/0a1b2c', 'chat'],
+    ['https://chatgpt.com/c/6aac817e', 'chat'],
+    ['https://chatgpt.com/g/g-abc123/c/6aad', 'chat'],
+    ['https://chat.openai.com/c/123', 'chat'],
+    ['https://gemini.google.com/app/5f2c', 'chat'],
+    ['https://notebooklm.google.com/notebook/e226b780', 'chat'],
+    ['https://notebook.google.com/notebook/e226b780', 'chat'],
+    ['https://learn.chatgpt.com/docs/quickstart', 'docs'],
+    ['https://claude.ai/login', 'page'],
     ['not a url', 'page'],
   ])('%s is %s', (url, kind) => {
     expect(linkKind(url)).toBe(kind);

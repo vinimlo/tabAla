@@ -10,13 +10,14 @@ export type LinkKind =
   | 'repo'
   | 'exercise'
   | 'docs'
+  | 'chat'
   | 'social'
   | 'search'
   | 'page';
 
 /** Display order of kind chips. */
 export const LINK_KINDS: readonly LinkKind[] = [
-  'video', 'paper', 'repo', 'code-change', 'docs', 'exercise', 'social', 'search', 'file', 'page',
+  'video', 'paper', 'repo', 'code-change', 'docs', 'exercise', 'chat', 'social', 'search', 'file', 'page',
 ];
 
 const PAPER_HOSTS = ['arxiv.org', 'openreview.net', 'aclanthology.org', 'dl.acm.org', 'ieeexplore.ieee.org'];
@@ -62,6 +63,14 @@ function isExercise(host: string, path: string): boolean {
     || (host === 'judge.beecrowd.com' && path.includes('/problems/view/'));
 }
 
+/** Saved conversations with an AI assistant or notebook. */
+function isChat(host: string, path: string): boolean {
+  return (host === 'claude.ai' && (path.startsWith('/chat/') || path.startsWith('/project/')))
+    || ((host === 'chatgpt.com' || host === 'chat.openai.com') && (path.startsWith('/c/') || path.startsWith('/g/')))
+    || (host === 'gemini.google.com' && path.startsWith('/app'))
+    || ((host === 'notebooklm.google.com' || host === 'notebook.google.com') && path.startsWith('/notebook/'));
+}
+
 function isDocs(host: string, path: string): boolean {
   return /^(docs|developer|developers|learn)\./.test(host)
     || onDomain(host, 'readthedocs.io')
@@ -100,6 +109,7 @@ export function linkKind(url: string): LinkKind {
   if (PAPER_HOSTS.some((domain) => onDomain(host, domain)) || path.toLowerCase().endsWith('.pdf')) { return 'paper'; }
   if (isRepo(host, segments)) { return 'repo'; }
   if (isExercise(host, path)) { return 'exercise'; }
+  if (isChat(host, path)) { return 'chat'; }
   if (isDocs(host, path)) { return 'docs'; }
   if (isSocial(host, path)) { return 'social'; }
   if (isSearch(host, parsed)) { return 'search'; }

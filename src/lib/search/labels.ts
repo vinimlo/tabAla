@@ -15,6 +15,7 @@ export const KIND_LABEL_KEYS: Record<LinkKind, string> = {
   'code-change': 'kind_code_change',
   docs: 'kind_docs',
   exercise: 'kind_exercise',
+  chat: 'kind_chat',
   social: 'kind_social',
   search: 'kind_search',
   file: 'kind_file',

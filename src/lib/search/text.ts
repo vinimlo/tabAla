@@ -48,6 +48,7 @@ const KIND_WORDS: Readonly<Partial<Record<string, LinkKind>>> = {
   issue: 'code-change', issues: 'code-change', pull: 'code-change',
   docs: 'docs', documentacao: 'docs', documentation: 'docs',
   exercicio: 'exercise', exercicios: 'exercise', exercise: 'exercise', exercises: 'exercise',
+  conversa: 'chat', conversas: 'chat', chat: 'chat', chats: 'chat',
 };
 
 export interface ParsedQuery {

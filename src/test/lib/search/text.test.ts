@@ -37,6 +37,8 @@ describe('parseQuery', () => {
     ['de', ['de'], []],
     ['de ', [], []],
     ['github', ['github'], []],
+    ['conversas sobre agentes ', ['agent'], ['chat']],
+    ['chat', [], ['chat']],
     ['!!!', [], []],
   ])('%j', (query, stems, kinds) => {
     const parsed = parseQuery(query);

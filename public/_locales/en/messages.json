@@ -1162,5 +1162,27 @@
   },
   "success_usage_cleared": {
     "message": "Usage data cleared"
+  },
+  "nextup_ask": {
+    "message": "You spent $1 min here. Completed?",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "nextup_ask_yes": {
+    "message": "Yes, completed"
+  },
+  "nextup_ask_no": {
+    "message": "Not yet"
+  },
+  "reason_spent": {
+    "message": "$1 min spent here",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
   }
 }

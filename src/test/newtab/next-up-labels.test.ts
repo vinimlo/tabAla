@@ -19,6 +19,8 @@ describe('next up labels', () => {
     [{ type: 'nextInColumn' }, 'reason_next_in_column'],
     [{ type: 'stale', weeks: 1 }, 'reason_stale_week'],
     [{ type: 'stale', weeks: 3 }, 'reason_stale_weeks'],
+    [{ type: 'ask', minutes: 25 }, 'nextup_ask'],
+    [{ type: 'spent', minutes: 12 }, 'reason_spent'],
   ] as [Reason, string][])('%j reads %s', (reason, key) => {
     expect(reasonText(reason)).toBe(key);
   });

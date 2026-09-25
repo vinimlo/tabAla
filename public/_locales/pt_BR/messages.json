@@ -1162,5 +1162,27 @@
   },
   "success_usage_cleared": {
     "message": "Dados de uso apagados"
+  },
+  "nextup_ask": {
+    "message": "Você passou $1 min aqui. Concluído?",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
+  },
+  "nextup_ask_yes": {
+    "message": "Sim, concluí"
+  },
+  "nextup_ask_no": {
+    "message": "Ainda não"
+  },
+  "reason_spent": {
+    "message": "Você passou $1 min aqui",
+    "placeholders": {
+      "minutes": {
+        "content": "$1"
+      }
+    }
   }
 }

@@ -145,4 +145,20 @@ describe('buildQueue', () => {
     const [card] = buildQueue({ links: [...done, link('next', 'a')], collections: [col('a', 1)], activity, now }).slots;
     expect(card).toMatchObject({ link: { id: 'next' }, effort: 25 });
   });
+
+  it('asks "completed?" first, about the link with the latest question', () => {
+    const links = [link('a1', 'a'), link('b1', 'b')];
+    const activity: Activity = {
+      a1: { ...opened(1), activeMs: 25 * 60_000, askCompleteAt: daysAgo(1) },
+      b1: { ...opened(0), activeMs: 12 * 60_000 },
+    };
+    const queue = buildQueue({ links, collections: [col('a', 1), col('b', 2)], activity, now });
+    expect(queue.slots[0]).toMatchObject({ role: 'continue', link: { id: 'a1' }, reason: { type: 'ask', minutes: 25 } });
+  });
+
+  it('says how long the user spent on the link to continue', () => {
+    const activity: Activity = { a1: { ...opened(1), activeMs: 12 * 60_000 } };
+    const [card] = buildQueue({ links: [link('a1', 'a')], collections: [col('a', 1)], activity, now }).slots;
+    expect(card.reason).toEqual({ type: 'spent', minutes: 12 });
+  });
 });

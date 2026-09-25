@@ -49,6 +49,7 @@
             on:reference
             on:discard
             on:reveal
+            on:dismissAsk
           />
         {/each}
       </div>

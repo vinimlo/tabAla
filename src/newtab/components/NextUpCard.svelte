@@ -16,6 +16,7 @@
     reference: Link;
     discard: Link;
     reveal: Link;
+    dismissAsk: Link;
   }>();
 
   let menu: 'snooze' | 'more' | null = null;
@@ -35,12 +36,17 @@
   }
 </script>
 
-<article class="nextup-card" data-role={rec.role}>
+<article class="nextup-card" class:asking={rec.reason.type === 'ask'} data-role={rec.role}>
   <p class="card-meta">
     <span class="card-role">{t(ROLE_KEYS[rec.role])}</span>
     <span class="card-path">{path}</span>
-    <span class="card-reason">{reasonText(rec.reason)}</span>
+    {#if rec.reason.type !== 'ask'}
+      <span class="card-reason">{reasonText(rec.reason)}</span>
+    {/if}
   </p>
+  {#if rec.reason.type === 'ask'}
+    <p class="card-question">{reasonText(rec.reason)}</p>
+  {/if}
 
   <button
     type="button"
@@ -52,6 +58,14 @@
     <span class="card-effort">{effortText(rec.effort)}</span>
   </button>
 
+  {#if rec.reason.type === 'ask'}
+    <div class="card-actions">
+      <button type="button" class="card-btn card-complete" on:click={() => dispatch('complete', rec.link)}>
+        ✓ {t('nextup_ask_yes')}
+      </button>
+      <button type="button" class="card-btn" on:click={() => dispatch('dismissAsk', rec.link)}>{t('nextup_ask_no')}</button>
+    </div>
+  {:else}
   <div class="card-actions">
     <button type="button" class="card-btn card-complete" on:click={() => dispatch('complete', rec.link)}>
       ✓ {t('progress_complete')}
@@ -84,6 +98,7 @@
       {/if}
     </div>
   </div>
+  {/if}
 </article>
 
 <style>
@@ -215,5 +230,15 @@
 
   .card-dropdown .danger {
     color: var(--semantic-error);
+  }
+
+  .nextup-card.asking {
+    border-color: var(--accent-primary);
+  }
+
+  .card-question {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--accent-primary);
   }
 </style>

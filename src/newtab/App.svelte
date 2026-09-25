@@ -275,6 +275,10 @@
     await revealOnBoard(event.detail);
   }
 
+  async function handleDismissAsk(event: CustomEvent<Link>): Promise<void> {
+    await progress.dismissAsk(event.detail);
+  }
+
   async function handleKeep(event: CustomEvent<Link>): Promise<void> {
     await progress.keepLink(event.detail);
   }
@@ -381,6 +385,7 @@
             on:reference={handleMarkReference}
             on:discard={handleDiscard}
             on:reveal={handleReveal}
+            on:dismissAsk={handleDismissAsk}
             on:toggleCollapsed={() => settingsStore.setNextUpCollapsed(!$settingsStore.settings.nextUpCollapsed)}
             on:openTriage={() => openFocus('triage')}
             on:openFocus={() => openFocus(null)}

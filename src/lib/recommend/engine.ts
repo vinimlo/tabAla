@@ -24,7 +24,9 @@ export type Reason =
   | { type: 'momentum'; count: number }
   | { type: 'nearlyDone'; remaining: number }
   | { type: 'nextInColumn' }
-  | { type: 'stale'; weeks: number };
+  | { type: 'stale'; weeks: number }
+  | { type: 'ask'; minutes: number }
+  | { type: 'spent'; minutes: number };
 
 export interface Front {
   collection: Collection;
@@ -127,6 +129,21 @@ function buildFronts(links: Link[], collections: Collection[], activity: Activit
 function continueSlot(
   fronts: Front[], activity: Activity, now: number, effortOf: (link: Link) => number
 ): Recommendation | null {
+  // A visit long enough to ask "completed?" takes the first slot (spec §7.1).
+  let asking: { link: Link; front: Front; at: number } | null = null;
+  for (const front of fronts) {
+    for (const link of front.eligible) {
+      const at = activityOf(activity, link.id).askCompleteAt;
+      if (at !== undefined && (asking === null || at > asking.at)) {
+        asking = { link, front, at };
+      }
+    }
+  }
+  if (asking !== null) {
+    const minutes = Math.max(1, Math.round(activityOf(activity, asking.link.id).activeMs / 60_000));
+    return recommendation(asking.link, asking.front.collection, 'continue', { type: 'ask', minutes }, effortOf(asking.link));
+  }
+
   const since = addDays(now, -CONTINUE_DAYS);
   let best: { link: Link; front: Front; openedAt: number } | null = null;
   for (const front of fronts) {
@@ -138,10 +155,11 @@ function continueSlot(
     }
   }
   if (best !== null) {
-    return recommendation(best.link, best.front.collection, 'continue', {
-      type: 'opened',
-      days: daysBetween(best.openedAt, now),
-    }, effortOf(best.link));
+    const spent = Math.round(activityOf(activity, best.link.id).activeMs / 60_000);
+    const reason: Reason = spent >= 1
+      ? { type: 'spent', minutes: spent }
+      : { type: 'opened', days: daysBetween(best.openedAt, now) };
+    return recommendation(best.link, best.front.collection, 'continue', reason, effortOf(best.link));
   }
   // Fronts are sorted with focus first, then by momentum.
   const focus = fronts.find((front) => front.collection.focus === true);

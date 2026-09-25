@@ -44,6 +44,10 @@ export function reasonText(reason: Reason): string {
       return t('reason_next_in_column');
     case 'stale':
       return plural(reason.weeks, 'reason_stale_week', 'reason_stale_weeks');
+    case 'ask':
+      return t('nextup_ask', reason.minutes);
+    case 'spent':
+      return t('reason_spent', reason.minutes);
   }
 }
 

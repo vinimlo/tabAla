@@ -26,6 +26,20 @@ describe('NextUpCard', () => {
     }
   });
 
+  it('asks "completed?" with yes and not yet', async () => {
+    const complete = vi.fn();
+    const dismissAsk = vi.fn();
+    const asking: Recommendation = { ...rec, role: 'continue', reason: { type: 'ask', minutes: 25 } };
+    render(NextUpCard, { props: { rec: asking, path: 'x' }, events: { complete, dismissAsk } });
+
+    expect(screen.getByText('nextup_ask')).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole('button', { name: /nextup_ask_yes/ }));
+    await fireEvent.click(screen.getByRole('button', { name: 'nextup_ask_no' }));
+
+    expect(complete.mock.calls[0][0].detail).toEqual(rec.link);
+    expect(dismissAsk.mock.calls[0][0].detail).toEqual(rec.link);
+  });
+
   it('shows the URL when the title is empty', () => {
     render(NextUpCard, { props: { rec: { ...rec, link: { ...rec.link, title: '' } }, path: 'x' } });
     expect(screen.getByText('https://example.com/essay')).toBeInTheDocument();

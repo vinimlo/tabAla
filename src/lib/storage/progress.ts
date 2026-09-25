@@ -1,10 +1,12 @@
 /**
  * Storage for the recommendation space: link and collection state (spec §4-§5).
  */
-import type { Collection, Link } from '../types';
+import type { Activity, Collection, Link, LinkActivity, RecoStats, WeekStats } from '../types';
+import { EMPTY_ACTIVITY, EMPTY_WEEK } from '../types';
 import { t } from '../i18n';
+import { dayKey, isoWeek } from '../recommend/dates';
 import type { OperationResult } from './core';
-import { getErrorMessage, withDataLock } from './core';
+import { getErrorMessage, storage, withDataLock } from './core';
 import { getLinks, saveLinks, getCollections, saveCollections } from './data-access';
 
 /** A value sets the field; null removes it; an absent key leaves it alone. */
@@ -55,4 +57,120 @@ export async function patchCollectionState(collectionId: string, patch: Collecti
     console.error('Failed to update collection state:', error);
     return { success: false, error: getErrorMessage(error, t('error_update_collection_failed')) };
   }
+}
+
+// Activity and numbers (never exported)
+
+export type ActivityEvent = 'open' | 'complete' | 'snooze' | 'keep' | 'reference' | 'discard';
+
+export const MAX_DAYS = 10;
+export const STATS_WEEKS = 12;
+
+export async function getActivity(): Promise<Activity> {
+  return (await storage.get<Activity>('activity')) ?? {};
+}
+
+export async function getRecoStats(): Promise<RecoStats> {
+  return (await storage.get<RecoStats>('recoStats')) ?? {};
+}
+
+function addDay(days: string[], day: string): string[] {
+  return days.includes(day) ? days : [...days, day].sort().slice(-MAX_DAYS);
+}
+
+/** Adds to this week's counters (queue is replaced) and keeps the last 12 weeks. */
+function bump(stats: RecoStats, now: number, changes: Partial<WeekStats>): RecoStats {
+  const week = isoWeek(now);
+  const current: WeekStats = { ...EMPTY_WEEK, ...stats[week] };
+  const next: WeekStats = {
+    shown: current.shown + (changes.shown ?? 0),
+    acted: current.acted + (changes.acted ?? 0),
+    snoozed: current.snoozed + (changes.snoozed ?? 0),
+    discarded: current.discarded + (changes.discarded ?? 0),
+    skipped: current.skipped + (changes.skipped ?? 0),
+    queue: changes.queue ?? current.queue,
+  };
+  const merged: RecoStats = { ...stats, [week]: next };
+  const kept = Object.keys(merged).sort().slice(-STATS_WEEKS);
+  return Object.fromEntries(kept.map((key) => [key, merged[key]]));
+}
+
+/** Any action clears what the strip showed; opens and snoozes are counted. */
+function afterAction(current: LinkActivity, event: ActivityEvent, now: number): LinkActivity {
+  const { skippedAt: _skippedAt, askCompleteAt, ...rest } = current;
+  const updated: LinkActivity = { ...rest, shownDays: [] };
+  if (askCompleteAt !== undefined && event !== 'complete') {
+    updated.askCompleteAt = askCompleteAt;
+  }
+  if (event === 'open') {
+    updated.opens = current.opens + 1;
+    updated.lastOpenedAt = now;
+    updated.openDays = addDay(current.openDays, dayKey(now));
+  } else if (event === 'snooze') {
+    updated.snoozes = current.snoozes + 1;
+  } else if (event === 'keep' || event === 'complete') {
+    updated.snoozes = 0;
+  }
+  return updated;
+}
+
+/**
+ * Records what the user did with a link. Opening or completing a link the
+ * strip had shown counts as acted; the action clears shownDays, so each
+ * showing counts at most once.
+ */
+export async function recordAction(linkId: string, event: ActivityEvent, now: number): Promise<void> {
+  await withDataLock(async () => {
+    const [activity, stats] = await Promise.all([getActivity(), getRecoStats()]);
+    const current = activity[linkId] ?? EMPTY_ACTIVITY;
+    const changes: Partial<WeekStats> = {
+      acted: (event === 'open' || event === 'complete') && current.shownDays.length > 0 ? 1 : 0,
+      snoozed: event === 'snooze' ? 1 : 0,
+      discarded: event === 'discard' ? 1 : 0,
+    };
+    const { [linkId]: _previous, ...others } = activity;
+    const next: Activity = event === 'discard' ? others : { ...others, [linkId]: afterAction(current, event, now) };
+    const counted = (changes.acted ?? 0) + (changes.snoozed ?? 0) + (changes.discarded ?? 0) > 0;
+    await storage.setBatch(counted ? { activity: next, recoStats: bump(stats, now, changes) } : { activity: next });
+  });
+}
+
+/**
+ * Records that the strip showed these links today (once per link per day),
+ * that these links left it after 3 days without action (once each), and the
+ * queue size seen this week. Writes nothing when nothing changed.
+ */
+export async function recordShown(shownIds: string[], skippedIds: string[], queueSize: number, now: number): Promise<void> {
+  await withDataLock(async () => {
+    const [activity, stats] = await Promise.all([getActivity(), getRecoStats()]);
+    const today = dayKey(now);
+    const next: Activity = { ...activity };
+    let shown = 0;
+    let skipped = 0;
+    for (const id of shownIds) {
+      const current = next[id] ?? EMPTY_ACTIVITY;
+      if (!current.shownDays.includes(today)) {
+        next[id] = { ...current, shownDays: addDay(current.shownDays, today) };
+        shown += 1;
+      }
+    }
+    for (const id of skippedIds) {
+      const current = next[id] ?? EMPTY_ACTIVITY;
+      if (current.skippedAt === undefined) {
+        next[id] = { ...current, skippedAt: now };
+        skipped += 1;
+      }
+    }
+    const queueChanged = stats[isoWeek(now)]?.queue !== queueSize;
+    if (shown === 0 && skipped === 0 && !queueChanged) {
+      return;
+    }
+    const recoStats = bump(stats, now, { shown, skipped, queue: queueSize });
+    await storage.setBatch(shown > 0 || skipped > 0 ? { activity: next, recoStats } : { recoStats });
+  });
+}
+
+/** Removes what the user did and the numbers; links stay. */
+export async function clearUsageData(): Promise<void> {
+  await withDataLock(() => storage.removeBatch(['activity', 'recoStats']));
 }

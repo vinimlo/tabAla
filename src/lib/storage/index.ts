@@ -78,4 +78,10 @@ export {
   patchCollectionState,
   type LinkStatePatch,
   type CollectionStatePatch,
+  getActivity,
+  getRecoStats,
+  recordAction,
+  recordShown,
+  clearUsageData,
+  type ActivityEvent,
 } from './progress';

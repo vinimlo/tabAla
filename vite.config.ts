@@ -17,7 +17,8 @@ const manifestWithVersion = {
 export default defineConfig(({ mode }) => ({
   base: '',
   plugins: [
-    svelte(),
+    // Short scoped-class prefix: the "svelte-" in every class and selector cost ~9 KB (500 KB budget).
+    svelte({ compilerOptions: { cssHash: ({ hash, css }) => `s${hash(css)}` } }),
     crx({ manifest: manifestWithVersion }),
     {
       name: 'strip-crossorigin',

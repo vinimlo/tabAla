@@ -27,6 +27,7 @@
   import { revealLink, workspaceForLink } from './reveal';
   import { createQueryTranslator, getTranslationAvailability } from '@/lib/ai/translator';
   import NowSection from './components/NowSection.svelte';
+  import TriageOverlay from './components/TriageOverlay.svelte';
   import FocusView from './components/FocusView.svelte';
   import { activityStore } from '@/lib/stores/activity';
   import * as progress from '@/lib/stores/progress';
@@ -44,6 +45,7 @@
   let openTabs = 0;
   let collectionFromGroup: { name: string; tabs: BrowserTab[] } | null = null;
   let showSearch = false;
+  let showTriage = false;
   const translateQuery = createQueryTranslator();
   let translationAvailable = false;
   /** Moves to the new day when the page is shown again or the clock passes midnight. */
@@ -332,7 +334,7 @@
   function handleKeydown(event: KeyboardEvent): void {
     if (showOnboarding) { return; }
 
-    const action = dashboardShortcut(event, showSearch);
+    const action = dashboardShortcut(event, showSearch || showTriage);
     if (action === 'closeAll') {
       showSettings = false;
       showCreateCollection = false;
@@ -347,6 +349,7 @@
       showSearch = true;
     } else if (action === 'closeLayer') {
       showSearch = false;
+      showTriage = false;
     } else if (action === 'newCollection') {
       showCreateCollection = true;
     } else if (action === 'toggleSidebar') {
@@ -408,7 +411,6 @@
           stats={$activityStore.stats}
           {now}
           workspaces={$workspacesStore.workspaces}
-          keyboard={!showOnboarding && !showSearch && !showSettings && !showCreateCollection && linkToRemove === null}
           on:open={handleOpen}
           on:complete={handleComplete}
           on:keep={handleKeep}
@@ -417,6 +419,7 @@
           on:restore={handleRestore}
           on:collectionFocus={handleCollectionFocus}
           on:collectionReference={handleCollectionReference}
+          on:openTriage={() => (showTriage = true)}
         />
       {:else}
         {#if $settingsStore.settings.showNextUp}
@@ -436,7 +439,7 @@
             on:dismissAsk={handleDismissAsk}
             on:undo={handleUndoComplete}
             on:toggleCollapsed={() => settingsStore.setNextUpCollapsed(!$settingsStore.settings.nextUpCollapsed)}
-            on:openTriage={() => openFocus('triage')}
+            on:openTriage={() => (showTriage = true)}
             on:openFocus={() => openFocus(null)}
           />
         {/if}
@@ -511,6 +514,20 @@
     on:openInNewTab={handleSearchOpenInNewTab}
     on:reveal={handleSearchReveal}
     on:close={() => (showSearch = false)}
+  />
+{/if}
+
+{#if showTriage}
+  <TriageOverlay
+    items={queue.triage}
+    workspaces={$workspacesStore.workspaces}
+    links={$linksStore.links}
+    on:keep={handleKeep}
+    on:discard={handleDiscard}
+    on:reference={handleMarkReference}
+    on:complete={handleComplete}
+    on:open={handleOpen}
+    on:close={() => (showTriage = false)}
   />
 {/if}
 

@@ -48,9 +48,6 @@
   "common_color": {
     "message": "Cor"
   },
-  "common_all": {
-    "message": "Todas"
-  },
   "common_try_again": {
     "message": "Tentar novamente"
   },
@@ -61,9 +58,6 @@
     "message": "Geral"
   },
 
-  "popup_save_current_tab": {
-    "message": "Salvar aba atual"
-  },
   "popup_collection": {
     "message": "Coleção"
   },
@@ -85,21 +79,6 @@
   "popup_remove_this_link": {
     "message": "Remover este link?"
   },
-  "popup_filter_by_collection": {
-    "message": "Filtrar por coleção"
-  },
-  "popup_click_to_edit": {
-    "message": "Clique para editar"
-  },
-  "popup_delete_collection": {
-    "message": "Excluir coleção"
-  },
-  "popup_delete_collection_name": {
-    "message": "Excluir coleção $1",
-    "placeholders": {
-      "name": { "content": "$1" }
-    }
-  },
   "popup_workspace": {
     "message": "Workspace"
   },
@@ -107,16 +86,6 @@
     "message": "Configurações"
   },
 
-  "empty_state_message": {
-    "message": "Sua sala de espera está vazia"
-  },
-  "empty_state_hint": {
-    "message": "Salve sua primeira aba para começar"
-  },
-
-  "link_untitled": {
-    "message": "Sem título"
-  },
   "link_remove": {
     "message": "Remover link"
   },
@@ -127,26 +96,6 @@
 
   "confirm_default_message": {
     "message": "Tem certeza?"
-  },
-
-  "confirm_delete_title": {
-    "message": "Excluir $1?",
-    "placeholders": {
-      "name": { "content": "$1" }
-    }
-  },
-  "confirm_delete_one_link": {
-    "message": "Excluir $1? O link será movido para Inbox",
-    "placeholders": {
-      "name": { "content": "$1" }
-    }
-  },
-  "confirm_delete_many_links": {
-    "message": "Excluir $1? Os $2 links serão movidos para Inbox",
-    "placeholders": {
-      "name": { "content": "$1" },
-      "count": { "content": "$2" }
-    }
   },
 
   "create_collection_title": {
@@ -170,12 +119,6 @@
   },
   "onboarding_feature_search": {
     "message": "Busca rápida por links"
-  },
-  "onboarding_no_popup": {
-    "message": "Não, só o popup"
-  },
-  "onboarding_yes_replace": {
-    "message": "Sim, substituir"
   },
   "onboarding_change_later": {
     "message": "Você pode alterar isso depois em Configurações"
@@ -267,26 +210,11 @@
   "newtab_error_loading": {
     "message": "Erro ao carregar dados"
   },
-  "newtab_search_placeholder": {
-    "message": "Buscar links..."
-  },
-  "newtab_clear_search": {
-    "message": "Limpar busca"
-  },
   "newtab_new_collection": {
     "message": "Nova coleção"
   },
-  "newtab_no_results": {
-    "message": "Nenhum resultado"
-  },
   "newtab_drag_links_here": {
     "message": "Arraste links aqui"
-  },
-  "newtab_no_links_found": {
-    "message": "Nenhum link encontrado para \"$1\"",
-    "placeholders": {
-      "query": { "content": "$1" }
-    }
   },
 
   "column_double_click_rename": {
@@ -308,14 +236,8 @@
   "linkcard_open": {
     "message": "Abrir link"
   },
-  "linkcard_open_new_tab": {
-    "message": "Abrir em nova aba"
-  },
   "linkcard_remove": {
     "message": "Remover link"
-  },
-  "linkcard_remove_title": {
-    "message": "Remover"
   },
 
   "tabs_sidebar_title": {
@@ -338,9 +260,6 @@
   },
   "tabs_sidebar_no_tabs": {
     "message": "Nenhuma aba aberta"
-  },
-  "tabs_sidebar_open": {
-    "message": "Abrir sidebar de abas"
   },
   "tabs_sidebar_create_collection": {
     "message": "Criar coleção"
@@ -443,20 +362,11 @@
   "error_rename_collection_failed": {
     "message": "Erro ao renomear. Tente novamente."
   },
-  "error_move_links_failed": {
-    "message": "Erro ao mover links"
-  },
   "error_move_link_failed": {
     "message": "Erro ao mover link"
   },
   "error_reorder_collections_failed": {
     "message": "Erro ao reordenar coleções"
-  },
-  "error_move_links_to_inbox_failed": {
-    "message": "Erro ao mover links para Inbox"
-  },
-  "error_delete_collection_rollback": {
-    "message": "Não foi possível excluir a coleção. Tente novamente"
   },
   "error_update_workspace_failed": {
     "message": "Erro ao atualizar workspace"
@@ -474,17 +384,11 @@
     "message": "Erro ao renomear coleção"
   },
 
-  "storage_quota_exceeded": {
-    "message": "Cota de armazenamento excedida. Remova algumas coleções ou links para continuar."
-  },
   "storage_link_not_found": {
     "message": "Link não encontrado"
   },
   "storage_collection_not_found": {
     "message": "Coleção não encontrada"
-  },
-  "storage_inbox_delete_forbidden": {
-    "message": "A coleção Inbox não pode ser excluída"
   },
   "storage_target_collection_not_found": {
     "message": "Coleção de destino não encontrada"
@@ -518,13 +422,6 @@
     "message": "Coleção $1 excluída",
     "placeholders": {
       "name": { "content": "$1" }
-    }
-  },
-  "success_collection_deleted_moved_one": {
-    "message": "Coleção $1 excluída. $2 link movido para Inbox",
-    "placeholders": {
-      "name": { "content": "$1" },
-      "count": { "content": "$2" }
     }
   },
   "success_collection_deleted_moved_many": {
@@ -619,9 +516,6 @@
     "message": "Remover este link?"
   },
 
-  "import_confirm_title": {
-    "message": "Confirmar importação"
-  },
   "import_confirm_message": {
     "message": "Serão adicionados: $1 workspaces, $2 coleções, $3 links",
     "placeholders": {
@@ -781,9 +675,6 @@
   },
   "progress_unmark_reference": {
     "message": "Não é referência"
-  },
-  "linkcard_complete_title": {
-    "message": "Concluir: sai do quadro e fica em Foco › Concluídos"
   },
   "linkcard_reference_badge": {
     "message": "Referência"
@@ -1045,17 +936,6 @@
     "message": "Salvo em $1",
     "placeholders": {
       "date": {
-        "content": "$1"
-      }
-    }
-  },
-  "triage_left_one": {
-    "message": "Falta 1"
-  },
-  "triage_left_many": {
-    "message": "Faltam $1",
-    "placeholders": {
-      "count": {
         "content": "$1"
       }
     }
@@ -1378,5 +1258,81 @@
   },
   "now_triage_now": {
     "message": "Triar agora"
+  },
+
+  "triage_progress": {
+    "message": "$1 de $2",
+    "placeholders": {
+      "index": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "triage_open": {
+    "message": "Abrir para decidir"
+  },
+  "triage_reference": {
+    "message": "Referência"
+  },
+  "triage_done_title": {
+    "message": "Triagem feita."
+  },
+  "triage_count_kept_one": {
+    "message": "1 mantido"
+  },
+  "triage_count_kept_many": {
+    "message": "$1 mantidos",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "triage_count_discarded_one": {
+    "message": "1 descartado"
+  },
+  "triage_count_discarded_many": {
+    "message": "$1 descartados",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "triage_count_reference_one": {
+    "message": "1 virou referência"
+  },
+  "triage_count_reference_many": {
+    "message": "$1 viraram referência",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "triage_count_completed_one": {
+    "message": "1 concluído"
+  },
+  "triage_count_completed_many": {
+    "message": "$1 concluídos",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_triage_waiting_one": {
+    "message": "1 link esperando decisão"
+  },
+  "focus_triage_waiting_many": {
+    "message": "$1 links esperando decisão",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
   }
 }

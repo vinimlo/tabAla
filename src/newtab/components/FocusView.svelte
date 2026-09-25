@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
   import { plural, t } from '@/lib/i18n';
   import type { Link, RecoStats, Workspace } from '@/lib/types';
   import type { Queue } from '@/lib/recommend/engine';
   import { completedByWeek, previousQueue } from '@/lib/recommend/progress';
   import FocusSession from './FocusSession.svelte';
-  import FocusTriage from './FocusTriage.svelte';
+  import FocusTriagePanel from './FocusTriagePanel.svelte';
   import FocusFronts from './FocusFronts.svelte';
   import FocusCompleted from './FocusCompleted.svelte';
 
@@ -13,16 +14,13 @@
   export let stats: RecoStats;
   export let now: number;
   export let workspaces: Workspace[] = [];
-  export let keyboard = true;
+
+  const dispatch = createEventDispatcher<{ openTriage: void }>();
 
   $: bars = completedByWeek(links, now);
   $: thisWeek = bars[bars.length - 1].completed;
   $: tallest = Math.max(1, ...bars.map((bar) => bar.completed));
   $: previous = previousQueue(stats, now);
-
-  function scrollTo(id: string): void {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
 </script>
 
 <div class="focus-view scrollbar-thin">
@@ -39,8 +37,8 @@
     </p>
   </section>
 
-  <FocusSession {queue} on:open on:complete on:openTriage={() => scrollTo('focus-triage')} />
-  <FocusTriage items={queue.triage} {workspaces} {links} {keyboard} on:keep on:discard on:reference on:complete on:open />
+  <FocusSession {queue} on:open on:complete on:openTriage={() => dispatch('openTriage')} />
+  <FocusTriagePanel items={queue.triage} on:openTriage={() => dispatch('openTriage')} />
   <FocusFronts fronts={queue.fronts} {workspaces} on:collectionFocus on:collectionReference />
   <FocusCompleted {links} on:restore on:open />
 </div>
@@ -61,6 +59,12 @@
     font-family: var(--font-display);
     font-size: var(--text-lg);
     color: var(--text-primary);
+  }
+
+  .focus-view :global(.focus-section-head) {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
   }
 
   .focus-view :global(.focus-empty) {

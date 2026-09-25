@@ -48,9 +48,6 @@
   "common_color": {
     "message": "Color"
   },
-  "common_all": {
-    "message": "All"
-  },
   "common_try_again": {
     "message": "Try again"
   },
@@ -61,9 +58,6 @@
     "message": "General"
   },
 
-  "popup_save_current_tab": {
-    "message": "Save current tab"
-  },
   "popup_collection": {
     "message": "Collection"
   },
@@ -85,21 +79,6 @@
   "popup_remove_this_link": {
     "message": "Remove this link?"
   },
-  "popup_filter_by_collection": {
-    "message": "Filter by collection"
-  },
-  "popup_click_to_edit": {
-    "message": "Click to edit"
-  },
-  "popup_delete_collection": {
-    "message": "Delete collection"
-  },
-  "popup_delete_collection_name": {
-    "message": "Delete collection $1",
-    "placeholders": {
-      "name": { "content": "$1" }
-    }
-  },
   "popup_workspace": {
     "message": "Workspace"
   },
@@ -107,16 +86,6 @@
     "message": "Settings"
   },
 
-  "empty_state_message": {
-    "message": "Your waiting room is empty"
-  },
-  "empty_state_hint": {
-    "message": "Save your first tab to start"
-  },
-
-  "link_untitled": {
-    "message": "Untitled"
-  },
   "link_remove": {
     "message": "Remove link"
   },
@@ -127,26 +96,6 @@
 
   "confirm_default_message": {
     "message": "Are you sure?"
-  },
-
-  "confirm_delete_title": {
-    "message": "Delete $1?",
-    "placeholders": {
-      "name": { "content": "$1" }
-    }
-  },
-  "confirm_delete_one_link": {
-    "message": "Delete $1? The link will be moved to Inbox",
-    "placeholders": {
-      "name": { "content": "$1" }
-    }
-  },
-  "confirm_delete_many_links": {
-    "message": "Delete $1? The $2 links will be moved to Inbox",
-    "placeholders": {
-      "name": { "content": "$1" },
-      "count": { "content": "$2" }
-    }
   },
 
   "create_collection_title": {
@@ -170,12 +119,6 @@
   },
   "onboarding_feature_search": {
     "message": "Quick search for links"
-  },
-  "onboarding_no_popup": {
-    "message": "No, just the popup"
-  },
-  "onboarding_yes_replace": {
-    "message": "Yes, replace"
   },
   "onboarding_change_later": {
     "message": "You can change this later in Settings"
@@ -267,26 +210,11 @@
   "newtab_error_loading": {
     "message": "Error loading data"
   },
-  "newtab_search_placeholder": {
-    "message": "Search links..."
-  },
-  "newtab_clear_search": {
-    "message": "Clear search"
-  },
   "newtab_new_collection": {
     "message": "New collection"
   },
-  "newtab_no_results": {
-    "message": "No results"
-  },
   "newtab_drag_links_here": {
     "message": "Drag links here"
-  },
-  "newtab_no_links_found": {
-    "message": "No links found for \"$1\"",
-    "placeholders": {
-      "query": { "content": "$1" }
-    }
   },
 
   "column_double_click_rename": {
@@ -308,14 +236,8 @@
   "linkcard_open": {
     "message": "Open link"
   },
-  "linkcard_open_new_tab": {
-    "message": "Open in new tab"
-  },
   "linkcard_remove": {
     "message": "Remove link"
-  },
-  "linkcard_remove_title": {
-    "message": "Remove"
   },
 
   "tabs_sidebar_title": {
@@ -338,9 +260,6 @@
   },
   "tabs_sidebar_no_tabs": {
     "message": "No open tabs"
-  },
-  "tabs_sidebar_open": {
-    "message": "Open tabs sidebar"
   },
   "tabs_sidebar_create_collection": {
     "message": "Create collection"
@@ -443,20 +362,11 @@
   "error_rename_collection_failed": {
     "message": "Error renaming. Try again."
   },
-  "error_move_links_failed": {
-    "message": "Error moving links"
-  },
   "error_move_link_failed": {
     "message": "Error moving link"
   },
   "error_reorder_collections_failed": {
     "message": "Error reordering collections"
-  },
-  "error_move_links_to_inbox_failed": {
-    "message": "Error moving links to Inbox"
-  },
-  "error_delete_collection_rollback": {
-    "message": "Could not delete collection. Try again"
   },
   "error_update_workspace_failed": {
     "message": "Error updating workspace"
@@ -474,17 +384,11 @@
     "message": "Error renaming collection"
   },
 
-  "storage_quota_exceeded": {
-    "message": "Storage quota exceeded. Please remove some collections or links to continue."
-  },
   "storage_link_not_found": {
     "message": "Link not found"
   },
   "storage_collection_not_found": {
     "message": "Collection not found"
-  },
-  "storage_inbox_delete_forbidden": {
-    "message": "The Inbox collection cannot be deleted"
   },
   "storage_target_collection_not_found": {
     "message": "Target collection not found"
@@ -518,13 +422,6 @@
     "message": "Collection $1 deleted",
     "placeholders": {
       "name": { "content": "$1" }
-    }
-  },
-  "success_collection_deleted_moved_one": {
-    "message": "Collection $1 deleted. $2 link moved to Inbox",
-    "placeholders": {
-      "name": { "content": "$1" },
-      "count": { "content": "$2" }
     }
   },
   "success_collection_deleted_moved_many": {
@@ -619,9 +516,6 @@
     "message": "Remove this link?"
   },
 
-  "import_confirm_title": {
-    "message": "Confirm import"
-  },
   "import_confirm_message": {
     "message": "Will be added: $1 workspaces, $2 collections, $3 links",
     "placeholders": {
@@ -781,9 +675,6 @@
   },
   "progress_unmark_reference": {
     "message": "Not a reference"
-  },
-  "linkcard_complete_title": {
-    "message": "Complete: leaves the board and stays in Focus › Completed"
   },
   "linkcard_reference_badge": {
     "message": "Reference"
@@ -1045,17 +936,6 @@
     "message": "Saved on $1",
     "placeholders": {
       "date": {
-        "content": "$1"
-      }
-    }
-  },
-  "triage_left_one": {
-    "message": "1 left"
-  },
-  "triage_left_many": {
-    "message": "$1 left",
-    "placeholders": {
-      "count": {
         "content": "$1"
       }
     }
@@ -1378,5 +1258,81 @@
   },
   "now_triage_now": {
     "message": "Triage now"
+  },
+
+  "triage_progress": {
+    "message": "$1 of $2",
+    "placeholders": {
+      "index": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "triage_open": {
+    "message": "Open to decide"
+  },
+  "triage_reference": {
+    "message": "Reference"
+  },
+  "triage_done_title": {
+    "message": "Triage done."
+  },
+  "triage_count_kept_one": {
+    "message": "1 kept"
+  },
+  "triage_count_kept_many": {
+    "message": "$1 kept",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "triage_count_discarded_one": {
+    "message": "1 discarded"
+  },
+  "triage_count_discarded_many": {
+    "message": "$1 discarded",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "triage_count_reference_one": {
+    "message": "1 now reference"
+  },
+  "triage_count_reference_many": {
+    "message": "$1 now reference",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "triage_count_completed_one": {
+    "message": "1 completed"
+  },
+  "triage_count_completed_many": {
+    "message": "$1 completed",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "focus_triage_waiting_one": {
+    "message": "1 link waiting for a decision"
+  },
+  "focus_triage_waiting_many": {
+    "message": "$1 links waiting for a decision",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
   }
 }

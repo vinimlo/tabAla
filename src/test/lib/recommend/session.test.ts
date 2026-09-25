@@ -57,4 +57,10 @@ describe('buildSession', () => {
   it('is empty when there is nothing to do', () => {
     expect(session([], [col('a', 1)], 30)).toEqual([]);
   });
+
+  it('fits the session with the learned effort', () => {
+    const done = ['d1', 'd2', 'd3'].map((id) => page(id, 'a', { completedAt: now - 20 * DAY }));
+    const activity: Activity = Object.fromEntries(done.map((l) => [l.id, { ...EMPTY_ACTIVITY, activeMs: 20 * 60_000 }]));
+    expect(session([...done, page('p1', 'a'), page('p2', 'a')], [col('a', 1)], 30, activity)).toEqual(['p1']);
+  });
 });

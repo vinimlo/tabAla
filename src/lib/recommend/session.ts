@@ -43,7 +43,7 @@ export function buildSession(queue: Queue, minutes: SessionMinutes): SessionItem
       if (taken.has(link.id)) {
         continue;
       }
-      const rec = recommendation(link, front.collection, 'advance', advanceReason(front));
+      const rec = recommendation(link, front.collection, 'advance', advanceReason(front), queue.effortOf(link));
       if (rec.effort <= left) {
         items.push({ type: 'link', rec, overBudget: false });
         taken.add(link.id);
@@ -56,7 +56,7 @@ export function buildSession(queue: Queue, minutes: SessionMinutes): SessionItem
     const front = queue.fronts[0];
     items.push({
       type: 'link',
-      rec: recommendation(front.eligible[0], front.collection, 'advance', advanceReason(front)),
+      rec: recommendation(front.eligible[0], front.collection, 'advance', advanceReason(front), queue.effortOf(front.eligible[0])),
       overBudget: true,
     });
   }

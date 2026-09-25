@@ -138,4 +138,11 @@ describe('buildQueue', () => {
     const [card] = buildQueue({ links: [video], collections: [col('a', 1)], activity: {}, now }).slots;
     expect(card).toMatchObject({ kind: 'video', action: 'watch', effort: 20 });
   });
+
+  it('uses the effort learned from completed links of the same collection', () => {
+    const done = ['d1', 'd2', 'd3'].map((id) => link(id, 'a', { completedAt: daysAgo(20) }));
+    const activity: Activity = Object.fromEntries(done.map((l) => [l.id, { ...EMPTY_ACTIVITY, activeMs: 25 * 60_000 }]));
+    const [card] = buildQueue({ links: [...done, link('next', 'a')], collections: [col('a', 1)], activity, now }).slots;
+    expect(card).toMatchObject({ link: { id: 'next' }, effort: 25 });
+  });
 });

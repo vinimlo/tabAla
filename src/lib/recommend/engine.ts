@@ -14,6 +14,7 @@ import { addDays, daysBetween } from './dates';
 import { defaultEffort, linkAction, type LinkAction } from './effort';
 import { isPending } from './state';
 import { activityOf, buildTriage, lastTouch, type TriageItem } from './triage';
+import { effortEstimator } from './learned';
 
 export type SlotRole = 'continue' | 'advance' | 'revive';
 
@@ -53,6 +54,8 @@ export interface Queue {
   fronts: Front[];
   /** Eligible links plus triage: what is left to do or decide. */
   size: number;
+  /** Minutes a link takes: learned from completed links, or the default of its kind. */
+  effortOf: (link: Link) => number;
 }
 
 export interface EngineInput {
@@ -68,9 +71,11 @@ export const REVIVE_DAYS = 14;
 export const MOMENTUM_DAYS = 7;
 export const NEARLY_DONE = 3;
 
-export function recommendation(link: Link, collection: Collection, role: SlotRole, reason: Reason): Recommendation {
+export function recommendation(
+  link: Link, collection: Collection, role: SlotRole, reason: Reason, effort?: number
+): Recommendation {
   const kind = linkKind(link.url);
-  return { link, collection, role, reason, kind, action: linkAction(kind), effort: defaultEffort(kind) };
+  return { link, collection, role, reason, kind, action: linkAction(kind), effort: effort ?? defaultEffort(kind) };
 }
 
 /**
@@ -119,7 +124,9 @@ function buildFronts(links: Link[], collections: Collection[], activity: Activit
   return fronts.sort(compareFronts);
 }
 
-function continueSlot(fronts: Front[], activity: Activity, now: number): Recommendation | null {
+function continueSlot(
+  fronts: Front[], activity: Activity, now: number, effortOf: (link: Link) => number
+): Recommendation | null {
   const since = addDays(now, -CONTINUE_DAYS);
   let best: { link: Link; front: Front; openedAt: number } | null = null;
   for (const front of fronts) {
@@ -134,18 +141,22 @@ function continueSlot(fronts: Front[], activity: Activity, now: number): Recomme
     return recommendation(best.link, best.front.collection, 'continue', {
       type: 'opened',
       days: daysBetween(best.openedAt, now),
-    });
+    }, effortOf(best.link));
   }
   // Fronts are sorted with focus first, then by momentum.
   const focus = fronts.find((front) => front.collection.focus === true);
-  return focus === undefined ? null : recommendation(focus.eligible[0], focus.collection, 'continue', { type: 'focus' });
+  return focus === undefined
+    ? null
+    : recommendation(focus.eligible[0], focus.collection, 'continue', { type: 'focus' }, effortOf(focus.eligible[0]));
 }
 
-function pickSlots(fronts: Front[], activity: Activity, now: number): Recommendation[] {
+function pickSlots(
+  fronts: Front[], activity: Activity, now: number, effortOf: (link: Link) => number
+): Recommendation[] {
   const slots: Recommendation[] = [];
   const used = new Set<string>();
 
-  const continued = continueSlot(fronts, activity, now);
+  const continued = continueSlot(fronts, activity, now, effortOf);
   if (continued !== null) {
     slots.push(continued);
     used.add(continued.collection.id);
@@ -155,7 +166,7 @@ function pickSlots(fronts: Front[], activity: Activity, now: number): Recommenda
   // shown yet, and when none qualifies the last slot goes to Advance too.
   const advance = (count: number): void => {
     for (const front of fronts.filter((f) => !used.has(f.collection.id)).slice(0, count)) {
-      slots.push(recommendation(front.eligible[0], front.collection, 'advance', advanceReason(front)));
+      slots.push(recommendation(front.eligible[0], front.collection, 'advance', advanceReason(front), effortOf(front.eligible[0])));
       used.add(front.collection.id);
     }
   };
@@ -172,7 +183,7 @@ function pickSlots(fronts: Front[], activity: Activity, now: number): Recommenda
   slots.push(recommendation(revive.eligible[0], revive.collection, 'revive', {
     type: 'stale',
     weeks: Math.floor(daysBetween(revive.lastTouch, now) / 7),
-  }));
+  }, effortOf(revive.eligible[0])));
   return slots;
 }
 
@@ -180,11 +191,13 @@ export function buildQueue({ links, collections, activity, now }: EngineInput): 
   const byId = new Map(collections.map((collection) => [collection.id, collection]));
   const triage = buildTriage(links, byId, activity, now);
   const inTriage = new Set(triage.map((item) => item.link.id));
+  const effortOf = effortEstimator(links, activity);
   const fronts = buildFronts(links, collections, activity, inTriage, now);
   return {
-    slots: pickSlots(fronts, activity, now),
+    slots: pickSlots(fronts, activity, now, effortOf),
     triage,
     fronts,
     size: fronts.reduce((total, front) => total + front.eligible.length, 0) + triage.length,
+    effortOf,
   };
 }

@@ -1184,5 +1184,14 @@
         "content": "$1"
       }
     }
+  },
+  "settings_learn_title": {
+    "message": "Learn from what I open"
+  },
+  "settings_learn_description": {
+    "message": "Notices, on this device only, when you open a saved link and how long its tab stays active, to ask whether it is completed and to learn how long things take. Turning it off stops it; Clear usage data erases what was learned."
+  },
+  "settings_learn_toggle_label": {
+    "message": "Turn learning from browsing on or off"
   }
 }

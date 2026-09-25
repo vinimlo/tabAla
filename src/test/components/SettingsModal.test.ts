@@ -30,6 +30,15 @@ describe('SettingsModal', () => {
     expect(storage.updateSettings).toHaveBeenCalledWith({ showNextUp: false });
   });
 
+  it('turning learning off stops it and clears pending questions', async () => {
+    render(SettingsModal);
+
+    await fireEvent.click(screen.getByRole('button', { name: 'settings_learn_toggle_label' }));
+
+    expect(storage.updateSettings).toHaveBeenCalledWith({ learnFromBrowsing: false });
+    await waitFor(() => expect(storage.clearAsks).toHaveBeenCalledTimes(1));
+  });
+
   it('clears usage data only after confirming', async () => {
     render(SettingsModal);
 

@@ -69,6 +69,14 @@
     await settingsStore.setShowNextUp(!settings.showNextUp);
   }
 
+  async function toggleLearn(): Promise<void> {
+    const enabled = !settings.learnFromBrowsing;
+    await settingsStore.setLearnFromBrowsing(enabled);
+    if (!enabled) {
+      await activityStore.clearAsks();
+    }
+  }
+
   async function handleClearUsage(): Promise<void> {
     confirmClearUsage = false;
     await activityStore.clear();
@@ -372,6 +380,25 @@
           on:click={toggleNextUp}
           aria-pressed={settings.showNextUp}
           aria-label={t('settings_nextup_toggle_label')}
+        >
+          <span class="toggle-track">
+            <span class="toggle-thumb"></span>
+          </span>
+        </button>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">{t('settings_learn_title')}</span>
+          <span class="setting-description">{t('settings_learn_description')}</span>
+        </div>
+        <button
+          type="button"
+          class="toggle"
+          class:active={settings.learnFromBrowsing}
+          on:click={toggleLearn}
+          aria-pressed={settings.learnFromBrowsing}
+          aria-label={t('settings_learn_toggle_label')}
         >
           <span class="toggle-track">
             <span class="toggle-thumb"></span>

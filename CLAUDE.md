@@ -86,7 +86,7 @@ interface Collection {
 - **Unicidade**: Mesmo URL pode existir em múltiplas coleções
 - **Ordenação**: posição manual na coleção (arrastar grava `order`); links sem posição, como os recém-salvos, ficam no topo por data. Mover sem arrastar (`moveLink`) tira a posição
 - **Busca**: painel ⌘K em todos os workspaces (src/lib/search); a busca por assunto traduz a consulta para o inglês com o Translator do Chrome e busca a original e a traduzida juntas (src/lib/ai/translator.ts)
-- **Próximos passos e Foco**: motor puro em src/lib/recommend (frentes = coleções, próximo link pela ordem da coluna, vagas continuar/avançar/retomar, triagem, sessão). Um link feito é **concluído** (nunca "vencido"). Comportamento em `activity` e números em `recoStats`, chaves separadas de `links` e fora do export; botões chamam src/lib/stores/progress.ts
+- **Próximos passos e Foco**: motor puro em src/lib/recommend (frentes = coleções, próximo link pela ordem da coluna, vagas continuar/avançar/retomar, triagem, sessão). Um link feito é **concluído** (nunca "vencido"). Comportamento em `activity` e números em `recoStats`, chaves separadas de `links` e fora do export; botões chamam src/lib/stores/progress.ts. Fase 2: o service worker (src/background/activity.ts, visita em `storage.session`) registra aberturas por qualquer caminho, tempo ativo (teto de 30 min por visita) e a pergunta "concluído?"; casamento de URL em src/lib/url-match.ts
 
 ## Comandos
 

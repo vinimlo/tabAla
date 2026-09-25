@@ -1184,5 +1184,14 @@
         "content": "$1"
       }
     }
+  },
+  "settings_learn_title": {
+    "message": "Aprender com o que eu abro"
+  },
+  "settings_learn_description": {
+    "message": "Percebe, só neste aparelho, quando você abre um link salvo e quanto tempo a aba fica ativa, para perguntar se ele foi concluído e aprender quanto tempo cada coisa leva. Desligar para de registrar; Apagar dados de uso apaga o que foi aprendido."
+  },
+  "settings_learn_toggle_label": {
+    "message": "Ligar ou desligar o aprendizado com o que eu abro"
   }
 }

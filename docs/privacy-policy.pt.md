@@ -33,6 +33,8 @@ Para sugerir o que abrir, ler ou resolver em seguida, o TabAla guarda no seu com
 
 Esses dados ficam só em `chrome.storage.local`, nunca saem do navegador e não entram no arquivo de exportação. Você pode apagá-los em Configurações → Dados → "Apagar dados de uso"; os links continuam. A faixa pode ser desligada em Configurações.
 
+Com "Aprender com o que eu abro" ligado (padrão), o TabAla também percebe, pela permissão `tabs` que já usa, quando uma aba abre um link salvo — por qualquer caminho — e por quanto tempo ela fica ativa numa janela em foco (no máximo 30 minutos por visita). Com isso ele pergunta "concluído?" depois de uma visita longa, aprende quanto tempo cada tipo de link leva e marca com um ponto o ícone da extensão numa aba de link salvo. Endereços que não estão salvos são comparados na memória e descartados; abas anônimas nunca são lidas. Desligar em Configurações para de registrar.
+
 ## Dados não coletados
 
 A extensão **não coleta**:
@@ -49,7 +51,7 @@ A extensão **não coleta**:
 | Permissão | Finalidade |
 |---|---|
 | `storage` | Salvar e recuperar links, coleções, workspaces e preferências no armazenamento local do navegador |
-| `tabs` | Obter URL e título da aba ativa, listar abas abertas, abrir e fechar abas |
+| `tabs` | Obter URL e título da aba ativa, listar abas abertas, abrir e fechar abas e reconhecer quando uma aba abre um link salvo |
 | `tabGroups` | Consultar grupos de abas nativos para permitir salvar abas de um grupo como coleção |
 | `activeTab` | Acessar de forma segura apenas a aba que o usuário está visualizando no momento |
 

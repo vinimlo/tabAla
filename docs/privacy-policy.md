@@ -33,6 +33,8 @@ To suggest what to open, read or solve next, TabAla keeps on your computer, alon
 
 This data stays in `chrome.storage.local`, never leaves the browser and is not included in exports. You can clear it in Settings → Data → "Clear usage data"; your links stay. The strip can be turned off in Settings.
 
+With "Learn from what I open" on (the default), TabAla also notices, through the `tabs` permission it already uses, when a tab opens a saved link — by any path — and how long it stays active in a focused window (at most 30 minutes per visit). It uses this to ask "completed?" after a long visit, to learn how long each kind of link takes, and to mark the extension icon with a dot on a tab showing a saved link. Addresses that are not saved are compared in memory and discarded; incognito tabs are never read. Turning it off in Settings stops it.
+
 ## Data not collected
 
 The extension **does not collect**:
@@ -49,7 +51,7 @@ The extension **does not collect**:
 | Permission | Purpose |
 |---|---|
 | `storage` | Save and retrieve links, collections, workspaces, and preferences in the browser's local storage |
-| `tabs` | Get the URL and title of the active tab, list open tabs, open and close tabs |
+| `tabs` | Get the URL and title of the active tab, list open tabs, open and close tabs, and recognize when a tab opens a saved link |
 | `tabGroups` | Query native tab groups to allow saving tabs from a group as a collection |
 | `activeTab` | Securely access only the tab the user is currently viewing |
 

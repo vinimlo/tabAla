@@ -25,7 +25,7 @@
 - O repositório é público: nada de dados pessoais em commit.
 - Não colocar no índice as mudanças de outra sessão no working tree (`Dockerfile`, `docker-compose.yml`, `.github/workflows/release.yml`, `entrypoint.dev.sh`, `.serena/`, trechos alheios do `CLAUDE.md`). Sempre `git add <arquivos>`.
 - Commits terminam com `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
-- Branch: `feat/proximos-passos-fase-2` (a partir de `main` `94d3bf5`).
+- Branch: `feat/proximos-passos-fase-2` (a partir de `main` `e57f7ae`).
 
 ## Review Focus
 

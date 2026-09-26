@@ -9637,7 +9637,7 @@ Put in the final message, for Chrome after "Recarregar" in `chrome://extensions`
 
 ## Execution record (2026-09-25)
 
-All 15 tasks done on `feat/nova-interface`, then a whole-branch review by a fresh reviewer (no Critical, 3 Important, 9 Minor) and one fix pass (`73a2916`). Final gates: 938 tests passing, lint at the 10 old dialog errors, `du -sb dist` = 538 216 of 573 440.
+All 15 tasks done on `feat/nova-interface`, then a whole-branch review by a fresh reviewer (no Critical, 3 Important, 9 Minor) and one fix pass (`5b52a76`). Final gates: 938 tests passing, lint at the 10 old dialog errors, `du -sb dist` = 538 216 of 573 440.
 
 ### Rulings made during execution
 
@@ -9670,7 +9670,7 @@ All 15 tasks done on `feat/nova-interface`, then a whole-branch review by a fres
 - Final: Ruling: finding 12 (hero .why nowrap) stays Minor — the collection span is a flex item whose min width is its longest word, so it wraps between words; only a single word wider than ~290 px overflows — cost if wrong: a clipped line with an unusually long one-word collection name.
 - Final: Ruling: session start from Focus switches to the board — stands, Task 13 specifies it and F returns — cost if wrong: one key.
 - Final: Ruling: always-on 30 s clock — stands (Task 13 ruling) — cost if wrong: negligible CPU.
-- Final: Ruling: double keydown listeners in ConfirmDialog/CreateCollectionModal/WorkspaceModal (possible double confirm/submit) — pre-existing at 7ecc933, outside this branch; reported to the user as an adjacent issue, not fixed — cost if wrong: Enter may act twice in those dialogs, as it did before this branch.
+- Final: Ruling: double keydown listeners in ConfirmDialog/CreateCollectionModal/WorkspaceModal (possible double confirm/submit) — pre-existing at 0437355, outside this branch; reported to the user as an adjacent issue, not fixed — cost if wrong: Enter may act twice in those dialogs, as it did before this branch.
 - Final: Ruling: column menu not on the Menu primitive — stands, spec §4.6 does not list it — cost if wrong: one menu with the older look.
 - Final: Ruling: card ⋯ menu may clip at a column's last card — pre-existing positioning, stands — cost if wrong: the last card's menu opens partly hidden.
 - Final: Ruling: CLAUDE.md "Svelte 4" — belongs to another session's unstaged hunk, left alone — cost if wrong: none for this branch.

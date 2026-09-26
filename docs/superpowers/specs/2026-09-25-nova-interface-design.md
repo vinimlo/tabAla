@@ -1,6 +1,6 @@
 # Nova interface: design
 
-**Data:** 2026-09-25 · **Estado:** direção aprovada em conversa sobre a prévia v2; aguarda revisão da spec escrita · **Branch:** `feat/nova-interface` (a partir de `main` 7ecc933)
+**Data:** 2026-09-25 · **Estado:** direção aprovada em conversa sobre a prévia v2; aguarda revisão da spec escrita · **Branch:** `feat/nova-interface` (a partir de `main` 0437355)
 
 ## 1. Contexto e objetivo
 

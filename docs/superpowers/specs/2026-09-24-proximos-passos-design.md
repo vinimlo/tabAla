@@ -1,6 +1,6 @@
 # Próximos passos e Foco: design
 
-**Data:** 2026-09-24 · **Estado:** aprovado em conversa; aguarda revisão da spec escrita · **Branch:** `feat/proximos-passos` (a partir de `main` 97b3d3c)
+**Data:** 2026-09-24 · **Estado:** aprovado em conversa; aguarda revisão da spec escrita · **Branch:** `feat/proximos-passos` (a partir de `main` e2dd237)
 
 ## 1. Contexto e objetivo
 

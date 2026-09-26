@@ -1,36 +1,44 @@
 Tired of hoarding tabs you'll "check later"?
 
-TabAla is a waiting room for your links — not permanent bookmarks, but an organized buffer to process at your own pace without cluttering your browser.
+TabAla is a waiting room for your links — not permanent bookmarks, but an organized buffer you actually get through, at your own pace, without cluttering your browser.
 
 How it works:
-Save the current tab with one click (or a keyboard shortcut), organize it into collections, and process when you're ready. That's it.
+Save the current tab with one click (or a keyboard shortcut) and organize it into collections. Every new tab then suggests what to open next. Done with a link? Mark it completed and it leaves the board.
 
 Why TabAla?
 → You open 30 tabs while researching and don't want to lose any
 → Someone sends you links you need to read later
 → You're studying and want to organize materials by topic
-→ You want to clean up your browser without losing what matters
+→ You save everything and never get back to it
 
 Key features:
-• Kanban-style board — See all your collections side by side with full drag-and-drop support
+• Now — Each new tab opens on one suggestion of what to read next, with the time it takes and the next ones beside it
+• Focus — A timed session of 15, 30 or 60 minutes over your collections. A started session follows you across tabs
+• Completed, not deleted — Finished links leave the board and stay in your history, with undo. You can also snooze a link or mark it as reference
+• Triage — Links untouched for months, skipped again and again or snoozed too often come back one at a time: still worth it, discard, reference or already done
+• Command palette — Search every workspace, run commands and act on a link (open, complete, snooze, move) without leaving the keyboard
+• Search by topic (optional) — Chrome's on-device translator lets a search in your language find links titled in English
+• Kanban-style board — See all your collections side by side with drag-and-drop
 • Workspaces — Separate contexts like Work, Study, and Personal into independent spaces (up to 12)
 • Automatic Inbox — Links saved without a collection go to Inbox. Deleted a collection? Its links move back there
-• Tabs sidebar — See your open browser tabs alongside your collections and drag them in to save
+• Open tabs — See the tabs open in your browser from the side rail and drag them in to save
 • Tab groups → Collections — Convert an entire tab group into a collection with one click
-• Instant search — Find any saved link across all collections (Ctrl+K)
 • Light and dark themes — Pick your style or follow your system theme
 • New Tab replacement — Use TabAla as your new tab page (optional)
 
 Your data, your rules:
+✓ No server — Links, usage and search all stay in your browser
 ✓ No tracking — Zero analytics, zero telemetry
+✓ Learning you control — TabAla notices which saved links you open, and for how long, to suggest what's next. Turn it off and clear that data in Settings
 ✓ You own your data — Always exportable, never locked in
 ✓ Open source — Apache 2.0 license
 
 Keyboard shortcuts:
-• / or Ctrl+K — Search links
+• / or Ctrl+K (⌘K on Mac) — Search and commands
 • N — New collection
-• T — Toggle tabs sidebar
-• Esc — Close modals
+• F — Focus
+• T — Open tabs
+• Esc — Close
 
 Perfect for:
 • Students organizing research materials
@@ -38,6 +46,6 @@ Perfect for:
 • Self-learners collecting resources
 • Anyone who hoards tabs to "check later"
 
-TabAla is lightweight (<500KB), fast, and minimalist. No unnecessary features, no bloatware — just the essentials to take back control of your tabs.
+TabAla stays small and fast. No accounts, no ads, nothing to sign up for.
 
 Save. Organize. Process when you want.

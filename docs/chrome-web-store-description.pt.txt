@@ -1,0 +1,51 @@
+Cansou de acumular abas para "ver depois"?
+
+O TabAla é uma sala de espera para os seus links. Não é favorito permanente: é um lugar organizado para você dar conta deles no seu ritmo, sem entupir o navegador.
+
+Como funciona:
+Salve a aba atual com um clique (ou um atalho) e organize em coleções. A partir daí, cada nova aba sugere o que abrir em seguida. Terminou um link? Marque como concluído e ele sai do quadro.
+
+Por que o TabAla?
+→ Você abre 30 abas pesquisando e não quer perder nenhuma
+→ Alguém te manda links para ler depois
+→ Você está estudando e quer separar o material por assunto
+→ Você salva tudo e nunca volta
+
+Recursos:
+• Agora — Toda nova aba abre com uma sugestão do que ler, quanto tempo leva e as próximas ao lado
+• Foco — Uma sessão cronometrada de 15, 30 ou 60 minutos nas suas coleções. A sessão iniciada segue você em todas as abas
+• Concluído, não apagado — Link terminado sai do quadro e fica no histórico, com desfazer. Dá para adiar um link ou marcar como referência
+• Triagem — Links parados há meses, pulados várias vezes ou adiados demais voltam um de cada vez: ainda vale, descartar, referência ou já concluí
+• Paleta de comandos — Busque em todos os workspaces, rode comandos e aja sobre o link (abrir, concluir, adiar, mover) sem tirar a mão do teclado
+• Busca por assunto (opcional) — O tradutor do próprio Chrome, que roda no seu computador, faz uma busca em português achar links com título em inglês
+• Quadro estilo Kanban — Todas as coleções lado a lado, com arrastar e soltar
+• Workspaces — Separe contextos como Trabalho, Estudos e Pessoal em espaços independentes (até 12)
+• Inbox automática — Link salvo sem coleção vai para a Inbox. Excluiu uma coleção? Os links voltam para lá
+• Abas abertas — Veja as abas abertas no navegador pela barra lateral e arraste para salvar
+• Grupos de abas → Coleções — Transforme um grupo de abas inteiro numa coleção com um clique
+• Tema claro e escuro — Escolha o seu ou siga o do sistema
+• Nova aba — Use o TabAla como página de nova aba (opcional)
+
+Seus dados, suas regras:
+✓ Sem servidor — Links, uso e busca ficam no seu navegador
+✓ Sem rastreamento — Nenhum analytics, nenhuma telemetria
+✓ Aprendizado sob seu controle — O TabAla repara quais links salvos você abre, e por quanto tempo, para sugerir o próximo. Desligue e apague esses dados nas Configurações
+✓ Os dados são seus — Sempre exportáveis, nunca presos
+✓ Código aberto — Licença Apache 2.0
+
+Atalhos de teclado:
+• / ou Ctrl+K (⌘K no Mac) — Busca e comandos
+• N — Nova coleção
+• F — Foco
+• T — Abas abertas
+• Esc — Fechar
+
+Feito para:
+• Estudantes organizando material de pesquisa
+• Devs com documentação espalhada
+• Quem aprende por conta própria e junta referências
+• Qualquer pessoa que acumula abas para "ver depois"
+
+O TabAla continua pequeno e rápido. Sem conta, sem anúncio, sem cadastro.
+
+Salve. Organize. Processe quando quiser.

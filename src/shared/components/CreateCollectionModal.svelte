@@ -76,13 +76,13 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <div
   class="backdrop"
   on:click={handleBackdropClick}
   on:keydown={handleKeydown}
   transition:fade={{ duration: 150 }}
   role="dialog"
+  tabindex="-1"
   aria-modal="true"
   aria-labelledby="modal-title"
 >

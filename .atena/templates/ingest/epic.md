@@ -1,5 +1,0 @@
-## Objetivo
-{objective}
-
-## Contexto
-{context}

@@ -1,5 +1,0 @@
-## Descrição
-{description}
-
-## Objetivo
-{objective}

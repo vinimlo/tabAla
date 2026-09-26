@@ -621,7 +621,7 @@
     "message": "Topic search"
   },
   "topic_search_description": {
-    "message": "Translates your searches into English on this computer, with Chrome's built-in translator, so they also find links with English titles. Nothing leaves your browser."
+    "message": "Searches typed in another language also run in English, with Chrome's built-in translator, so they find links with English titles. Nothing leaves your browser."
   },
   "topic_search_unavailable": {
     "message": "Not available on this computer"
@@ -1581,5 +1581,14 @@
 
   "common_or": {
     "message": "or"
+  },
+
+  "topic_search_description_from": {
+    "message": "Searches you type in $1 also run in English, with Chrome's built-in translator, so they find links with English titles. Nothing leaves your browser.",
+    "placeholders": {
+      "language": {
+        "content": "$1"
+      }
+    }
   }
 }

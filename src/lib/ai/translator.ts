@@ -42,6 +42,15 @@ export function queryLanguage(): string | null {
   return candidates.find((language) => language !== TARGET_LANGUAGE) ?? null;
 }
 
+/** The query language's name in the interface language ('português', 'Portuguese'); null when none. */
+export function queryLanguageName(): string | null {
+  const language = queryLanguage();
+  if (language === null) {
+    return null;
+  }
+  return new Intl.DisplayNames([chrome.i18n.getUILanguage()], { type: 'language' }).of(language) ?? language;
+}
+
 function languagePair(): LanguagePair | null {
   const source = queryLanguage();
   return source === null ? null : { sourceLanguage: source, targetLanguage: TARGET_LANGUAGE };

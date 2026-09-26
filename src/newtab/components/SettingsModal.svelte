@@ -18,6 +18,7 @@
   import {
     downloadTranslation,
     getTranslationAvailability,
+    queryLanguageName,
     topicSearchView,
     type ModelAvailability,
   } from '@/lib/ai/translator';
@@ -33,6 +34,7 @@
 
   let availability: ModelAvailability = 'unavailable';
   let downloadProgress: number | null = null;
+  const sourceLanguage = queryLanguageName();
 
   onMount(async () => {
     availability = await getTranslationAvailability();
@@ -331,7 +333,9 @@
       <div class="setting-item">
         <div class="setting-info">
           <span class="setting-label">{t('topic_search_title')}</span>
-          <span class="setting-description">{t('topic_search_description')}</span>
+          <span class="setting-description">
+            {sourceLanguage === null ? t('topic_search_description') : t('topic_search_description_from', sourceLanguage)}
+          </span>
         </div>
         {#if topicView === 'unavailable'}
           <span class="setting-status">{t('topic_search_unavailable')}</span>

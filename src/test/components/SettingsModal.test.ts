@@ -7,6 +7,7 @@ import SettingsModal from '@/newtab/components/SettingsModal.svelte';
 import { settingsStore } from '@/lib/stores/settings';
 import * as storage from '@/lib/storage';
 import { DEFAULT_SETTINGS } from '@/lib/types';
+import { queryLanguageName } from '@/lib/ai/translator';
 const { createStorageMock } = await vi.hoisted(() => import('../mocks/storage'));
 
 vi.mock('@/lib/storage', () => createStorageMock());
@@ -14,12 +15,27 @@ vi.mock('@/lib/ai/translator', () => ({
   getTranslationAvailability: vi.fn(() => Promise.resolve('unavailable')),
   downloadTranslation: vi.fn(() => Promise.resolve()),
   topicSearchView: vi.fn(() => 'unavailable'),
+  queryLanguageName: vi.fn(() => 'Portuguese'),
 }));
 
 describe('SettingsModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     settingsStore.set({ settings: { ...DEFAULT_SETTINGS }, loading: false, error: null, pendingLocalUpdate: false });
+  });
+
+  it('says which language topic search translates from', () => {
+    render(SettingsModal);
+
+    expect(screen.getByText('topic_search_description_from')).toBeInTheDocument();
+    expect(chrome.i18n.getMessage).toHaveBeenCalledWith('topic_search_description_from', ['Portuguese']);
+  });
+
+  it('keeps a general description when every language is English', () => {
+    vi.mocked(queryLanguageName).mockReturnValueOnce(null);
+    render(SettingsModal);
+
+    expect(screen.getByText('topic_search_description')).toBeInTheDocument();
   });
 
   it('lists every dashboard shortcut, with no text outside the locales', () => {

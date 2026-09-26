@@ -8,6 +8,7 @@ import {
   downloadTranslation,
   getTranslationAvailability,
   queryLanguage,
+  queryLanguageName,
   topicSearchView,
 } from '@/lib/ai/translator';
 
@@ -60,6 +61,25 @@ describe('queryLanguage', () => {
     chromeMock.i18n.getUILanguage.mockReturnValue('en-US');
     readLanguages(['en-US', 'en', 'pt-BR', 'es']);
     expect(queryLanguage()).toBe('pt');
+  });
+});
+
+describe('queryLanguageName', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('names the query language in the interface language', () => {
+    expect(queryLanguageName()).toBe('português');
+    chromeMock.i18n.getUILanguage.mockReturnValue('en-US');
+    readLanguages(['en-US', 'en', 'pt']);
+    expect(queryLanguageName()).toBe('Portuguese');
+  });
+
+  it('is null when every language is English', () => {
+    chromeMock.i18n.getUILanguage.mockReturnValue('en-US');
+    readLanguages(['en-US', 'en']);
+    expect(queryLanguageName()).toBeNull();
   });
 });
 

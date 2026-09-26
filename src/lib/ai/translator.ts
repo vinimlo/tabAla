@@ -30,10 +30,16 @@ function translatorApi(): TranslatorApi | undefined {
   return (globalThis as { Translator?: TranslatorApi }).Translator;
 }
 
-/** Interface language without region ('pt-BR' -> 'pt'); null when it is English. */
+const baseLanguage = (tag: string): string => tag.split('-')[0].toLowerCase();
+
+/**
+ * The language queries are typed in, without region ('pt-BR' -> 'pt'): the
+ * interface language, or, with Chrome in English, the first other language
+ * the user reads. Null when all of them are English.
+ */
 export function queryLanguage(): string | null {
-  const language = chrome.i18n.getUILanguage().split('-')[0].toLowerCase();
-  return language === TARGET_LANGUAGE ? null : language;
+  const candidates = [chrome.i18n.getUILanguage(), ...navigator.languages].map(baseLanguage);
+  return candidates.find((language) => language !== TARGET_LANGUAGE) ?? null;
 }
 
 function languagePair(): LanguagePair | null {

@@ -40,11 +40,26 @@ afterEach(() => {
   chromeMock.i18n.getUILanguage.mockReturnValue('en');
 });
 
+function readLanguages(languages: string[]): void {
+  vi.spyOn(navigator, 'languages', 'get').mockReturnValue(languages);
+}
+
 describe('queryLanguage', () => {
-  it('uses the interface language without region, and none for English', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('uses the interface language without region, and none when everything is English', () => {
     expect(queryLanguage()).toBe('pt');
     chromeMock.i18n.getUILanguage.mockReturnValue('en-US');
+    readLanguages(['en-US', 'en']);
     expect(queryLanguage()).toBeNull();
+  });
+
+  it('with the interface in English, uses the first other language the user reads', () => {
+    chromeMock.i18n.getUILanguage.mockReturnValue('en-US');
+    readLanguages(['en-US', 'en', 'pt-BR', 'es']);
+    expect(queryLanguage()).toBe('pt');
   });
 });
 
@@ -59,10 +74,21 @@ describe('getTranslationAvailability', () => {
     expect(api.availability).toHaveBeenCalledWith({ sourceLanguage: 'pt', targetLanguage: 'en' });
   });
 
-  it('is unavailable when the interface is already in English', async () => {
+  it('is unavailable when the interface and every language the user reads are English', async () => {
     installTranslator('available', (text) => Promise.resolve(text));
     chromeMock.i18n.getUILanguage.mockReturnValue('en');
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US', 'en']);
     expect(await getTranslationAvailability()).toBe('unavailable');
+    vi.restoreAllMocks();
+  });
+
+  it('with Chrome in English, asks about the other language the user reads', async () => {
+    const { api } = installTranslator('available', (text) => Promise.resolve(text));
+    chromeMock.i18n.getUILanguage.mockReturnValue('en-US');
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US', 'en', 'pt']);
+    expect(await getTranslationAvailability()).toBe('available');
+    expect(api.availability).toHaveBeenCalledWith({ sourceLanguage: 'pt', targetLanguage: 'en' });
+    vi.restoreAllMocks();
   });
 });
 
